@@ -1,4 +1,4 @@
-const BASE = '/api'
+const BASE = import.meta.env.VITE_API_BASE_URL || '/api'
 export const api = {
   getChallenges: (p={}) => fetch(`${BASE}/challenges?${new URLSearchParams(p)}`).then(r=>r.json()),
   getRandomChallenge: (p={}) => fetch(`${BASE}/challenges/random?${new URLSearchParams(p)}`).then(r=>r.json()),
