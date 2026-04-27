@@ -1,50 +1,37 @@
 const router = require('express').Router();
 const Challenge = require('../models/Challenge');
 
-// GET all with filters
 router.get('/', async (req, res) => {
   try {
-    const { category, mode_type, difficulty, limit } = req.query;
-    const filter = {};
-    if (category) filter.category = { $in: category.split(',') };
-    if (mode_type) filter.mode_type = { $in: [mode_type, 'all'] };
-    if (difficulty) filter.difficulty = difficulty;
-    let query = Challenge.find(filter);
-    if (limit) query = query.limit(parseInt(limit));
-    const challenges = await query;
-    res.json(challenges);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    const { category, mode_type, difficulty } = req.query;
+    const f = {};
+    if (category)  f.category  = { $in: category.split(',') };
+    if (mode_type) f.mode_type = { $in: [mode_type, 'all'] };
+    if (difficulty) f.difficulty = difficulty;
+    res.json(await Challenge.find(f));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// GET random challenge
 router.get('/random', async (req, res) => {
   try {
     const { category, mode_type } = req.query;
-    const filter = {};
-    if (category) filter.category = { $in: category.split(',') };
-    if (mode_type) filter.mode_type = { $in: [mode_type, 'all'] };
-    const count = await Challenge.countDocuments(filter);
-    const random = Math.floor(Math.random() * count);
-    const challenge = await Challenge.findOne(filter).skip(random);
-    res.json(challenge);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    const f = {};
+    if (category)  f.category  = { $in: category.split(',') };
+    if (mode_type) f.mode_type = { $in: [mode_type, 'all'] };
+    const count = await Challenge.countDocuments(f);
+    if (!count) return res.status(404).json({ error: 'No challenges found' });
+    res.json(await Challenge.findOne(f).skip(Math.floor(Math.random() * count)));
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST create
 router.post('/', async (req, res) => {
-  try {
-    const challenge = new Challenge(req.body);
-    await challenge.save();
-    res.status(201).json(challenge);
-  } catch (err) { res.status(400).json({ error: err.message }); }
+  try { res.status(201).json(await new Challenge(req.body).save()); }
+  catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// DELETE
 router.delete('/:id', async (req, res) => {
-  try {
-    await Challenge.findByIdAndDelete(req.params.id);
-    res.json({ deleted: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  try { await Challenge.findByIdAndDelete(req.params.id); res.json({ deleted: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

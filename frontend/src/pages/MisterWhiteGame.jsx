@@ -1,213 +1,345 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus } from 'lucide-react'
+import { Plus, Minus, ChevronLeft, Eye, EyeOff, Users } from 'lucide-react'
 import { shuffle } from '../utils/game'
 
 const WORD_PAIRS = [
   ['Futebol','Rugby'],['Pizza','Focaccia'],['Gato','Leopardo'],['Praia','Piscina'],
   ['Café','Chá'],['Carro','Mota'],['Sol','Lua'],['Médico','Enfermeiro'],
   ['Leão','Tigre'],['Cinema','Teatro'],['Guitarra','Violino'],['Crocodilo','Lagarto'],
-  ['Avião','Helicóptero'],['Coca-Cola','Pepsi'],['McDonald\'s','Burger King'],
+  ['Avião','Helicóptero'],['Coca-Cola','Pepsi'],["McDonald's","Burger King"],
   ['Instagram','TikTok'],['Neve','Granizo'],['Pistola','Espingarda'],
+  ['Praia','Lago'],['Chocolate','Caramelo'],['Castelo','Palácio'],['Tubarão','Baleia'],
+  ['Computador','Tablet'],['Vinho','Cerveja'],['Montanha','Colina'],['Janela','Porta'],
 ]
+const COLORS = ['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-lime-400 to-green-500','from-sky-400 to-indigo-500','from-red-400 to-rose-600','from-teal-400 to-cyan-500','from-orange-400 to-amber-500','from-indigo-400 to-violet-500']
 
 export default function MisterWhiteGame() {
   const navigate = useNavigate()
   const [step, setStep] = useState('setup')
-  const [players, setPlayers] = useState(['','',''])
+  const [playerNames, setPlayerNames] = useState(['','','',''])
   const [numUndercover, setNumUndercover] = useState(1)
   const [numMW, setNumMW] = useState(1)
-  const [roles, setRoles] = useState([])
-  const [revealIdx, setRevealIdx] = useState(0)
-  const [showWord, setShowWord] = useState(false)
-  const [activeVoters, setActiveVoters] = useState([])
-  const [votes, setVotes] = useState({})
-  const [mwGuess, setMwGuess] = useState('')
-  const [eliminated, setEliminated] = useState([])
-  const [civilWord, setCivilWord] = useState('')
-  const [mwEliminatedIdx, setMwEliminatedIdx] = useState(null)
 
-  const validPlayers = players.filter(p => p.trim())
-  const maxSpecials = Math.max(0, validPlayers.length - 2)
+  // Game state
+  const [roles, setRoles] = useState([])           // [{name, color, role, word, origIdx}] — in original player order
+  const [civilWord, setCivilWord] = useState('')
+  const [undercoverWord, setUndercoverWord] = useState('')
+  const [revealCursor, setRevealCursor] = useState(0) // tracks which player is next to reveal
+  const [showRole, setShowRole] = useState(false)
+  const [eliminated, setEliminated] = useState([])
+  const [votes, setVotes] = useState({})           // {candidateIdx: count}
+  const [voteCandidate, setVoteCandidate] = useState(null) // currently selected target
+  const [confirmed, setConfirmed] = useState(false)
+  const [mwGuess, setMwGuess] = useState('')
+  const [mwEliminatedIdx, setMwEliminatedIdx] = useState(null)
+  const [gameResult, setGameResult] = useState(null)
+  const [roundNum, setRoundNum] = useState(1)
+
+  const valid = playerNames.filter(n => n.trim())
+  const maxSpec = Math.max(0, valid.length - 2)
 
   const startGame = () => {
     const pair = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)]
-    setCivilWord(pair[0])
-    const shuffled = shuffle(validPlayers.map((name, i) => ({ name, originalIdx: i })))
-    const assigned = shuffled.map((p, i) => {
-      let role = 'civil', word = pair[0]
-      if (i < numMW) { role = 'mister_white'; word = '' }
-      else if (i < numMW + numUndercover) { role = 'undercover'; word = pair[1] }
-      return { ...p, role, word }
-    })
+    setCivilWord(pair[0]); setUndercoverWord(pair[1])
+    // Assign roles randomly but KEEP original player order for reveals/turns
+    const indices = Array.from({ length: valid.length }, (_, i) => i)
+    const shuffledIdxs = shuffle([...indices])
+    // Assign MW and undercover roles to shuffled positions
+    const roleMap = {}
+    shuffledIdxs.slice(0, numMW).forEach(i => { roleMap[i] = { role: 'mister_white', word: '' } })
+    shuffledIdxs.slice(numMW, numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'undercover', word: pair[1] } })
+    shuffledIdxs.slice(numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'civil', word: pair[0] } })
+    // Build roles array in ORIGINAL order
+    const assigned = valid.map((name, i) => ({
+      name, origIdx: i,
+      color: COLORS[i % COLORS.length],
+      ...roleMap[i]
+    }))
     setRoles(assigned)
-    setActiveVoters(assigned.map((_, i) => i))
-    setRevealIdx(0)
-    setShowWord(false)
+    setRevealCursor(0); setShowRole(false)
+    setEliminated([]); setVotes({}); setVoteCandidate(null); setConfirmed(false)
+    setMwGuess(''); setMwEliminatedIdx(null); setGameResult(null); setRoundNum(1)
     setStep('reveal')
   }
 
-  const finishReveal = () => {
-    if (revealIdx < roles.length - 1) { setRevealIdx(r => r + 1); setShowWord(false) }
-    else setStep('playing')
+  const activeIndices = roles.map((_, i) => i).filter(i => !eliminated.includes(i))
+
+  // Advance revealCursor wrapping only through active players in original order
+  const nextReveal = () => {
+    // Find next in original order after current reveal
+    const next = revealCursor + 1
+    if (next >= roles.length) { setRevealCursor(0); setShowRole(false); setStep('playing'); return }
+    setRevealCursor(next); setShowRole(false)
   }
 
-  const submitVote = (targetIdx) => setVotes(v => ({ ...v, [revealIdx]: targetIdx }))
+  const startVoting = () => {
+    setVoteCandidate(null); setConfirmed(false); setVotes({}); setStep('vote')
+  }
 
-  const eliminatePlayer = () => {
-    const counts = {}
-    Object.values(votes).forEach(v => { counts[v] = (counts[v] || 0) + 1 })
-    const max = Math.max(...Object.values(counts))
-    const toElim = parseInt(Object.keys(counts).find(k => counts[k] === max))
-    if (roles[toElim]?.role === 'mister_white') {
-      setMwEliminatedIdx(toElim)
+  const selectCandidate = (idx) => { setVoteCandidate(idx); setConfirmed(false) }
+
+  const confirmElimination = () => {
+    if (voteCandidate === null) return
+    const elim = voteCandidate
+    const newElim = [...eliminated, elim]
+    setEliminated(newElim)
+    const role = roles[elim]
+    if (role.role === 'mister_white') {
+      setMwEliminatedIdx(elim)
+      // Check if game should end or continue
+      const remaining = roles.filter((_, i) => !newElim.includes(i))
+      const undercoversLeft = remaining.filter(r => r.role === 'undercover').length
+      if (undercoversLeft === 0) { setStep('mw_guess'); return }
+      // MW caught but undercoveres remain — MW gets to guess, then game continues
       setStep('mw_guess')
     } else {
-      setEliminated(e => [...e, toElim])
-      setActiveVoters(v => v.filter(i => i !== toElim))
-      const remaining = activeVoters.filter(i => i !== toElim)
-      const mwAlive = remaining.some(i => roles[i]?.role === 'mister_white')
-      const civils = remaining.filter(i => roles[i]?.role === 'civil').length
-      if (!mwAlive || civils <= 1) setStep('result')
-      else { setVotes({}); setRevealIdx(0); setStep('playing') }
+      checkEndCondition(newElim)
     }
   }
 
+  const checkEndCondition = (newElim) => {
+    const remaining = roles.filter((_, i) => !newElim.includes(i))
+    const mwAlive = remaining.some(r => r.role === 'mister_white')
+    const civils = remaining.filter(r => r.role === 'civil').length
+    const undercoveres = remaining.filter(r => r.role === 'undercover').length
+    if (civils <= 1) { setGameResult(mwAlive ? 'mw_wins' : undercoveres > 0 ? 'undercover_wins' : 'civils_win'); setStep('result'); return }
+    if (undercoveres >= civils) { setGameResult('undercover_wins'); setStep('result'); return }
+    if (!mwAlive && undercoveres === 0) { setGameResult('civils_win'); setStep('result'); return }
+    // Next round — advance reveal cursor to next active player in order
+    const nextActive = activeIndices.filter(i => !newElim.includes(i))
+    // Advance starting player by 1 (rotate right)
+    const firstNext = nextActive[(nextActive.indexOf(nextActive[0]) + 1) % nextActive.length]
+    setRevealCursor(firstNext || nextActive[0] || 0)
+    setVoteCandidate(null); setConfirmed(false); setVotes({})
+    setRoundNum(r => r + 1); setStep('playing')
+  }
+
+  const handleMWGuess = () => {
+    const guess = mwGuess.toLowerCase().trim()
+    const correct = guess === civilWord.toLowerCase().trim() || civilWord.toLowerCase().startsWith(guess)
+    if (correct) { setGameResult('mw_wins'); setStep('result') }
+    else {
+      // MW guessed wrong — check if game continues (undercoveres still alive)
+      const remaining = roles.filter((_, i) => ![...eliminated].includes(i))
+      const undercoveres = remaining.filter(r => r.role === 'undercover').length
+      if (undercoveres > 0) {
+        checkEndCondition(eliminated)
+      } else {
+        setGameResult('civils_win'); setStep('result')
+      }
+    }
+  }
+
+  const resetGame = () => { setStep('setup'); setPlayerNames(['','','','']); setNumMW(1); setNumUndercover(1) }
+
+  const remainingActive = roles.filter((_, i) => !eliminated.includes(i))
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col items-center px-4 py-8">
+    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-lg">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/')} className="text-slate-400 text-sm">← Sair</button>
-          <h1 className="text-white font-bold text-xl">👁️ Mister White</h1>
+          <button onClick={() => step === 'setup' ? navigate('/') : setStep('setup')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <div>
+            <h1 className="text-white font-bold text-xl">👁️ Mister White</h1>
+            {step !== 'setup' && <p className="text-slate-500 text-xs">Ronda {roundNum} · {remainingActive.length} jogadores activos</p>}
+          </div>
         </div>
         <AnimatePresence mode="wait">
-          {step === 'setup' && (
-            <motion.div key="setup" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                <h3 className="text-white font-semibold mb-3">Jogadores</h3>
-                {players.map((p, i) => (
+
+          {/* ── SETUP ── */}
+          {step==='setup'&&(
+            <motion.div key="setup" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+                <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-slate-400"/>Jogadores (mín. 3)</h3>
+                {playerNames.map((n,i)=>(
                   <div key={i} className="flex items-center gap-2 mb-2">
-                    <input value={p} onChange={e => setPlayers(ps => ps.map((x,j) => j===i ? e.target.value : x))}
+                    <input value={n} onChange={e=>setPlayerNames(ps=>ps.map((x,j)=>j===i?e.target.value:x))}
                       placeholder={`Jogador ${i+1}`}
-                      className="flex-1 bg-white/5 text-white rounded-xl px-3 py-2.5 outline-none border border-white/10 text-sm" />
-                    {players.length > 3 && <button onClick={() => setPlayers(ps => ps.filter((_,j) => j!==i))} className="text-slate-500 hover:text-red-400"><Minus className="w-4 h-4" /></button>}
+                      className="flex-1 bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm"/>
+                    {playerNames.length>3&&<button onClick={()=>setPlayerNames(ps=>ps.filter((_,j)=>j!==i))} className="text-slate-600 hover:text-red-400 transition-colors"><Minus className="w-4 h-4"/></button>}
                   </div>
                 ))}
-                <button onClick={() => setPlayers(p => [...p, ''])} className="text-slate-400 hover:text-white text-sm flex items-center gap-1 mt-1">
-                  <Plus className="w-3 h-3" /> Adicionar
+                <button onClick={()=>setPlayerNames(p=>[...p,''])} className="text-slate-500 hover:text-white text-sm flex items-center gap-1 mt-1 transition-colors">
+                  <Plus className="w-3 h-3"/> Adicionar
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {[{ label: 'Undercoveres', val: numUndercover, set: setNumUndercover }, { label: 'Mister Whites', val: numMW, set: setNumMW }].map(({ label, val, set }) => (
-                  <div key={label} className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                {[{label:'Undercoveres',val:numUndercover,set:setNumUndercover},{label:'Mister Whites',val:numMW,set:setNumMW}].map(({label,val,set})=>(
+                  <div key={label} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
                     <p className="text-slate-400 text-xs mb-2">{label}</p>
                     <div className="flex items-center justify-center gap-3">
-                      <button onClick={() => set(v => Math.max(0, v-1))} className="text-slate-400 hover:text-white"><Minus className="w-4 h-4" /></button>
-                      <span className="text-white font-bold text-xl">{val}</span>
-                      <button onClick={() => set(v => v + numMW + numUndercover < maxSpecials ? v+1 : v)} className="text-slate-400 hover:text-white"><Plus className="w-4 h-4" /></button>
+                      <button onClick={()=>set(v=>Math.max(0,v-1))} className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white"><Minus className="w-3 h-3"/></button>
+                      <span className="text-white font-black text-xl w-6 text-center">{val}</span>
+                      <button onClick={()=>{ if(numMW+numUndercover<maxSpec) set(v=>v+1) }}
+                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white"><Plus className="w-3 h-3"/></button>
                     </div>
                   </div>
                 ))}
               </div>
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame}
-                disabled={validPlayers.length < 3}
-                className="w-full bg-gradient-to-r from-slate-500 to-slate-600 text-white font-bold rounded-2xl py-4 disabled:opacity-50">
-                Começar Jogo
+              <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-4 text-sm text-slate-400 space-y-1">
+                <p>📖 <span className="text-white">Civis</span> conhecem a palavra. <span className="text-blue-400">Undercoveres</span> têm palavra similar. <span className="text-red-400">Mister White</span> não tem palavra.</p>
+                <p>🗳️ Grupo discute, vota num suspeito, e o dono do telemóvel confirma a eliminação.</p>
+                <p>🔄 Após a primeira ronda, o turno de revelar avança um para a direita.</p>
+              </div>
+              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame} disabled={valid.length<3}
+                className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4 disabled:opacity-40">
+                Começar 👁️
               </motion.button>
             </motion.div>
           )}
-          {step === 'reveal' && roles[revealIdx] && (
-            <motion.div key={`reveal-${revealIdx}`} initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}} exit={{opacity:0}} className="text-center space-y-6">
-              <h2 className="text-white font-bold text-xl">Vez de {roles[revealIdx].name}</h2>
-              {!showWord ? (
-                <motion.button whileTap={{scale:0.95}} onClick={() => setShowWord(true)}
-                  className="w-full h-40 bg-white/5 border border-white/10 rounded-3xl flex items-center justify-center text-slate-400 text-lg hover:bg-white/10 transition-all">
-                  👆 Toca para ver a tua palavra
+
+          {/* ── REVEAL — one by one in original order ── */}
+          {step==='reveal'&&roles[revealCursor]&&(
+            <motion.div key={`reveal-${revealCursor}`} initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0}} className="text-center space-y-5">
+              <div className={`w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br ${roles[revealCursor].color} flex items-center justify-center text-white font-black text-4xl`}>
+                {roles[revealCursor].name[0]}
+              </div>
+              <h2 className="text-white font-bold text-xl">Vez de <span className="font-black">{roles[revealCursor].name}</span></h2>
+              <p className="text-slate-500 text-sm">Mostra só a ti próprio!</p>
+              {!showRole ? (
+                <motion.button whileTap={{scale:0.96}} onClick={()=>setShowRole(true)}
+                  className="w-full h-36 bg-white/[0.04] border border-white/[0.08] rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:bg-white/[0.07] transition-all">
+                  <EyeOff className="w-8 h-8"/><span>Toca para ver o teu papel</span>
                 </motion.button>
               ) : (
-                <motion.div initial={{scale:0}} animate={{scale:1}} className="w-full h-40 bg-gradient-to-br from-slate-700 to-slate-800 border border-white/20 rounded-3xl flex flex-col items-center justify-center gap-2">
-                  <span className="text-slate-400 text-sm">{roles[revealIdx].role === 'civil' ? 'Civil' : roles[revealIdx].role === 'undercover' ? 'Undercover' : 'Mister White'}</span>
-                  <span className="text-white font-black text-3xl">{roles[revealIdx].word || 'Sem palavra'}</span>
+                <motion.div initial={{scale:0.85,opacity:0}} animate={{scale:1,opacity:1}}
+                  className={`w-full h-36 rounded-3xl flex flex-col items-center justify-center gap-2 border ${roles[revealCursor].role==='civil'?'bg-green-900/25 border-green-500/30':roles[revealCursor].role==='undercover'?'bg-blue-900/25 border-blue-500/30':'bg-red-900/25 border-red-500/30'}`}>
+                  <span className="text-slate-300 text-sm">{roles[revealCursor].role==='civil'?'✅ Civil':roles[revealCursor].role==='undercover'?'🕵️ Undercover':'👁️ Mister White'}</span>
+                  <span className="text-white font-black text-3xl">{roles[revealCursor].word||'Sem palavra'}</span>
+                  {roles[revealCursor].role==='undercover'&&<span className="text-blue-300 text-xs">A tua palavra é parecida mas diferente!</span>}
+                  {roles[revealCursor].role==='mister_white'&&<span className="text-red-300 text-xs">Tenta descobrir a palavra civil!</span>}
                 </motion.div>
               )}
-              {showWord && (
-                <button onClick={finishReveal} className="w-full bg-gradient-to-r from-slate-500 to-slate-600 text-white font-bold rounded-2xl py-4">
-                  {revealIdx < roles.length - 1 ? 'Próximo →' : 'Começar Ronda →'}
+              {showRole&&(
+                <button onClick={nextReveal}
+                  className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4">
+                  {revealCursor<roles.length-1?`Próximo: ${roles[revealCursor+1]?.name} →`:'Começar Ronda →'}
                 </button>
               )}
+              <p className="text-slate-600 text-xs">{revealCursor+1} de {roles.length}</p>
             </motion.div>
           )}
-          {step === 'playing' && (
-            <motion.div key="playing" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
-                <p className="text-slate-300">Cada jogador diz uma pista sobre a sua palavra. Depois votam!</p>
+
+          {/* ── PLAYING ── */}
+          {step==='playing'&&(
+            <motion.div key={`playing-${roundNum}`} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
+                <p className="text-slate-300 text-sm leading-relaxed">Cada jogador diz <b className="text-white">uma pista</b> sobre a sua palavra — nem demasiado óbvia nem demasiado vaga.</p>
               </div>
               <div className="space-y-2">
-                {activeVoters.map(i => (
-                  <div key={i} className="bg-white/5 border border-white/10 rounded-xl px-4 py-3 flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center text-white text-xs font-bold">{roles[i]?.name[0]}</div>
-                    <span className="text-white">{roles[i]?.name}</span>
+                {activeIndices.map(i => (
+                  <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-sm font-black flex-shrink-0`}>{roles[i].name[0]}</div>
+                    <span className="text-white font-medium">{roles[i].name}</span>
+                    <Eye className="text-slate-700 w-4 h-4 ml-auto"/>
                   </div>
                 ))}
               </div>
-              <button onClick={() => { setRevealIdx(0); setVotes({}); setStep('vote') }}
+              {eliminated.length>0&&(
+                <div className="space-y-1">
+                  <p className="text-slate-600 text-xs uppercase tracking-wider">Eliminados</p>
+                  {eliminated.map(i=>(
+                    <div key={i} className="bg-white/[0.02] rounded-xl px-4 py-2 flex items-center gap-3 opacity-35">
+                      <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-xs font-black`}>{roles[i].name[0]}</div>
+                      <span className="text-slate-500 text-sm">{roles[i].name}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startVoting}
                 className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold rounded-2xl py-4">
-                Votar na Eliminação
-              </button>
+                🗳️ Votar na Eliminação
+              </motion.button>
             </motion.div>
           )}
-          {step === 'vote' && (
-            <motion.div key="vote" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
-              <h3 className="text-white font-semibold text-center">Vote em quem é suspeito</h3>
-              {activeVoters.filter(i => i !== revealIdx).map(target => (
-                <button key={target} onClick={() => submitVote(target)}
-                  className={`w-full p-4 rounded-2xl border transition-all text-white font-medium
-                    ${votes[revealIdx] === target ? 'bg-red-600/30 border-red-500' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                  {roles[target]?.name}
-                </button>
-              ))}
-              {revealIdx < activeVoters.length - 1 ? (
-                <button onClick={() => setRevealIdx(r => r + 1)} className="w-full bg-white/10 text-white rounded-2xl py-3">Próximo votante →</button>
-              ) : (
-                <button onClick={eliminatePlayer} className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold rounded-2xl py-4">Eliminar Jogador</button>
+
+          {/* ── VOTE — group discusses, one confirms ── */}
+          {step==='vote'&&(
+            <motion.div key="vote" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
+              <div className="bg-red-900/15 border border-red-500/25 rounded-2xl p-4 text-center">
+                <p className="text-white font-bold mb-1">Quem eliminar?</p>
+                <p className="text-slate-400 text-sm">O grupo discute e o dono do telemóvel escolhe quem é eliminado.</p>
+              </div>
+              <div className="space-y-2">
+                {activeIndices.map(idx => (
+                  <motion.button key={idx} whileHover={{scale:1.01}} whileTap={{scale:0.98}}
+                    onClick={() => selectCandidate(idx)}
+                    className={`w-full px-4 py-3.5 rounded-xl border flex items-center gap-3 transition-all text-left ${voteCandidate===idx?'bg-red-900/25 border-red-500/50':'bg-white/[0.04] border-white/[0.07] hover:border-white/[0.2]'}`}>
+                    <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${roles[idx].color} flex items-center justify-center text-white text-sm font-black flex-shrink-0`}>{roles[idx].name[0]}</div>
+                    <span className={`font-medium ${voteCandidate===idx?'text-white':'text-slate-300'}`}>{roles[idx].name}</span>
+                    {voteCandidate===idx&&<span className="ml-auto text-red-400 text-sm font-bold">Selecionado ✓</span>}
+                  </motion.button>
+                ))}
+              </div>
+              {voteCandidate!==null&&!confirmed&&(
+                <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
+                  className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-center space-y-3">
+                  <p className="text-amber-300 font-bold">Eliminar <span className="text-white">{roles[voteCandidate]?.name}</span>?</p>
+                  <p className="text-slate-400 text-sm">Toda a gente concorda?</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => {setVoteCandidate(null)}} className="flex-1 bg-white/[0.06] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">← Voltar atrás</button>
+                    <motion.button whileTap={{scale:0.96}} onClick={confirmElimination}
+                      className="flex-1 bg-gradient-to-r from-red-600 to-rose-700 text-white font-black rounded-2xl py-3">
+                      Eliminar! ✂️
+                    </motion.button>
+                  </div>
+                </motion.div>
+              )}
+              {voteCandidate===null&&(
+                <button onClick={()=>setStep('playing')} className="w-full bg-white/[0.05] text-slate-400 rounded-2xl py-3 text-sm">← Voltar ao jogo</button>
               )}
             </motion.div>
           )}
-          {step === 'mw_guess' && (
-            <motion.div key="mw_guess" initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4 text-center">
-              <div className="text-5xl mb-2">👁️</div>
-              <h3 className="text-white font-bold text-xl">{roles[mwEliminatedIdx]?.name} é o Mister White!</h3>
-              <p className="text-slate-400">Última hipótese — adivinha a palavra civil!</p>
-              <input value={mwGuess} onChange={e => setMwGuess(e.target.value)} placeholder="A palavra civil é..."
-                className="w-full bg-white/5 text-white rounded-2xl px-4 py-4 outline-none border border-white/10 text-center text-lg" />
-              <button onClick={() => setStep('result')} className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4">Revelar</button>
+
+          {/* ── MW GUESS ── */}
+          {step==='mw_guess'&&mwEliminatedIdx!==null&&(
+            <motion.div key="mwguess" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="text-center space-y-5">
+              <div className="text-5xl">👁️</div>
+              <h3 className="text-white font-black text-xl">{roles[mwEliminatedIdx]?.name} é o Mister White!</h3>
+              <p className="text-slate-400 text-sm">Última hipótese — adivinha a palavra civil para vencer!</p>
+              <input value={mwGuess} onChange={e=>setMwGuess(e.target.value)}
+                placeholder="A palavra civil é..."
+                className="w-full bg-white/[0.05] text-white text-center text-lg font-bold rounded-2xl px-4 py-4 outline-none border border-white/[0.08] focus:border-slate-400/50"
+                onKeyDown={e=>e.key==='Enter'&&mwGuess.trim()&&handleMWGuess()}/>
+              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={handleMWGuess} disabled={!mwGuess.trim()}
+                className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4 disabled:opacity-40">
+                Revelar! 🎭
+              </motion.button>
             </motion.div>
           )}
-          {step === 'result' && (
-            <motion.div key="result" initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}} exit={{opacity:0}} className="text-center space-y-5">
-              {mwGuess.toLowerCase().trim() === civilWord.toLowerCase().trim() && mwEliminatedIdx !== null ? (
-                <div><div className="text-5xl mb-3">🕵️</div><h2 className="text-white font-black text-2xl">Mister White Venceu!</h2><p className="text-slate-400">Adivinhou: {civilWord}</p></div>
-              ) : (
-                <div><div className="text-5xl mb-3">✅</div><h2 className="text-white font-black text-2xl">Os Civis Venceram!</h2></div>
-              )}
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-left">
-                <p className="text-slate-400 text-xs mb-3">Palavras: Civil = <strong className="text-white">{civilWord}</strong></p>
-                {roles.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 py-1 border-b border-white/5 last:border-0">
-                    <span className="text-white text-sm">{r.name}</span>
-                    <span className={`text-xs ml-auto px-2 py-0.5 rounded-full ${r.role==='civil'?'bg-green-600/30 text-green-400':r.role==='undercover'?'bg-blue-600/30 text-blue-400':'bg-red-600/30 text-red-400'}`}>{r.role}</span>
-                    <span className="text-slate-400 text-xs">{r.word || '—'}</span>
+
+          {/* ── RESULT ── */}
+          {step==='result'&&(
+            <motion.div key="result" initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0}} className="text-center space-y-5">
+              <div className="text-6xl">{gameResult==='civils_win'?'✅':gameResult==='mw_wins'?'🕵️':'🔵'}</div>
+              <h2 className="text-white font-black text-2xl">
+                {gameResult==='civils_win'?'Os Civis Venceram!':gameResult==='mw_wins'?'Mister White Venceu!':'Undercoveres Venceram!'}
+              </h2>
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-left space-y-1">
+                <div className="flex gap-4 mb-3 text-sm">
+                  <span className="text-slate-400">Civil: <span className="text-green-400 font-bold">{civilWord}</span></span>
+                  <span className="text-slate-400">Undercover: <span className="text-blue-400 font-bold">{undercoverWord}</span></span>
+                </div>
+                {roles.map((r,i)=>(
+                  <div key={i} className="flex items-center gap-2 py-1 border-b border-white/[0.05] last:border-0">
+                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${r.color} flex items-center justify-center text-white text-xs font-black flex-shrink-0`}>{r.name[0]}</div>
+                    <span className="text-white text-sm flex-1">{r.name}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${r.role==='civil'?'bg-green-500/15 text-green-400':r.role==='undercover'?'bg-blue-500/15 text-blue-400':'bg-red-500/15 text-red-400'}`}>
+                      {r.role==='civil'?'Civil':r.role==='undercover'?'Undercover':'MW'}
+                    </span>
+                    <span className="text-slate-500 text-xs">{r.word||'—'}</span>
                   </div>
                 ))}
               </div>
               <div className="flex gap-3">
-                <button onClick={() => { setStep('setup'); setRoles([]); setVotes({}); setEliminated([]); setMwGuess(''); setMwEliminatedIdx(null) }}
-                  className="flex-1 bg-white/10 text-white rounded-2xl py-3 font-medium">Jogar Novamente</button>
-                <button onClick={() => navigate('/')} className="flex-1 bg-white/10 text-white rounded-2xl py-3 font-medium">Sair</button>
+                <button onClick={startGame} className="flex-1 bg-white/[0.07] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">🔄 Nova Ronda</button>
+                <button onClick={resetGame} className="flex-1 bg-white/[0.07] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">🏠 Início</button>
               </div>
             </motion.div>
           )}
+
         </AnimatePresence>
       </div>
     </div>

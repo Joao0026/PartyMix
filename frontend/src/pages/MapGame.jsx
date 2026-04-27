@@ -1,366 +1,259 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion, AnimatePresence, useAnimation } from 'framer-motion'
-import { loadGame, CATEGORY_CONFIG, shuffle } from '../utils/game'
+import { motion, AnimatePresence } from 'framer-motion'
+import { loadGame, CATEGORY_CONFIG } from '../utils/game'
 import { api } from '../utils/api'
 import DiceRoller from '../components/game/DiceRoller'
 import ChallengeCard from '../components/game/ChallengeCard'
+import MiniGameModal from '../components/game/MiniGameModal'
 import { Trophy, ChevronLeft } from 'lucide-react'
 
-function buildMap(categories, length = 60) {
+const WINNING_SCORE = 5
+
+function buildMap(cats, miniGames, friendsMode, rotation, length = 60) {
+  const isMiniOnly = friendsMode === 'map_mini'
   return Array.from({ length }, (_, i) => {
-    if (i === 0) return { type: 'start', emoji: '🏁', bg: '#059669' }
-    if (i % 5 === 0) return { type: 'minigame', emoji: '🎲', bg: '#d97706' }
-    const cat = categories[i % categories.length]
-    const cfg = CATEGORY_CONFIG[cat] || { emoji: '⭐' }
-    return { type: 'challenge', category: cat, emoji: cfg.emoji, bg: '#6d28d9' }
+    if (i === 0) return { type:'start', emoji:'🏁', bg:'#059669' }
+    if (isMiniOnly) {
+      if (!miniGames.length) return { type:'start', emoji:'⭐', bg:'#6d28d9' }
+      const mg = miniGames[Math.floor(Math.random() * miniGames.length)]
+      return { type:'minigame', mini:mg, emoji:'🎮', bg:'#7c3aed' }
+    }
+    if (rotation === 'random') {
+      // Equal probability: 50% category, 50% mini-game (if mini-games available)
+      const hasMini = miniGames.length > 0
+      if (hasMini && Math.random() < 0.5) {
+        const mg = miniGames[Math.floor(Math.random() * miniGames.length)]
+        return { type:'minigame', mini:mg, emoji:'🎲', bg:'#d97706' }
+      }
+      const cat = cats[Math.floor(Math.random() * cats.length)]
+      const cfg = CATEGORY_CONFIG[cat] || { emoji:'⭐' }
+      return { type:'challenge', category:cat, emoji:cfg.emoji, bg:'#6d28d9' }
+    }
+    // Fixed rotation: mini-games on multiples of 5
+    if (i % 5 === 0 && miniGames.length > 0) {
+      return { type:'minigame', mini:miniGames[Math.floor(Math.random()*miniGames.length)], emoji:'🎲', bg:'#d97706' }
+    }
+    const cat = cats[i % cats.length]
+    const cfg = CATEGORY_CONFIG[cat] || { emoji:'⭐' }
+    return { type:'challenge', category:cat, emoji:cfg.emoji, bg:'#6d28d9' }
   })
 }
 
-const MINI_GAME_LABELS = {
-  maior_menor: { title: '🃏 Maior ou Menor', desc: 'Adivinha se a próxima carta é maior ou menor!', color: 'from-blue-600 to-cyan-600' },
-  grupo: { title: '👥 Desafio de Grupo', desc: 'Todos participam neste desafio!', color: 'from-green-600 to-emerald-600' },
-  espio: { title: '🕵️ Espião', desc: 'Descobre quem não conhece a palavra secreta.', color: 'from-slate-600 to-slate-800' },
-  '10_segundos': { title: '⏱ 10 Segundos', desc: 'Nomeia 5 coisas em 10 segundos!', color: 'from-orange-500 to-amber-600' },
-  batalha: { title: '⚔️ Batalha', desc: 'Debate absurdo — os outros votam!', color: 'from-red-600 to-rose-700' },
-}
-
 export default function MapGame() {
-  const navigate = useNavigate()
-  const game = loadGame()
-  const players = game?.players || []
+  const navigate   = useNavigate()
+  const game       = loadGame()
+  const players    = game?.players || []
+  const cats       = game?.selectedCategories || ['mimica','verdade','acao']
+  const miniGames  = game?.miniGames || []
+  const friendsMode= game?.friendsMode || 'map_cats'
+  const mapRotation= game?.mapRotation || 'random'
+  const penaltyType= game?.penaltyType || 'sips'
 
-  const [positions, setPositions] = useState(players.map(() => 0))
-  const [scores, setScores] = useState(players.map(() => 0))
-  const [currentPlayer, setCurrentPlayer] = useState(0)
-  const [rolled, setRolled] = useState(false)
-  const [moving, setMoving] = useState(false)
-  const [challenge, setChallenge] = useState(null)
-  const [showChallenge, setShowChallenge] = useState(false)
-  const [miniGame, setMiniGame] = useState(null)
-  const [ongoings, setOngoings] = useState([])
-  const [penaltyAnim, setPenaltyAnim] = useState(null)
-  const [round, setRound] = useState(1)
-  const mapScrollRef = useRef(null)
-  const MAP = buildMap(game?.selectedCategories || ['mimica', 'verdade', 'acao'])
+  const MAP = useRef(buildMap(cats, miniGames, friendsMode, mapRotation)).current
 
-  useEffect(() => { if (!game) navigate('/') }, [])
+  const [positions,    setPositions]    = useState(players.map(()=>0))
+  const [scores,       setScores]       = useState(players.map(()=>0))
+  const [currentPlayer,setCurrentPlayer]= useState(0)
+  const [rolled,       setRolled]       = useState(false)
+  const [moving,       setMoving]       = useState(false)
+  const [challenge,    setChallenge]    = useState(null)
+  const [showChallenge,setShowChallenge]= useState(false)
+  const [miniGame,     setMiniGame]     = useState(null)
+  const [ongoings,     setOngoings]     = useState([])
+  const [penaltyAnim,  setPenaltyAnim]  = useState(null)
+  const [round,        setRound]        = useState(1)
+  const mapRef = useRef(null)
 
-  const scrollToPlayer = (pos) => {
-    if (!mapScrollRef.current) return
-    const tileW = 64 + 8
-    const container = mapScrollRef.current
-    const center = pos * tileW - container.clientWidth / 2 + tileW / 2
-    container.scrollTo({ left: Math.max(0, center), behavior: 'smooth' })
+  useEffect(()=>{ if(!game) navigate('/') },[])
+
+  const scrollTo = p => {
+    if(!mapRef.current)return
+    mapRef.current.scrollTo({left:Math.max(0,p*70-mapRef.current.clientWidth/2+35),behavior:'smooth'})
   }
 
-  const handleRoll = async (val) => {
-    if (rolled || moving) return
-    setRolled(true)
-    setMoving(true)
-
-    // Animate step by step
-    const startPos = positions[currentPlayer]
-    for (let step = 1; step <= val; step++) {
-      await new Promise(r => setTimeout(r, 180))
-      const newPos = Math.min(startPos + step, MAP.length - 1)
-      setPositions(p => p.map((pos, i) => i === currentPlayer ? newPos : pos))
-      scrollToPlayer(newPos)
+  const handleRoll = async val => {
+    if(rolled||moving)return
+    setRolled(true); setMoving(true)
+    const start = positions[currentPlayer]
+    for(let s=1;s<=val;s++){
+      await new Promise(r=>setTimeout(r,190))
+      const np=Math.min(start+s,MAP.length-1)
+      setPositions(p=>p.map((pos,i)=>i===currentPlayer?np:pos))
+      scrollTo(np)
     }
-
     setMoving(false)
-    const finalPos = Math.min(startPos + val, MAP.length - 1)
-    const tile = MAP[finalPos]
-
-    setTimeout(async () => {
-      if (tile.type === 'minigame') {
-        const mg = game?.miniGames?.length
-          ? game.miniGames[Math.floor(Math.random() * game.miniGames.length)]
-          : 'maior_menor'
-        setMiniGame(mg)
-      } else if (tile.type === 'challenge') {
-        const c = await api.getRandomChallenge({ category: tile.category, mode_type: game?.mode || 'friends' })
-        if (c && !c.error) { setChallenge(c); setShowChallenge(true) }
+    const final = Math.min(start+val,MAP.length-1)
+    const tile  = MAP[final]
+    setTimeout(async ()=>{
+      if(tile.type==='minigame'){
+        setMiniGame(tile.mini)
+      } else if(tile.type==='challenge'){
+        try{
+          const c=await api.getRandomChallenge({category:tile.category,mode_type:game?.mode||'friends'})
+          if(c&&!c.error){setChallenge(c);setShowChallenge(true)}
+        }catch{}
       }
-    }, 400)
+    },350)
   }
 
-  const handleChallengeResult = (result) => {
+  const showPenalty = (playerName) => {
+    let anim
+    if(penaltyType==='sips'){
+      const sips=[1,1,2,2,2,3][Math.floor(Math.random()*6)]
+      anim={name:playerName,type:'sips',sips}
+    } else if(penaltyType==='penalty'){
+      anim={name:playerName,type:'penalty'}
+    } else {
+      // 'both' → randomly pick ONE
+      if(Math.random()<0.5){
+        const sips=[1,1,2,2,2,3][Math.floor(Math.random()*6)]
+        anim={name:playerName,type:'sips',sips}
+      } else {
+        anim={name:playerName,type:'penalty'}
+      }
+    }
+    setPenaltyAnim(anim)
+    setTimeout(()=>setPenaltyAnim(null),2800)
+  }
+
+  const handleResult = result => {
     setShowChallenge(false)
-    if (result === 'success') {
-      setScores(s => s.map((sc, i) => i === currentPlayer ? sc + 1 : sc))
+    if(result==='success'){
+      const ns=scores.map((sc,i)=>i===currentPlayer?sc+1:sc)
+      setScores(ns)
+      if(ns[currentPlayer]>=WINNING_SCORE){
+        setTimeout(()=>navigate('/VictoryScreen',{state:{players,scores:ns,mode:game?.mode}}),400)
+        return
+      }
     }
-    if (result === 'fail' && (game?.penaltyType === 'sips' || game?.penaltyType === 'both')) {
-      const sips = [1, 2, 2, 2, 3, 3][Math.floor(Math.random() * 6)]
-      setPenaltyAnim({ name: players[currentPlayer]?.name, sips })
-      setTimeout(() => setPenaltyAnim(null), 2500)
-    }
-    if (result === 'accepted' && challenge?.is_ongoing) {
-      setOngoings(o => [...o, {
-        text: challenge.text, instruction: challenge.ongoing_instruction,
-        playerIdx: currentPlayer, turnsLeft: challenge.ongoing_rounds
-      }])
+    if(result==='fail') showPenalty(players[currentPlayer]?.name)
+    if(result==='accepted'&&challenge?.is_ongoing){
+      setOngoings(o=>[...o,{instruction:challenge.ongoing_instruction,playerIdx:currentPlayer,turnsLeft:challenge.ongoing_rounds}])
     }
   }
 
   const nextPlayer = () => {
-    setRolled(false)
-    setChallenge(null)
-    setShowChallenge(false)
-    setMiniGame(null)
-    const next = (currentPlayer + 1) % players.length
+    setRolled(false);setChallenge(null);setShowChallenge(false);setMiniGame(null)
+    const next=(currentPlayer+1)%players.length
+    if(next===0) setRound(r=>r+1)
     setCurrentPlayer(next)
-    if (next === 0) setRound(r => r + 1)
-    scrollToPlayer(positions[next])
-    // Tick ongoings
-    setOngoings(os => os
-      .map(o => ({ ...o, turnsLeft: o.turnsLeft - 1 }))
-      .filter(o => o.turnsLeft > 0)
-    )
+    scrollTo(positions[next])
+    setOngoings(os=>os.map(o=>({...o,turnsLeft:o.turnsLeft-1})).filter(o=>o.turnsLeft>0))
   }
 
-  const player = players[currentPlayer]
-  const visStart = Math.max(0, positions[currentPlayer] - 3)
+  const player   = players[currentPlayer]
+  const maxScore = Math.max(...scores)
+  const modeLabel= friendsMode==='map_mini'?'🎮 Mini-jogos':mapRotation==='random'?'🎲 50/50 Aleatório':'🔄 Fixo'
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-white/10 flex-shrink-0">
+  return(
+    <div className="min-h-screen bg-[#080b14] flex flex-col">
+      <div className="p-4 border-b border-white/[0.06] flex-shrink-0">
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white p-1">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            <Trophy className="text-amber-400 w-4 h-4" />
-            <span className="text-white font-bold text-sm">Ronda {round}</span>
-          </div>
+          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <div className="flex items-center gap-2"><Trophy className="text-amber-400 w-4 h-4"/><span className="text-white font-bold text-sm">R{round} · {modeLabel}</span></div>
           <div className="flex gap-2">
-            {players.map((p, i) => (
+            {players.map((p,i)=>(
               <div key={i} className="text-center">
-                <div className={`text-xs font-black ${i === currentPlayer ? 'text-amber-400' : 'text-white'}`}>{scores[i]}</div>
-                <div className="text-slate-500 text-xs">{p.name.split(' ')[0]}</div>
+                <div className={`text-sm font-black ${i===currentPlayer?'text-amber-400':'text-white'}`}>{scores[i]}</div>
+                <div className="text-slate-600 text-xs truncate max-w-10">{p.name.split(' ')[0]}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Ongoing badges */}
-      {ongoings.length > 0 && (
+      {ongoings.length>0&&(
         <div className="px-4 pt-2 space-y-1 max-w-lg mx-auto w-full">
-          {ongoings.map((o, i) => (
-            <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-              className="bg-orange-500/20 border border-orange-500/40 rounded-xl px-3 py-1.5 text-orange-300 text-xs flex items-center gap-2">
-              🔁 <span><b>{players[o.playerIdx]?.name}:</b> {o.instruction} ({o.turnsLeft} ronda{o.turnsLeft > 1 ? 's' : ''})</span>
-            </motion.div>
+          {ongoings.map((o,i)=>(
+            <div key={i} className="bg-orange-500/10 border border-orange-500/25 rounded-xl px-3 py-1.5 text-orange-300 text-xs flex gap-2">
+              🔁 <span><b>{players[o.playerIdx]?.name}:</b> {o.instruction} ({o.turnsLeft})</span>
+            </div>
           ))}
         </div>
       )}
 
-      {/* MAP STRIP */}
+      {/* MAP */}
       <div className="px-4 py-3 max-w-lg mx-auto w-full">
-        <div ref={mapScrollRef}
-          className="flex gap-2 overflow-x-scroll pb-2"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {MAP.map((tile, idx) => {
-            const playersHere = players.map((p, pi) => ({ p, pi })).filter(({ pi }) => positions[pi] === idx)
-            const isCurrent = positions[currentPlayer] === idx
-            return (
-              <motion.div key={idx}
-                animate={isCurrent ? { 
-                  scale: [1, 1.15, 1], 
-                  boxShadow: [
-                    '0 0 0px rgba(167,139,250,0)',
-                    '0 0 24px rgba(167,139,250,0.9)',
-                    '0 0 12px rgba(167,139,250,0.5)'
-                  ] 
-                } : { scale: 1, boxShadow: '0 0 0px rgba(167,139,250,0)' }}
-                transition={{ duration: 0.6, ease: 'easeInOut', repeat: isCurrent ? Infinity : 0, repeatType: 'mirror' }}
-                className="relative flex-shrink-0 flex flex-col items-center justify-end rounded-2xl overflow-visible transition-all duration-300"
-                style={{ 
-                  width: 64, 
-                  height: 68, 
-                  background: tile.bg + '99', 
-                  border: isCurrent ? '2px solid rgba(167,139,250,1)' : '1px solid rgba(255,255,255,0.08)',
-                  filter: isCurrent ? 'brightness(1.2)' : 'brightness(1)'
-                }}>
-                {/* Players on tile */}
-                <div className="absolute -top-4 flex gap-0.5">
-                  {playersHere.map(({ p, pi }) => (
-                    <motion.div key={pi}
-                      initial={{ scale: 0 }} animate={{ scale: 1 }}
-                      layout
-                      className={`w-6 h-6 rounded-full bg-gradient-to-br ${p.color} border-2 border-white/60 flex items-center justify-center text-white text-xs font-black shadow-lg`}
-                      style={{ zIndex: 10 }}>
+        <div ref={mapRef} className="flex gap-2 overflow-x-scroll pb-2" style={{scrollbarWidth:'none'}}>
+          {MAP.map((tile,idx)=>{
+            const here=players.map((p,pi)=>({p,pi})).filter(({pi})=>positions[pi]===idx)
+            const isCur=positions[currentPlayer]===idx
+            return(
+              <motion.div key={idx} animate={isCur?{scale:1.1,boxShadow:'0 0 14px rgba(167,139,250,0.5)'}:{scale:1}}
+                className="relative flex-shrink-0 flex flex-col items-center justify-end rounded-2xl"
+                style={{width:62,height:66,background:tile.bg+'99',border:`0.5px solid ${isCur?'rgba(167,139,250,0.65)':'rgba(255,255,255,0.06)'}`}}>
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-0.5">
+                  {here.map(({p,pi})=>(
+                    <motion.div key={pi} layout initial={{scale:0}} animate={{scale:1}}
+                      className={`w-6 h-6 rounded-full bg-gradient-to-br ${p.color} border-2 border-white/50 flex items-center justify-center text-white text-xs font-black shadow`}>
                       {p.name[0]}
                     </motion.div>
                   ))}
                 </div>
                 <span className="text-2xl mb-1">{tile.emoji}</span>
-                <span className="text-white/40 text-xs mb-1">{idx}</span>
+                <span className="text-white/25 text-xs mb-1 font-mono">{idx}</span>
               </motion.div>
             )
           })}
         </div>
       </div>
 
-        {/* Current player card */}
-      <div className="flex-1 flex flex-col items-center px-4 pb-6 max-w-lg mx-auto w-full gap-4">
-        <motion.div layout className="bg-white/5 border border-violet-500/30 rounded-3xl p-5 w-full">
-          <div className="flex items-center gap-4 mb-5">
-            <motion.div layout
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, repeatType: 'mirror' }}
-              className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-violet-500/20`}>
-              {player?.name?.[0]}
-            </motion.div>
-            <div>
-              <motion.p 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }}
-                className="text-slate-400 text-xs">É a vez de</motion.p>
-              <motion.h2 
-                key={currentPlayer} 
-                initial={{ opacity: 0, x: -20 }} 
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ type: 'spring', damping: 10 }}
-                className="text-white font-black text-2xl">{player?.name}</motion.h2>
-              <motion.p 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-slate-500 text-xs">Casa {positions[currentPlayer]} • {scores[currentPlayer]} pts</motion.p>
+      {/* Score bars */}
+      <div className="px-4 max-w-lg mx-auto w-full mb-2">
+        {players.map((p,i)=>(
+          <div key={i} className="flex items-center gap-2 mb-1">
+            <span className="text-xs text-slate-600 w-12 truncate">{p.name.split(' ')[0]}</span>
+            <div className="flex-1 h-1.5 bg-white/[0.05] rounded-full overflow-hidden">
+              <motion.div animate={{width:`${(scores[i]/WINNING_SCORE)*100}%`}} className={`h-full rounded-full bg-gradient-to-r ${p.color}`} transition={{type:'spring',damping:12}}/>
             </div>
+            <span className="text-xs text-slate-600 w-6 text-right">{scores[i]}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Player card */}
+      <div className="flex-1 flex flex-col items-center px-4 pb-6 max-w-lg mx-auto w-full gap-4">
+        <motion.div layout className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 w-full">
+          <div className="flex items-center gap-4 mb-5">
+            <motion.div layout className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-3xl shadow-xl`}>{player?.name?.[0]}</motion.div>
+            <div>
+              <p className="text-slate-500 text-xs">É a vez de</p>
+              <motion.h2 key={currentPlayer} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} className="text-white font-black text-2xl">{player?.name}</motion.h2>
+              <p className="text-slate-600 text-xs">Casa {positions[currentPlayer]} · {scores[currentPlayer]} pts</p>
+            </div>
+            {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="text-amber-400 w-5 h-5 ml-auto"/>}
           </div>
           {!rolled
-            ? <DiceRoller onRoll={handleRoll} disabled={moving} />
-            : !moving && (
-              <motion.button 
-                initial={{ opacity: 0, y: 10 }} 
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.02 }} 
-                whileTap={{ scale: 0.98 }}
-                onClick={nextPlayer}
-                className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 mt-2 shadow-lg shadow-violet-500/30">
+            ?<DiceRoller onRoll={handleRoll} disabled={moving}/>
+            :!moving&&(
+              <motion.button initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextPlayer}
+                className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 mt-2">
                 Próximo Jogador →
               </motion.button>
             )
           }
         </motion.div>
-
-        {/* Scoreboard */}
-        <div className="w-full grid grid-cols-2 gap-2">
-          {players.map((p, i) => (
-            <motion.div key={i} layout
-              animate={i === currentPlayer ? { scale: [1, 1.02, 1] } : {}}
-              transition={{ duration: 0.8, repeat: i === currentPlayer ? Infinity : 0, repeatType: 'reverse' }}
-              className={`bg-white/5 rounded-2xl p-3 flex items-center gap-3 transition-all border-2 ${i === currentPlayer ? 'border-violet-500/80 bg-violet-500/15 shadow-lg shadow-violet-500/30' : 'border-white/10'}`}>
-              <motion.div
-                initial={false}
-                animate={i === currentPlayer ? { scale: [1, 1.1, 1] } : {}}
-                transition={{ duration: 0.6, repeat: i === currentPlayer ? Infinity : 0 }}
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-sm font-black shadow`}>
-                {p.name[0]}
-              </motion.div>
-              <div className="min-w-0 flex-1">
-                <div className="text-white text-sm font-semibold truncate">{p.name}</div>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-400 text-xs">Casa {positions[i]}</span>
-                  <motion.span 
-                    key={`score-${i}-${scores[i]}`}
-                    initial={{ scale: 1.3, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    className="text-amber-400 text-xs font-bold">★ {scores[i]}
-                  </motion.span>
-                </div>
-              </div>
-              <AnimatePresence>
-                {i === currentPlayer && (
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: [1, 1.4, 1] }}
-                    exit={{ scale: 0 }}
-                    transition={{ duration: 0.8, repeat: Infinity, repeatType: 'reverse' }}
-                    className="w-3 h-3 rounded-full bg-gradient-to-r from-violet-400 to-pink-400 flex-shrink-0 shadow-lg shadow-violet-400/50" />
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </div>
       </div>
 
-      {/* Penalty animation overlay */}
       <AnimatePresence>
-        {penaltyAnim && (
-          <motion.div key="penalty"
-            initial={{ opacity: 0, scale: 0.3, y: 100 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.3, y: -100 }}
-            transition={{ type: 'spring', damping: 12, stiffness: 200 }}
+        {penaltyAnim&&(
+          <motion.div key="pen" initial={{opacity:0,scale:0.6,y:40}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.6,y:-40}}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            <motion.div 
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity, repeatType: 'reverse' }}
-              className="bg-gradient-to-r from-amber-500 to-orange-600 backdrop-blur-md rounded-3xl px-8 py-6 text-center shadow-2xl border border-amber-300/40">
-              <motion.div 
-                animate={{ rotate: [0, 10, -10, 5, 0] }}
-                transition={{ duration: 1, repeat: Infinity }}
-                className="text-6xl mb-3">
-                🍺
-              </motion.div>
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                transition={{ delay: 0.2 }}
-                className="text-black font-black text-2xl">
-                {penaltyAnim.name}
-              </motion.div>
-              <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-black/80 text-lg font-bold mt-1">
-                bebe {penaltyAnim.sips} golo{penaltyAnim.sips > 1 ? 's' : ''}!
-              </motion.div>
-            </motion.div>
+            <div className={`backdrop-blur-sm rounded-3xl px-8 py-6 text-center shadow-2xl ${penaltyAnim.type==='penalty'?'bg-emerald-500/85':'bg-amber-500/85'}`}>
+              <div className="text-5xl mb-2">{penaltyAnim.type==='penalty'?'⚽':'🍺'}</div>
+              <div className="text-black font-black text-2xl">{penaltyAnim.name}</div>
+              <div className="text-black/80 font-bold">{penaltyAnim.type==='penalty'?'marca um penálti!':`bebe ${penaltyAnim.sips} golo${penaltyAnim.sips>1?'s':''}!`}</div>
+            </div>
           </motion.div>
         )}
-      </AnimatePresence>
-
-      {/* Challenge modal */}
-      <AnimatePresence>
-        {showChallenge && challenge && (
-          <ChallengeCard challenge={challenge} player={player} mode={game?.mode}
-            penaltyType={game?.penaltyType}
-            onResult={handleChallengeResult}
-            onClose={() => setShowChallenge(false)} />
+        {showChallenge&&challenge&&(
+          <ChallengeCard challenge={challenge} player={player} mode={game?.mode} penaltyType={game?.penaltyType}
+            onResult={handleResult} onClose={()=>setShowChallenge(false)}/>
         )}
-      </AnimatePresence>
-
-      {/* Mini-game modal */}
-      <AnimatePresence>
-        {miniGame && (() => {
-          const mg = MINI_GAME_LABELS[miniGame] || { title: '🎲 Mini-Jogo', desc: '', color: 'from-violet-600 to-purple-700' }
-          return (
-            <motion.div key="minigame"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
-              <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                className="w-full max-w-lg bg-slate-800 border border-white/10 rounded-3xl overflow-hidden">
-                <div className={`bg-gradient-to-r ${mg.color} p-5 text-center`}>
-                  <h3 className="text-white font-black text-2xl">{mg.title}</h3>
-                </div>
-                <div className="p-5 text-center">
-                  <p className="text-slate-300 mb-6">{mg.desc}</p>
-                  <button onClick={nextPlayer}
-                    className={`w-full bg-gradient-to-r ${mg.color} text-white font-bold rounded-2xl py-4`}>
-                    Concluído →
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )
-        })()}
+        {miniGame&&(
+          <MiniGameModal type={miniGame} players={players} currentPlayer={currentPlayer} onClose={nextPlayer}/>
+        )}
       </AnimatePresence>
     </div>
   )

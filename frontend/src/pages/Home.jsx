@@ -1,89 +1,138 @@
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Sparkles, Heart, Users, Home as HomeIcon, Layers, Eye, Settings, ChevronRight } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Globe, Users2 } from 'lucide-react'
+import { useLang } from '../contexts/LangContext'
+import { LANGS } from '../i18n/translations'
 
-const MODES = [
-  { id: 'couple', icon: Heart, label: 'Modo Casal', desc: 'Dados eróticos, desafios e posições', color: 'from-red-500 to-rose-700', glow: '#f43f5e', path: '/GameSetup?mode=couple' },
-  { id: 'friends', icon: Users, label: 'Modo Amigos', desc: 'Mapa, mini-jogos e penalizações', color: 'from-cyan-400 to-blue-600', glow: '#22d3ee', path: '/GameSetup?mode=friends' },
-  { id: 'family', icon: HomeIcon, label: 'Modo Família', desc: 'Cultura, desporto, música e cinema', color: 'from-sky-400 to-blue-400', glow: '#38bdf8', path: '/GameSetup?mode=family' },
-  { id: 'cards', icon: Layers, label: 'Modo Cartas', desc: 'Tipo Cards Against Humanity', color: 'from-amber-500 to-yellow-500', glow: '#f59e0b', path: '/CardsLobby' },
-  { id: 'mister', icon: Eye, label: 'Mister White', desc: 'Dedução social, quem é o infiltrado?', color: 'from-slate-400 to-slate-600', glow: '#94a3b8', path: '/MisterWhiteGame' },
-]
+const MODE_ICONS = { couple: Heart, friends: Users, family: HomeIcon, drink: Beer, cards: Layers, mister: Eye }
+const MODE_COLORS = {
+  couple:  { gradient: 'from-rose-500 to-pink-600',    glow: 'rgba(244,63,94,0.18)',  ring: '#f43f5e' },
+  friends: { gradient: 'from-cyan-400 to-blue-500',    glow: 'rgba(34,211,238,0.15)', ring: '#22d3ee' },
+  family:  { gradient: 'from-sky-400 to-indigo-500',   glow: 'rgba(56,189,248,0.15)', ring: '#38bdf8' },
+  drink:   { gradient: 'from-amber-400 to-orange-500', glow: 'rgba(245,158,11,0.18)', ring: '#f59e0b' },
+  cards:   { gradient: 'from-yellow-400 to-amber-500', glow: 'rgba(234,179,8,0.15)',  ring: '#eab308' },
+  mister:  { gradient: 'from-slate-500 to-slate-700',  glow: 'rgba(148,163,184,0.15)',ring: '#94a3b8' },
+}
+const MODE_PATHS = { couple:'/GameSetup?mode=couple', friends:'/GameSetup?mode=friends', family:'/GameSetup?mode=family', drink:'/DrinkGame', cards:'/CardsLobby', mister:'/MisterWhiteGame' }
+const MODE_ORDER = ['couple','friends','family','drink','cards','mister']
+
+function LangSwitcher() {
+  const { lang, changeLang } = useLang()
+  return (
+    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1">
+      {LANGS.map(l => (
+        <button key={l.code} onClick={() => changeLang(l.code)}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${lang === l.code ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}>
+          {l.flag} {l.label}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function Home() {
   const navigate = useNavigate()
+  const { t } = useLang()
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 flex flex-col items-center px-4 py-10 overflow-hidden">
-      {/* Background blobs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-20 right-1/4 w-64 h-64 bg-cyan-600/8 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Logo */}
-      <motion.div
-        initial={{ opacity: 0, y: -30, scale: 0.8 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ type: 'spring', damping: 12 }}
-        className="mb-10 text-center relative z-10">
-        <div className="flex items-center justify-center gap-3 mb-2">
-          <motion.div animate={{ rotate: [0, 15, -10, 15, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 3, delay: 1 }}>
-            <Sparkles className="text-yellow-400 w-8 h-8" />
-          </motion.div>
-          <h1 className="text-5xl font-black bg-gradient-to-r from-yellow-400 via-pink-400 to-violet-400 bg-clip-text text-transparent tracking-tight">
-            PartyMix
-          </h1>
-          <motion.div animate={{ rotate: [0, -15, 10, -15, 0], scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 3, delay: 1.5 }}>
-            <Sparkles className="text-violet-400 w-8 h-8" />
-          </motion.div>
-        </div>
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="text-slate-400 text-xs font-semibold tracking-[0.25em] uppercase">
-          O jogo de festa definitivo
-        </motion.p>
-      </motion.div>
-
-      {/* Mode buttons */}
-      <div className="w-full max-w-lg space-y-3 relative z-10">
-        {MODES.map((m, i) => (
-          <motion.button
-            key={m.id}
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 + i * 0.08, type: 'spring', damping: 14 }}
-            whileHover={{ scale: 1.02, x: 4 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={() => navigate(m.path)}
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-2xl p-4 flex items-center gap-4 hover:bg-white/[0.08] hover:border-white/20 transition-all group relative overflow-hidden"
-            style={{ '--glow': m.glow }}>
-            {/* Subtle glow on hover */}
-            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-              style={{ background: `radial-gradient(circle at 30% 50%, ${m.glow}18 0%, transparent 70%)` }} />
-            <motion.div
-              whileHover={{ rotate: [0, -8, 8, 0] }}
-              transition={{ duration: 0.4 }}
-              className={`bg-gradient-to-br ${m.color} w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg relative z-10`}>
-              <m.icon className="text-white w-7 h-7" />
-            </motion.div>
-            <div className="flex-1 text-left relative z-10">
-              <div className="text-white font-bold text-lg leading-tight">{m.label}</div>
-              <div className="text-slate-400 text-sm">{m.desc}</div>
-            </div>
-            <motion.div
-              animate={{ x: [0, 3, 0] }}
-              transition={{ repeat: Infinity, duration: 2, delay: i * 0.3 }}
-              className="relative z-10">
-              <ChevronRight className="text-slate-600 group-hover:text-white transition-colors w-5 h-5" />
-            </motion.div>
-          </motion.button>
-        ))}
+    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 overflow-hidden relative">
+      {/* Ambient background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] rounded-full opacity-20"
+          style={{ background: 'radial-gradient(circle, #7c3aed 0%, transparent 70%)' }} />
+        <div className="absolute bottom-[-5%] right-[10%] w-[350px] h-[350px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }} />
+        <div className="absolute top-[40%] left-[-5%] w-[250px] h-[250px] rounded-full opacity-10"
+          style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)' }} />
       </div>
 
-      <motion.button
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}
-        onClick={() => navigate('/Admin')}
-        className="mt-8 flex items-center gap-2 text-slate-600 hover:text-slate-300 transition-colors text-sm relative z-10">
-        <Settings className="w-4 h-4" /> Painel Admin
-      </motion.button>
+      {/* Lang switcher top */}
+      <div className="w-full max-w-lg flex justify-end mb-6 relative z-10">
+        <LangSwitcher />
+      </div>
+
+      {/* Logo */}
+      <motion.div initial={{ opacity: 0, y: -24 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 14 }}
+        className="mb-10 text-center relative z-10">
+        <motion.div
+          animate={{ y: [0, -4, 0] }}
+          transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+          className="text-6xl mb-3 select-none">🎉</motion.div>
+        <h1 className="text-5xl font-black tracking-tight mb-2"
+          style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #ec4899 40%, #8b5cf6 80%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          PartyMix
+        </h1>
+        <p className="text-slate-500 text-sm font-medium tracking-[0.2em] uppercase">{t.tagline}</p>
+      </motion.div>
+
+      {/* Mode cards */}
+      <div className="w-full max-w-lg space-y-2.5 relative z-10">
+        {MODE_ORDER.map((id, i) => {
+          const cfg   = MODE_COLORS[id]
+          const Icon  = MODE_ICONS[id]
+          const info  = t.modes[id]
+          return (
+            <motion.button key={id}
+              initial={{ opacity: 0, x: -32 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.06 + i * 0.06, type: 'spring', damping: 16 }}
+              whileHover={{ scale: 1.015, x: 3 }}
+              whileTap={{ scale: 0.975 }}
+              onClick={() => navigate(MODE_PATHS[id])}
+              className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all group relative overflow-hidden text-left"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '0.5px solid rgba(255,255,255,0.08)',
+              }}>
+              {/* Glow on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"
+                style={{ background: `radial-gradient(ellipse at 20% 50%, ${cfg.glow} 0%, transparent 60%)` }} />
+              {/* Active ring on hover */}
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                style={{ boxShadow: `inset 0 0 0 1px ${cfg.ring}30` }} />
+
+              <motion.div
+                whileHover={{ rotate: [-4, 4, -2, 0] }}
+                transition={{ duration: 0.35 }}
+                className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cfg.gradient} flex items-center justify-center flex-shrink-0 shadow-lg relative z-10`}
+                style={{ boxShadow: `0 4px 20px ${cfg.ring}30` }}>
+                <Icon className="text-white w-7 h-7" />
+              </motion.div>
+
+              <div className="flex-1 relative z-10">
+                <div className="text-white font-bold text-base leading-tight">{info.label}</div>
+                <div className="text-slate-500 text-sm mt-0.5">{info.desc}</div>
+              </div>
+
+              <ChevronRight className="text-slate-700 group-hover:text-slate-400 transition-colors w-4 h-4 relative z-10 flex-shrink-0" />
+            </motion.button>
+          )
+        })}
+
+        {/* Community Cards button */}
+        <motion.button
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+          whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.975 }}
+          onClick={() => navigate('/community')}
+          className="w-full rounded-2xl p-4 flex items-center gap-4 transition-all group relative overflow-hidden text-left mt-1"
+          style={{ background: 'rgba(255,255,255,0.02)', border: '0.5px dashed rgba(255,255,255,0.12)' }}>
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-800 flex items-center justify-center flex-shrink-0" style={{ boxShadow: '0 4px 20px rgba(124,58,237,0.3)' }}>
+            <Users2 className="text-white w-7 h-7" />
+          </div>
+          <div className="flex-1">
+            <div className="text-white font-bold text-base">{t.community}</div>
+            <div className="text-slate-500 text-sm mt-0.5">{t.communityDesc}</div>
+          </div>
+          <ChevronRight className="text-slate-700 group-hover:text-slate-400 transition-colors w-4 h-4 flex-shrink-0" />
+        </motion.button>
+      </div>
+
+      {/* Version */}
+      <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}
+        className="mt-8 text-slate-700 text-xs relative z-10">
+        PartyMix v5 · <a onClick={() => navigate('/admin')} className="hover:text-slate-500 cursor-pointer transition-colors">⚙</a>
+      </motion.p>
     </div>
   )
 }
