@@ -168,6 +168,7 @@ function initWebSocket(httpServer) {
 
       io.to(code).emit('new_round', {
         round:     room.round,
+        czarIdx:   room.czarIdx,
         czarName:  room.players[room.czarIdx].name,
         czarId:    room.players[room.czarIdx].id,
         blackCard: room.blackCard,

@@ -53,6 +53,7 @@ export default function CardsLobby() {
   const roomRef = useRef(null)
   const handRef = useRef(null)
   const hasNavigatedRef = useRef(false)
+  const pendingStartRef = useRef(null)
 
   const join = () => {
     if (!name.trim() || !code.trim()) return
@@ -73,21 +74,32 @@ export default function CardsLobby() {
       navigate('/CardsGame', { replace: true, state: { online: true } })
     }
 
+    const enterGameAfterHand = (rawGameState) => {
+      if (hasNavigatedRef.current) return
+      pendingStartRef.current = rawGameState
+      s.once('your_hand', (hand) => {
+        if (hasNavigatedRef.current) return
+        handRef.current = hand
+        const pending = pendingStartRef.current
+        pendingStartRef.current = null
+        if (pending) enterGame(pending)
+      })
+    }
+
     s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
     s.on('room_joined', ({ room:r }) => {
       setRoom(r)
       roomRef.current = r
       setJoining(false)
       if (r.status === 'playing') {
-        enterGame({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
+        enterGameAfterHand({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
       }
     })
     s.on('room_updated', r => {
       setRoom(r)
       roomRef.current = r
-      if (r.status === 'playing') {
-        enterGame({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
-      }
+      // Não navegar aqui quando passa a "playing": room_updated pode chegar antes de your_hand e
+      // bloqueava enterGame vindo de game_started. Só game_started (e room_joined em jogo) tratam disso.
     })
     s.on('your_hand', hand => {
       handRef.current = hand
@@ -96,9 +108,9 @@ export default function CardsLobby() {
     s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
     s.on('connect_failed', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
 
-    // When host starts — navigate to game as participant
-    s.on('game_started', state => {
-      enterGame(state)
+    // Quando o host inicia: esperar your_hand (emitido logo a seguir no servidor) antes de navegar
+    s.on('game_started', (state) => {
+      enterGameAfterHand(state)
     })
   }
 

@@ -182,7 +182,6 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
 
   const HAND_SIZE = 7
   const czar       = players[czarIdx]
-  const iAmCzar    = mode==='online' ? czarId===socket?.id : czar===players[czarIdx]
 
   // ── LOCAL GAME INIT ──────────────────────────────────────────
   useEffect(() => {
@@ -200,59 +199,79 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
     setPlayers(localPlayers)
   }, [])
 
-  // ── ONLINE SOCKET EVENTS ─────────────────────────────────────
+  // ── ONLINE: snapshot ao entrar (separado dos listeners para não re-subscrever a cada mudança de state)
+  useEffect(() => {
+    if (mode !== 'online' || !initialGameState) return
+    setPlayers(initialGameState.players.map((p) => p.name))
+    setCurrentBlack(initialGameState.blackCard)
+    setCzarIdx(initialGameState.czarIdx ?? 0)
+    setCzarId(initialGameState.czarId)
+    setRoundNum(initialGameState.round)
+    setScores(Object.fromEntries(initialGameState.players.map((p) => [p.name, p.score])))
+    setSubmissions({})
+    setRevealed(false)
+    setRoundWinner(null)
+  }, [mode, initialGameState])
+
+  // ── ONLINE SOCKET EVENTS (deps só socket/mode — evita socket.off que remove your_hand a meio do jogo)
   useEffect(() => {
     if (mode !== 'online' || !socket) return
 
-    if (initialGameState) {
-      setPlayers(initialGameState.players.map(p=>p.name))
-      setCurrentBlack(initialGameState.blackCard)
-      setCzarIdx(initialGameState.czarIdx||0)
-      setCzarId(initialGameState.czarId)
-      setRoundNum(initialGameState.round)
-      setScores(Object.fromEntries(initialGameState.players.map(p=>[p.name,p.score])))
+    const onGameStarted = (state) => {
+      setPlayers(state.players.map((p) => p.name))
+      setCurrentBlack(state.blackCard)
+      setCzarIdx(state.czarIdx ?? 0)
+      setCzarId(state.czarId)
+      setRoundNum(state.round)
+      setScores(Object.fromEntries(state.players.map((p) => [p.name, p.score])))
       setSubmissions({})
       setRevealed(false)
       setRoundWinner(null)
     }
-
-    socket.on('game_started', state => {
-      setPlayers(state.players.map(p=>p.name))
-      setCurrentBlack(state.blackCard)
-      setCzarIdx(state.czarIdx||0)
-      setCzarId(state.czarId)
-      setRoundNum(state.round)
-      setScores(Object.fromEntries(state.players.map(p=>[p.name,p.score])))
-      setSubmissions({})
-      setRevealed(false)
-      setRoundWinner(null)
-    })
-    socket.on('your_hand', hand => setMyHand(hand))
-    socket.on('submission_update', d => setSubCount(d))
-    socket.on('cards_revealed', ({ submissions: subs }) => {
+    const onYourHand = (hand) => setMyHand(Array.isArray(hand) ? [...hand] : [])
+    const onSubUpdate = (d) => setSubCount(d)
+    const onCardsRevealed = ({ submissions: subs }) => {
       setRevealed(true)
       const map = {}
-      subs.forEach(s => { map[s.playerId]=s.card })
+      subs.forEach((s) => { map[s.playerId] = s.card })
       setSubmissions(map)
-    })
-    socket.on('round_ended', d => {
-      setRoundWinner(d.winnerName)
-      setScores(Object.fromEntries(d.scores.map(s=>[s.name,s.score])))
-    })
-    socket.on('new_round', d => {
+    }
+    const onRoundEnded = (d) => {
+      setRoundWinner(d.winnerId)
+      setScores(Object.fromEntries(d.scores.map((s) => [s.name, s.score])))
+    }
+    const onNewRound = (d) => {
       setRoundNum(d.round)
       setCzarId(d.czarId)
-      const newCzarIdx = players.indexOf(d.czarName)
-      if(newCzarIdx>=0) setCzarIdx(newCzarIdx)
+      if (typeof d.czarIdx === 'number') setCzarIdx(d.czarIdx)
       setCurrentBlack(d.blackCard)
       setSubmissions({})
       setRevealed(false)
       setRoundWinner(null)
-      setSubCount({count:0,total:0,allDone:false})
-    })
-    socket.on('game_ended', d => { setGameEnded(true); setFinalScores(d.scores) })
-    return () => { ['game_started','your_hand','submission_update','cards_revealed','round_ended','new_round','game_ended'].forEach(e=>socket.off(e)) }
-  }, [socket, mode, players, initialGameState])
+      setSubCount({ count: 0, total: 0, allDone: false })
+    }
+    const onGameEnded = (d) => {
+      setGameEnded(true)
+      setFinalScores(d.scores)
+    }
+
+    socket.on('game_started', onGameStarted)
+    socket.on('your_hand', onYourHand)
+    socket.on('submission_update', onSubUpdate)
+    socket.on('cards_revealed', onCardsRevealed)
+    socket.on('round_ended', onRoundEnded)
+    socket.on('new_round', onNewRound)
+    socket.on('game_ended', onGameEnded)
+    return () => {
+      socket.off('game_started', onGameStarted)
+      socket.off('your_hand', onYourHand)
+      socket.off('submission_update', onSubUpdate)
+      socket.off('cards_revealed', onCardsRevealed)
+      socket.off('round_ended', onRoundEnded)
+      socket.off('new_round', onNewRound)
+      socket.off('game_ended', onGameEnded)
+    }
+  }, [socket, mode])
 
   // ── LOCAL HELPERS ────────────────────────────────────────────
   const localSubmit = (playerName, card) => {
@@ -380,9 +399,9 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
 
         {/* ONLINE: your hand */}
         {mode==='online'&&!revealed&&!imCzar&&!mySubmitted&&(
-          <div>
+          <div className="min-h-0 shrink-0">
             <p className="text-white font-bold mb-2 text-center">{playerName}, escolhe a tua carta:</p>
-            <div className="flex gap-2 overflow-x-auto pb-2" style={{scrollbarWidth:'none'}}>
+            <div className="flex gap-2 overflow-x-auto pb-2 min-h-[5.5rem] touch-pan-x" style={{scrollbarWidth:'none'}}>
               {myHand.map((card,i)=>(
                 <motion.button key={i} whileHover={{y:-4}} whileTap={{scale:0.96}}
                   onClick={()=>onlineSubmit(card)}
@@ -413,17 +432,24 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
             <p className="text-white font-bold text-center">{czarName}, escolhe a melhor carta!</p>
             {Object.entries(submissions).map(([pid,card])=>(
               <motion.button key={pid} whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-                onClick={()=>{if(!roundWinner)(mode==='local'?pickWinner(pid):pickWinner(pid))}}
-                className={`w-full text-left bg-white rounded-2xl p-5 transition-all ${roundWinner===pid?'ring-4 ring-amber-400 shadow-xl':''} ${roundWinner&&roundWinner!==pid?'opacity-40':''}`}>
+                onClick={()=>{
+                  if (roundWinner) return
+                  if (mode==='online' && !imCzar) return
+                  pickWinner(pid)
+                }}
+                className={`w-full text-left bg-white rounded-2xl p-5 transition-all ${roundWinner===pid?'ring-4 ring-amber-400 shadow-xl':''} ${roundWinner&&roundWinner!==pid?'opacity-40':''} ${mode==='online'&&!imCzar?'opacity-60 pointer-events-none':''}`}>
                 <p className="text-slate-900 font-black text-lg">{card}</p>
                 {roundWinner===pid&&<p className="text-amber-600 text-sm font-bold mt-2">👑 Vencedor desta ronda!</p>}
               </motion.button>
             ))}
-            {roundWinner&&(
+            {roundWinner&&(mode!=='online'||isHost)&&(
               <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextRound}
                 className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4">
                 Próxima Ronda →
               </motion.button>
+            )}
+            {roundWinner&&mode==='online'&&!isHost&&(
+              <p className="text-slate-500 text-center text-sm">O host vai avançar para a próxima ronda.</p>
             )}
           </div>
         )}
