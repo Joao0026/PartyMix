@@ -449,15 +449,14 @@ export default function CardsGame() {
 
   useEffect(() => {
     if (!location.state?.online) return
-    const { socket: incomingSocket, room: incomingRoom, playerName: incomingPlayerName, gameState, hand } = location.state
+    const { room: incomingRoom, playerName: incomingPlayerName, gameState, hand } = location.state
     if (!incomingRoom) return
 
     const storedSocket = getGlobalSocket()
-    const resolvedSocket = incomingSocket || storedSocket
-    if (!resolvedSocket) return
+    if (!storedSocket) return
 
-    setSocket(resolvedSocket)
-    setGlobalSocket(resolvedSocket)
+    setSocket(storedSocket)
+    setGlobalSocket(storedSocket)
     setRoom(incomingRoom)
     setPlayerName(incomingPlayerName || '')
     const incomingHand = hand || []

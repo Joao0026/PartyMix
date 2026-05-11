@@ -30,7 +30,7 @@ export default function CardsLobby() {
     const enterGame = (state) => {
       if (hasNavigatedRef.current) return
       hasNavigatedRef.current = true
-      navigate('/CardsGame', { state: { online:true, socket:s, room:roomRef.current, playerName:name.trim(), gameState:state, hand:handRef.current } })
+      navigate('/CardsGame', { state: { online:true, room:roomRef.current, playerName:name.trim(), gameState:state, hand:handRef.current } })
     }
 
     s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
