@@ -79,12 +79,13 @@ function initWebSocket(httpServer) {
       room.revealed   = false
       room.roundWinner= null
 
-      io.to(code).emit('game_started', buildGameState(room, io))
+      io.to(code).emit('game_started', buildGameState(room))
       console.log('[WS] emitted game_started', { code, players: room.players.map(p=>p.name) })
       io.to(code).emit('room_updated', sanitize(room))
       // Send each player their hand privately
       room.players.forEach(p => {
-        io.to(p.id).emit('your_hand', room.hands[p.id] || []
+        io.to(p.id).emit('your_hand', room.hands[p.id] || [])
+      })
     })
 
     // ── SUBMIT CARD ───────────────────────────────────────────
