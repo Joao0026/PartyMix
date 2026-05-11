@@ -133,21 +133,34 @@ export function NumericDie({ value, size = 72, dotColor = '#7c3aed' }) {
 }
 
 // ── BOARD DIE ─────────────────────────────────────────────────
-export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6, whiteDice = false }) {
+/** confirmAfterRoll: mostra o resultado e só chama onRoll depois de tocares em "Jogar" */
+export function BoardDie({
+  onRoll,
+  disabled,
+  color = '#7c3aed',
+  maxDice = 6,
+  whiteDice = false,
+  confirmAfterRoll = true,
+}) {
   const [rolling, setRolling] = useState(false)
-  const [faceVal, setFaceVal] = useState(Math.min(6,maxDice))
-  const [result,  setResult]  = useState(null)
-  const [hl,      setHl]      = useState(false)
+  const [faceVal, setFaceVal] = useState(Math.min(6, maxDice))
+  const [result, setResult] = useState(null)
+  const [hl, setHl] = useState(false)
+  const [awaitingConfirm, setAwaitingConfirm] = useState(false)
   const ivRef = useRef(null)
 
-  const dotColor = whiteDice ? 'rgba(255,255,255,0.98)' : color
+  // Dado “branco”: face clara + pintas escuras (branco sobre branco não se vê)
+  const dotColor = whiteDice ? '#0f172a' : color
   const dieFaceBg = whiteDice
-    ? 'linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%)'
+    ? 'linear-gradient(145deg, #ffffff 0%, #e2e8f0 55%, #cbd5e1 100%)'
     : 'white'
 
   const roll = async () => {
-    if (rolling || disabled) return
-    setRolling(true); setResult(null); setHl(false)
+    if (rolling || disabled || awaitingConfirm) return
+    setRolling(true)
+    setResult(null)
+    setHl(false)
+    setAwaitingConfirm(false)
     playDiceSound()
     clearInterval(ivRef.current)
     let c = 0
@@ -155,75 +168,124 @@ export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6, white
       setFaceVal(Math.floor(Math.random() * maxDice) + 1)
       if (++c > 18) clearInterval(ivRef.current)
     }, 70)
-    await new Promise(r => setTimeout(r, 1400))
+    await new Promise((r) => setTimeout(r, 1400))
     const v = Math.floor(Math.random() * maxDice) + 1
-    setFaceVal(v); setResult(v); setRolling(false)
+    setFaceVal(v)
+    setResult(v)
+    setRolling(false)
     playPointSound()
-    setHl(true); setTimeout(() => setHl(false), 600)
-    onRoll && onRoll(v)
+    setHl(true)
+    setTimeout(() => setHl(false), 600)
+    if (!confirmAfterRoll) {
+      onRoll?.(v)
+    } else {
+      setAwaitingConfirm(true)
+    }
   }
 
+  const confirmMove = () => {
+    if (result == null || !awaitingConfirm) return
+    setAwaitingConfirm(false)
+    onRoll?.(result)
+    setResult(null)
+  }
+
+  const safeFace = Math.min(maxDice, Math.max(1, faceVal))
+
   return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
-      {/* 3D rotating die */}
-      <motion.div
-        animate={rolling?{rotateX:[0,420,840],rotateY:[0,210,420,630,840],scale:[1,1.1,0.95,1.04,1.1,1]}:hl?{scale:[1.22,1]}:{}}
-        transition={rolling?{duration:0.85,ease:'easeInOut'}:{duration:0.3,type:'spring'}}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div
         style={{
-          perspective:800,
-          backfaceVisibility:'hidden',
-          cursor: rolling||disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.4 : 1,
+          perspective: 900,
+          transformStyle: 'preserve-3d',
         }}
-        onClick={!rolling && !disabled ? roll : undefined}>
-        {/* White background die with colored dots */}
-        <div style={{
-          width:88, height:88,
-          background:dieFaceBg,
-          borderRadius:12,
-          display:'grid',
-          gridTemplateColumns:'1fr 1fr 1fr',
-          gridTemplateRows:'1fr 1fr 1fr',
-          padding:12,
-          boxSizing:'border-box',
-          boxShadow:hl
-            ? (whiteDice
-                ? '0 0 0 3px rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.18)'
-                : `0 0 0 3px ${color}, 0 4px 16px ${color}66`
+      >
+        <motion.div
+          animate={
+            rolling
+              ? { rotateX: [12, 420, 840], rotateY: [-14, 200, 420, 620, 840], scale: [1, 1.08, 0.96, 1.05, 1] }
+              : hl
+                ? { rotateX: 12, rotateY: -14, scale: [1.18, 1] }
+                : { rotateX: 12, rotateY: -14, scale: 1 }
+          }
+          transition={rolling ? { duration: 0.9, ease: 'easeInOut' } : { duration: 0.35, type: 'spring' }}
+          style={{
+            transformStyle: 'preserve-3d',
+            cursor: rolling || disabled || awaitingConfirm ? 'default' : 'pointer',
+            opacity: disabled ? 0.4 : 1,
+          }}
+          onClick={!rolling && !disabled && !awaitingConfirm ? roll : undefined}
+        >
+          <div
+            style={{
+              width: 92,
+              height: 92,
+              background: dieFaceBg,
+              borderRadius: 14,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gridTemplateRows: '1fr 1fr 1fr',
+              padding: 12,
+              boxSizing: 'border-box',
+              transform: 'translateZ(0)',
+              border: whiteDice ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(0,0,0,0.06)',
+              boxShadow: hl
+                ? whiteDice
+                  ? '0 10px 22px rgba(0,0,0,0.25), 0 0 0 2px rgba(255,255,255,0.85), inset 0 1px 0 rgba(255,255,255,0.9)'
+                  : `0 0 0 3px ${color}, 0 8px 20px ${color}55`
+                : '0 12px 28px rgba(0,0,0,0.35), inset 0 -6px 12px rgba(15,23,42,0.08), inset 0 2px 0 rgba(255,255,255,0.65)',
+              gap: 0,
+            }}
+          >
+            {Array.from({ length: 9 }).map((_, i) => {
+              const hasDot = DOT_GRIDS[safeFace]?.some(([r, c]) => r === Math.floor(i / 3) && c === i % 3)
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {hasDot ? (
+                    <div
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: '50%',
+                        background: dotColor,
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
+                      }}
+                    />
+                  ) : null}
+                </div>
               )
-            : '0 6px 14px rgba(0,0,0,0.2)',
-          gap:0,
-        }}>
-          {Array.from({length:9}).map((_,i)=>{
-            const val=faceVal
-            const hasDot=DOT_GRIDS[val]?.some(([r,c])=>r===Math.floor(i/3)&&c===i%3)
-            return(
-              <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {hasDot&&(
-                  <div
-                    style={{
-                      width:14,
-                      height:14,
-                      borderRadius:'50%',
-                      background:dotColor,
-                      boxShadow:'0 1px 3px rgba(0,0,0,0.25)',
-                      border: whiteDice ? '1px solid rgba(17,24,39,0.08)' : 'none',
-                    }}
-                  />
-                )}
-                }
-              </div>
-            )
-          })}
-        </div>
-      </motion.div>
-      <div style={{ textAlign:'center', minHeight:44 }}>
-        {!result && !rolling && <p style={{ color:'#64748b', fontSize:14, margin:0, fontWeight:500 }}>Toca para lançar</p>}
-        {rolling  && <p style={{ color:color, fontSize:14, fontWeight:700, margin:0 }}>A rolar...</p>}
-        {result && !rolling && (
+            })}
+          </div>
+        </motion.div>
+      </div>
+
+      <div style={{ textAlign: 'center', minHeight: 52, width: '100%', maxWidth: 280 }}>
+        {!result && !rolling && !awaitingConfirm && (
+          <p style={{ color: '#94a3b8', fontSize: 14, margin: 0, fontWeight: 500 }}>Toca no dado para lançar</p>
+        )}
+        {rolling && (
+          <p style={{ color: whiteDice ? '#e2e8f0' : color, fontSize: 14, fontWeight: 700, margin: 0 }}>A rolar…</p>
+        )}
+        {result != null && !rolling && (
           <div>
-            <p style={{ color:'white', fontWeight:900, fontSize:38, margin:0, lineHeight:1 }}>{result}</p>
-            <p style={{ color:'#64748b', fontSize:13, margin:0 }}>{result===1?'casa':'casas'}</p>
+            <p style={{ color: '#f8fafc', fontWeight: 900, fontSize: 40, margin: 0, lineHeight: 1 }}>{result}</p>
+            <p style={{ color: '#94a3b8', fontSize: 13, margin: '4px 0 0' }}>
+              {result === 1 ? '1 casa' : `${result} casas`}
+            </p>
+            {confirmAfterRoll && awaitingConfirm && (
+              <button
+                type="button"
+                onClick={confirmMove}
+                className="mt-3 w-full rounded-2xl py-3 font-bold text-white shadow-lg"
+                style={{
+                  background: `linear-gradient(135deg, ${color}, ${color}cc)`,
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Jogar →
+              </button>
+            )}
           </div>
         )}
       </div>
