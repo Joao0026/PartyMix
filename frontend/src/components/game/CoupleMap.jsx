@@ -1,105 +1,99 @@
 import { useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
+import { EroticDie, BoardDie } from './EroticDie'
+import { playDiceSound, playPointSound } from '../../utils/sounds'
 
-const BODY_PARTS=['Lábios','Pescoço','Orelhas','Ombros','Costas','Barriga','Pés','Mãos','Pulsos','Clavícula','Joelhos','Tornozelos','Nuca','Dedos','Peito','Cintura']
-const ACTIONS=['Massagem suave','Beijos lentos','Mordidas suaves','Carícias longas','Sopros quentes','Toque com pontas dos dedos','Beijos húmidos','Lambidas suaves','Friccionar devagar','Cobrir de beijos']
+const BODY_PARTS = ['Lábios','Pescoço','Orelhas','Ombros','Costas','Barriga','Pés','Mãos','Pulsos','Clavícula','Joelhos','Tornozelos','Nuca','Dedos','Peito','Cintura']
+const ACTIONS    = ['Massagem suave','Beijos lentos','Mordidas suaves','Carícias longas','Sopros quentes','Toque com dedos','Beijos húmidos','Lambidas suaves','Friccionar devagar','Cobrir de beijos']
+const DARE_CARDS = ['Massagem nas costas durante 2 minutos','Beija no pescoço durante 30 segundos','Sussurra o teu maior fantasma ao ouvido','Remove uma peça de roupa do parceiro','Diz 3 elogios específicos ao corpo do parceiro','Beija em 5 sítios diferentes sem ser os lábios','Dança sensualmente durante 1 minuto','Venda os olhos e surpreende o parceiro com um toque','Escreve com o dedo nas costas — parceiro adivinha','Olha nos olhos durante 30 segundos sem falar','Beija o parceiro durante 1 minuto sem parar','Faz uma massagem nos pés durante 1 minuto','Mostra ao teu parceiro como gostas de ser beijado']
+const QUIZ_Q     = ['O que é que o teu parceiro mais gosta em ti?','Qual foi o momento mais íntimo que passaram juntos?','O que o teu parceiro adora que tu faças?','Qual seria o destino de férias perfeito para o teu parceiro?','O que faz o teu parceiro quando está com medo?','Qual é o maior sonho do teu parceiro?','O que faz o teu parceiro sorrir mesmo nos dias maus?']
+const ROLEPLAY   = [{title:'Desconhecidos no Bar',desc:'Fingem que nunca se conheceram.'},{title:'Médico e Paciente',desc:'Consulta muito profissional... ou não.'},{title:'Vizinhos',desc:'O ruído ao lado leva a um encontro.'},{title:'Estranhos no Elevador',desc:'Presos. 5 minutos. Sem sair.'}]
 
-const DARE_CARDS=[
-  'Massagem nas costas durante 2 minutos',
-  'Beija o teu parceiro no pescoço durante 30 segundos',
-  'Sussurra o teu fantasma mais ousado ao ouvido',
-  'Remove uma peça de roupa do teu parceiro',
-  'Diz 3 elogios específicos ao corpo do teu parceiro',
-  'Beija em 5 sítios diferentes sem ser os lábios',
-  'Dança sensualmente durante 1 minuto',
-  'Venda os olhos e surpreende o parceiro com um toque',
-  'Escreve com o dedo nas costas — ele/ela adivinha',
-  'Olha nos olhos durante 30 segundos sem falar',
-  'Beija o teu parceiro durante 1 minuto sem parar',
-  'Diz a coisa mais ousada que nunca disseste',
-  'Faz uma massagem nos pés durante 1 minuto',
-  'Sussurra 3 coisas que adoras no corpo do teu parceiro',
+const TILE_DEFS_SELECTABLE = [
+  {id:'dare',    emoji:'🔥',label:'Desafio',       bg:'#9d174d',prob:0.28, activity:'challenges'},
+  {id:'dice',    emoji:'🎲',label:'Dados Eróticos', bg:'#7c2d12',prob:0.22, activity:'dice'},
+  {id:'quiz',    emoji:'💬',label:'Quiz',           bg:'#581c87',prob:0.16, activity:'quiz'},
+  {id:'roleplay',emoji:'🎭',label:'Roleplay',       bg:'#134e4a',prob:0.12, activity:'roleplay'},
+]
+const TILE_DEFS_FIXED = [
+  {id:'forward', emoji:'💘',label:'+2 Casas',       bg:'#14532d',prob:0.11},
+  {id:'back',    emoji:'💔',label:'-1 Casa',        bg:'#7f1d1d',prob:0.11},
 ]
 
-const QUIZ_Q=[
-  'Qual é a parte favorita do teu parceiro no teu corpo?',
-  'O que faz o teu parceiro primeiro quando acorda?',
-  'Qual é o maior fantasma do teu parceiro?',
-  'Qual foi o momento mais íntimo que passaram juntos?',
-  'O que é que o teu parceiro adora que tu faças?',
-  'Qual seria o destino de férias perfeito para o teu parceiro?',
-]
-
-const ROLEPLAY_SCENARIOS=[
-  {title:'Desconhecidos no Bar',desc:'Fingem que nunca se conheceram. Um conquista o outro.'},
-  {title:'Médico e Paciente',desc:'Consulta muito profissional... ou não.'},
-  {title:'Vizinhos',desc:'O ruído do apartamento ao lado leva a um encontro.'},
-  {title:'Chef e Crítico',desc:'Uma refeição avaliada com muita exigência.'},
-  {title:'Estranhos num Elevador',desc:'Presos juntos. 5 minutos. Sem sair.'},
-]
-
-// Tile types with probabilities
-const TILE_DEFS=[
-  {id:'dare',     emoji:'🔥',label:'Desafio',       bg:'#9d174d',prob:0.30},
-  {id:'dice',     emoji:'🎲',label:'Dados Eróticos', bg:'#7c2d12',prob:0.18},
-  {id:'quiz',     emoji:'💬',label:'Quiz',           bg:'#581c87',prob:0.14},
-  {id:'roleplay', emoji:'🎭',label:'Roleplay',       bg:'#134e4a',prob:0.10},
-  {id:'forward',  emoji:'💘',label:'+2 Casas',       bg:'#14532d',prob:0.14},
-  {id:'back',     emoji:'💔',label:'-1 Casa',        bg:'#7f1d1d',prob:0.14},
-]
-
-function pickTile(){
-  let r=Math.random(),cum=0
-  for(const t of TILE_DEFS){cum+=t.prob;if(r<cum)return t}
-  return TILE_DEFS[0]
+function getTileDefs(selected){
+  const selectable = TILE_DEFS_SELECTABLE.filter(t => selected.includes(t.activity))
+  return [...selectable, ...TILE_DEFS_FIXED]
 }
 
-function buildBoard(n=24){
-  return Array.from({length:n},(_,i)=>{
+function pickTile(defs){
+  const totalProb = defs.reduce((sum,t)=>sum+t.prob,0)
+  let r=Math.random()*totalProb, cum=0
+  for(const t of defs){cum+=t.prob; if(r<cum) return {...t}}
+  return {...defs[0]}
+}
+const COLS=10,ROWS=5,TOTAL=COLS*ROWS
+function buildBoard(tileDefs){
+  const board = Array.from({length:TOTAL},(_,i)=>{
     if(i===0) return {id:'start',emoji:'💕',label:'Início',bg:'#7c3aed'}
-    if(i===n-1) return {id:'end',emoji:'🏆',label:'Fim!',bg:'#b45309'}
-    return pickTile()
+    return pickTile(tileDefs)
   })
-}
 
-// Die component for board movement (1-4 so board doesn't drag)
-function BoardDie({onRoll,disabled}){
-  const [rolling,setRolling]=useState(false),[val,setVal]=useState(null)
+  for (let i = 2; i < board.length - 1; i++) {
+    const curr = board[i].id
+    const prev = board[i-1].id
+    if ((curr === 'forward' || curr === 'back') && (prev === 'forward' || prev === 'back')) {
+      const alt = tileDefs.find(t => t.id !== 'forward' && t.id !== 'back')
+      board[i] = alt ? {...alt} : {id:'dare',emoji:'🔥',label:'Desafio',bg:'#9d174d'}
+    }
+  }
+  board[board.length-1] = {id:'end',emoji:'🏆',label:'Fim!',bg:'#b45309'}
+  return board
+}
+function posToGrid(pos){const row=Math.floor(pos/COLS);const col=row%2===0?pos%COLS:COLS-1-(pos%COLS);return{row,col}}
+
+// Erotic dice inside modal — the modal is on document.body so NO ancestor 3D context
+function EroticDiceInModal({onDone}){
+  const [rolling,setRolling]=useState(false),[body,setBody]=useState(null),[action,setAction]=useState(null)
   const roll=async()=>{
-    if(rolling||disabled)return
-    setRolling(true);setVal(null)
-    await new Promise(r=>setTimeout(r,900))
-    const v=Math.floor(Math.random()*4)+1
-    setVal(v);setRolling(false);onRoll(v)
+    if(rolling)return
+    setRolling(true);setBody(null);setAction(null)
+    playDiceSound()
+    await new Promise(r=>setTimeout(r,1350))
+    setBody(BODY_PARTS[Math.floor(Math.random()*BODY_PARTS.length)])
+    setAction(ACTIONS[Math.floor(Math.random()*ACTIONS.length)])
+    playPointSound()
+    setRolling(false)
   }
   return(
-    <div className="flex flex-col items-center gap-2">
-      <motion.button onClick={roll} disabled={rolling||disabled}
-        whileHover={!rolling&&!disabled?{scale:1.06}:{}}
-        whileTap={!rolling&&!disabled?{scale:0.92}:{}}
-        animate={rolling?{rotate:[0,18,-18,14,-14,0],scale:[1,1.1,0.95,1.1,1]}:val?{scale:[1.2,1]}:{}}
-        transition={{duration:rolling?0.9:0.3}}
-        className="w-24 h-24 rounded-3xl flex items-center justify-center text-white font-black text-5xl shadow-2xl disabled:opacity-40 select-none"
-        style={{background:'linear-gradient(135deg,#be185d,#9d174d)',boxShadow:'0 6px 28px rgba(190,24,93,0.45)'}}>
-        {rolling?'💕':val||'🎲'}
-      </motion.button>
-      {val&&!rolling&&<p className="text-white font-black text-2xl">+{val} casas!</p>}
-      {!val&&!rolling&&<p className="text-slate-500 text-sm">Toca para lançar</p>}
+    <div className="space-y-4">
+      <div className="flex gap-3">
+        <EroticDie options={BODY_PARTS} label="Parte do Corpo" color="#e11d48" rolling={rolling} value={body}/>
+        <EroticDie options={ACTIONS}    label="Ação"           color="#be185d" rolling={rolling} value={action}/>
+      </div>
+      {body&&action&&!rolling&&(
+        <div className="rounded-2xl p-4 text-center border border-rose-500/30" style={{background:'rgba(225,29,72,0.1)'}}>
+          <p className="text-rose-300 text-xs mb-1">O que fazer:</p>
+          <p className="text-white font-black text-xl">{action} nos {body}</p>
+        </div>
+      )}
+      <button onClick={roll} disabled={rolling}
+        className="w-full text-white font-black rounded-2xl py-4 text-lg disabled:opacity-50"
+        style={{background:'linear-gradient(135deg,#e11d48,#be185d)'}}>
+        {rolling?'🎲 A rolar...':body?'🎲 Rolar de Novo':'🎲 Rolar Dados Eróticos'}
+      </button>
+      {(body||rolling)&&<button onClick={onDone} className="w-full bg-white/[0.05] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">✅ Feito!</button>}
     </div>
   )
 }
 
-// Tile action modal
 function TileModal({tile,players,turn,onDone}){
-  const player=players[turn%2],other=players[(turn+1)%2]
+  const player=players[turn%2]
   const [content]=useState(()=>{
-    if(tile.id==='dare') return DARE_CARDS[Math.floor(Math.random()*DARE_CARDS.length)]
-    if(tile.id==='dice') return {body:BODY_PARTS[Math.floor(Math.random()*BODY_PARTS.length)],action:ACTIONS[Math.floor(Math.random()*ACTIONS.length)]}
-    if(tile.id==='quiz') return QUIZ_Q[Math.floor(Math.random()*QUIZ_Q.length)]
-    if(tile.id==='roleplay') return ROLEPLAY_SCENARIOS[Math.floor(Math.random()*ROLEPLAY_SCENARIOS.length)]
+    if(tile.id==='dare')return DARE_CARDS[Math.floor(Math.random()*DARE_CARDS.length)]
+    if(tile.id==='quiz')return QUIZ_Q[Math.floor(Math.random()*QUIZ_Q.length)]
+    if(tile.id==='roleplay')return ROLEPLAY[Math.floor(Math.random()*ROLEPLAY.length)]
     return null
   })
-
   return(
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center p-4">
       <motion.div initial={{y:100,opacity:0}} animate={{y:0,opacity:1}} exit={{y:100,opacity:0}}
@@ -108,24 +102,17 @@ function TileModal({tile,players,turn,onDone}){
         style={{background:'#100518',border:`1px solid ${tile.bg}60`}}>
         <div className="px-5 py-4 flex items-center gap-3" style={{background:tile.bg}}>
           <span className="text-4xl">{tile.emoji}</span>
-          <div>
-            <h3 className="text-white font-black text-xl">{tile.label}</h3>
-            <p className="text-white/70 text-sm">Vez de {player?.name}</p>
-          </div>
+          <div><h3 className="text-white font-black text-xl">{tile.label}</h3><p className="text-white/70 text-sm">Vez de {player?.name}</p></div>
         </div>
         <div className="p-5 space-y-4">
           {tile.id==='dare'&&<p className="text-white text-xl font-semibold text-center leading-relaxed py-3">{content}</p>}
-          {tile.id==='dice'&&content&&(
-            <div className="text-center space-y-3">
-              <p className="text-rose-300 text-sm">Resultado dos dados:</p>
-              <p className="text-white font-black text-2xl">{content.action} nos {content.body}</p>
-            </div>
-          )}
+          {/* Dice rendered here — inside modal on document body, no ancestor 3D context */}
+          {tile.id==='dice'&&<EroticDiceInModal onDone={onDone}/>}
           {tile.id==='quiz'&&(
-            <div className="text-center space-y-3">
-              <p className="text-violet-300 text-sm">{player?.name} responde sobre {other?.name}:</p>
-              <p className="text-white font-bold text-lg leading-snug">{content}</p>
-              <p className="text-slate-500 text-sm">{other?.name} confirma se acertou!</p>
+            <div className="text-center space-y-3 py-2">
+              <p className="text-violet-300 text-sm">Respondam os dois em voz alta:</p>
+              <p className="text-white font-bold text-xl leading-snug">{content}</p>
+              <p className="text-slate-500 text-xs">Sem resposta na app!</p>
             </div>
           )}
           {tile.id==='roleplay'&&content&&(
@@ -133,156 +120,176 @@ function TileModal({tile,players,turn,onDone}){
               <p className="text-teal-300 text-sm">Cenário:</p>
               <p className="text-white font-black text-xl">{content.title}</p>
               <p className="text-slate-300 text-sm">{content.desc}</p>
-              <p className="text-slate-500 text-xs">5 minutos — GO! ⏱</p>
             </div>
           )}
-          {tile.id==='forward'&&<p className="text-green-400 font-black text-2xl text-center">💘 Avança 2 casas extra!</p>}
-          {tile.id==='back'&&<p className="text-red-400 font-black text-2xl text-center">💔 Recua 1 casa!</p>}
-          <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={onDone}
-            className="w-full text-black font-black rounded-2xl py-4 text-lg"
-            style={{background:`linear-gradient(135deg,${tile.bg},${tile.bg}cc)`,color:'white'}}>
-            {['dare','roleplay','quiz'].includes(tile.id)?'✅ Feito!':'Continuar →'}
-          </motion.button>
+          {tile.id==='forward'&&<p className="text-green-400 font-black text-2xl text-center py-2">💘 Avança 2 casas extra!</p>}
+          {tile.id==='back'&&<p className="text-red-400 font-black text-2xl text-center py-2">💔 Recua 1 casa!</p>}
+          {tile.id!=='dice'&&(
+            <button onClick={onDone} className="w-full text-white font-black rounded-2xl py-4 text-lg" style={{background:tile.bg}}>
+              {['dare','roleplay','quiz'].includes(tile.id)?'✅ Feito!':'Continuar →'}
+            </button>
+          )}
         </div>
       </motion.div>
     </div>
   )
 }
 
-export default function CoupleMap({players,onExit}){
-  const BOARD=useRef(buildBoard(24)).current
+export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
+  const tileDefs = getTileDefs(selected)
+  const BOARD=useRef(buildBoard(tileDefs)).current
   const [positions,setPositions]=useState([0,0])
   const [turn,setTurn]=useState(0)
+  const [diceResult,setDiceResult]=useState(null)
+  const [animatingPos,setAnimatingPos]=useState(null)
   const [rolled,setRolled]=useState(false)
   const [activeTile,setActiveTile]=useState(null)
   const [winner,setWinner]=useState(null)
-  const mapRef=useRef(null)
+  const [curTile,setCurTile]=useState(null)
+  const [diceSides,setDiceSides]=useState(maxDice)
+  const player=players[turn%2],pos=positions[turn%2]
 
-  const player=players[turn%2]
-  const pos=positions[turn%2]
-
-  const scrollTo=p=>{
-    if(!mapRef.current)return
-    mapRef.current.scrollTo({left:Math.max(0,p*70-mapRef.current.clientWidth/2+35),behavior:'smooth'})
-  }
-
-  const handleRoll=async val=>{
+  const handleRoll=async(val)=>{
     if(rolled)return
     setRolled(true)
-    let finalPos=Math.min(pos+val,BOARD.length-1)
-    const tile=BOARD[finalPos]
-    if(tile.id==='forward') finalPos=Math.min(finalPos+2,BOARD.length-1)
-    if(tile.id==='back') finalPos=Math.max(finalPos-1,0)
-    setPositions(p=>p.map((v,i)=>i===turn%2?finalPos:v))
-    scrollTo(finalPos)
-    if(finalPos>=BOARD.length-1){setWinner(turn%2);return}
-    setTimeout(()=>setActiveTile(BOARD[finalPos]),550)
+    setDiceResult(val)
+    
+    let currentPos=pos
+    let finalPos=pos+val
+    
+    // Animate step by step
+    for(let step=1;step<=val;step++){
+      await new Promise(r=>setTimeout(r,300))
+      const stepPos=Math.min(pos+step,TOTAL-1)
+      setAnimatingPos(stepPos)
+      setPositions(p=>p.map((v,i)=>i===turn%2?stepPos:v))
+    }
+    
+    finalPos=Math.min(finalPos,TOTAL-1)
+    let tileToCheck=BOARD[finalPos]
+    
+    if(tileToCheck.id==='forward'){
+      finalPos=Math.min(finalPos+2,TOTAL-1)
+      // Animate the +2 bonus
+      for(let step=1;step<=2;step++){
+        await new Promise(r=>setTimeout(r,300))
+        setAnimatingPos(Math.min(finalPos-2+step,TOTAL-1))
+        setPositions(p=>p.map((v,i)=>i===turn%2?Math.min(finalPos-2+step,TOTAL-1):v))
+      }
+      // Get the tile at final position after bonus
+      tileToCheck=BOARD[finalPos]
+    }
+    
+    if(tileToCheck.id==='back'){
+      const backPos=Math.max(finalPos-1,0)
+      // Animate going back
+      await new Promise(r=>setTimeout(r,300))
+      setAnimatingPos(backPos)
+      setPositions(p=>p.map((v,i)=>i===turn%2?backPos:v))
+      finalPos=backPos
+      tileToCheck=BOARD[finalPos]
+    }
+    
+    setCurTile(finalPos)
+    if(finalPos>=TOTAL-1){setWinner(turn%2);return}
+    setAnimatingPos(null)
+    await new Promise(r=>setTimeout(r,600))
+    setActiveTile(tileToCheck)
   }
-
-  const nextTurn=()=>{
-    setActiveTile(null);setRolled(false)
-    setTurn(t=>t+1)
-    setTimeout(()=>scrollTo(positions[(turn+1)%2]),100)
-  }
-
-  // ── LEGEND ──────────────────────────────────────────────────
-  const legend=TILE_DEFS.map(t=>({...t}))
+  const nextTurn=()=>{setActiveTile(null);setRolled(false);setDiceResult(null);setTurn(t=>t+1)}
 
   if(winner!==null)return(
     <div className="flex-1 flex flex-col items-center justify-center px-4 text-center gap-5">
-      <motion.div animate={{scale:[1,1.15,1]}} transition={{repeat:Infinity,duration:2}}>
-        <span className="text-7xl">🏆</span>
-      </motion.div>
+      <span className="text-7xl">🏆</span>
       <h2 className="text-white font-black text-3xl">{players[winner]?.name} chegou primeiro!</h2>
       <p className="text-rose-300 text-lg">Escolhe uma recompensa especial 💕</p>
-      <button onClick={onExit}
-        className="text-white font-bold rounded-2xl px-8 py-4"
-        style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>
-        Terminar 💕
-      </button>
+      <button onClick={onExit} className="text-white font-bold rounded-2xl px-8 py-4" style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>Terminar 💕</button>
     </div>
   )
 
+  const tileW=44,tileH=42,gap=2
+  const boardW=COLS*(tileW+gap)-gap,boardH=ROWS*(tileH+gap)-gap
+
   return(
     <div className="flex flex-col flex-1">
-      {/* Board scroll */}
-      <div className="px-4 py-3">
-        <div ref={mapRef} className="flex gap-2 overflow-x-scroll pb-2" style={{scrollbarWidth:'none'}}>
-          {BOARD.map((tile,idx)=>{
-            const p0=positions[0]===idx,p1=positions[1]===idx,isCur=(turn%2===0?p0:p1)
-            return(
-              <motion.div key={idx}
-                animate={isCur?{scale:1.12,boxShadow:`0 0 16px ${tile.bg}99`}:{scale:1}}
-                className="relative flex-shrink-0 flex flex-col items-center justify-end rounded-2xl"
-                style={{width:60,height:64,background:tile.bg+'aa',border:`0.5px solid ${isCur?tile.bg:'rgba(255,255,255,0.06)'}`}}>
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 flex gap-0.5">
-                  {p0&&<div className={`w-6 h-6 rounded-full bg-gradient-to-br ${players[0]?.color} border-2 border-white/50 flex items-center justify-center text-white text-xs font-black shadow-lg`}>{players[0]?.name?.[0]}</div>}
-                  {p1&&<div className={`w-6 h-6 rounded-full bg-gradient-to-br ${players[1]?.color} border-2 border-white/50 flex items-center justify-center text-white text-xs font-black shadow-lg`}>{players[1]?.name?.[0]}</div>}
-                </div>
-                <span className="text-xl mb-1">{tile.emoji}</span>
-                <span className="text-white/25 text-xs mb-1 font-mono">{idx}</span>
-              </motion.div>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Legend */}
-      <div className="px-4 mb-2">
+      <div className="px-4 pt-2 pb-1">
         <div className="flex gap-1.5 overflow-x-auto" style={{scrollbarWidth:'none'}}>
-          {legend.map(t=>(
-            <div key={t.id} className="flex items-center gap-1 flex-shrink-0 rounded-lg px-2 py-1" style={{background:t.bg+'30',border:`0.5px solid ${t.bg}60`}}>
-              <span className="text-xs">{t.emoji}</span>
-              <span className="text-xs text-white/60 whitespace-nowrap">{t.label}</span>
+          {tileDefs.map(t=>(
+            <div key={t.id} className="flex items-center gap-1 flex-shrink-0 rounded-lg px-2 py-1" style={{background:t.bg+'35',border:`0.5px solid ${t.bg}70`}}>
+              <span className="text-xs">{t.emoji}</span><span className="text-xs text-white/60 whitespace-nowrap">{t.label}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Player card + die */}
-      <div className="flex-1 flex flex-col items-center px-4 pb-4 gap-4">
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 w-full">
-          <div className="flex items-center gap-4 mb-5">
-            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl`}>
-              {player?.name?.[0]}
-            </div>
-            <div>
-              <p className="text-slate-500 text-xs">Vez de</p>
-              <h2 className="text-white font-black text-xl">{player?.name}</h2>
-              <p className="text-slate-600 text-xs">Casa {pos} / {BOARD.length-1}</p>
-            </div>
-          </div>
-          {!rolled
-            ?<BoardDie onRoll={handleRoll} disabled={false}/>
-            :!activeTile&&(
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextTurn}
-                className="w-full text-white font-bold rounded-2xl py-4"
-                style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>
-                Próximo Turno 💕
-              </motion.button>
+      {/* Board — NO Framer Motion on tiles, pure CSS only */}
+      <div className="flex justify-center px-4 py-3">
+        {diceResult&&<div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-white/[0.1] border border-rose-500/30 rounded-2xl px-6 py-3"><p className="text-white font-black text-2xl">🎲 {diceResult}</p></div>}
+        <div style={{position:'relative',width:boardW,height:boardH}}>
+          {BOARD.map((tile,idx)=>{
+            const {row,col}=posToGrid(idx)
+            const p0here=positions[0]===idx,p1here=positions[1]===idx
+            const isCur=(turn%2===0?p0here:p1here)
+            const isAnimating=animatingPos===idx
+            return(
+              <div key={idx}
+                style={{
+                  position:'absolute',
+                  left:col*(tileW+gap),
+                  top:(ROWS-1-row)*(tileH+gap),
+                  width:tileW, height:tileH,
+                  background:tile.bg+'cc',
+                  borderRadius:9,
+                  border:`0.5px solid ${isCur||isAnimating?tile.bg:'rgba(255,255,255,0.07)'}`,
+                  boxShadow:(isCur||isAnimating)?`0 0 10px ${tile.bg}cc`:'none',
+                  outline:(isCur||isAnimating)?`2px solid ${tile.bg}`:'none',
+                  transition:'box-shadow 0.3s, outline 0.3s, background 0.2s',
+                  display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',
+                  paddingBottom:2,overflow:'visible',zIndex:(isCur||isAnimating)?2:1,
+                }}>
+                <div style={{position:'absolute',top:-10,left:'50%',transform:'translateX(-50%)',display:'flex',gap:2}}>
+                  {p0here&&<div style={{width:17,height:17,borderRadius:'50%',background:'linear-gradient(135deg,#ec4899,#f43f5e)',border:'1.5px solid rgba(255,255,255,0.7)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:9,fontWeight:900,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}>{players[0]?.name?.[0]}</div>}
+                  {p1here&&<div style={{width:17,height:17,borderRadius:'50%',background:'linear-gradient(135deg,#06b6d4,#3b82f6)',border:'1.5px solid rgba(255,255,255,0.7)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:9,fontWeight:900,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}>{players[1]?.name?.[0]}</div>}
+                </div>
+                <span style={{fontSize:18,lineHeight:1}}>{tile.emoji}</span>
+                <span style={{fontSize:8,color:'rgba(255,255,255,0.3)',fontFamily:'monospace'}}>{idx}</span>
+              </div>
             )
-          }
+          })}
         </div>
+      </div>
 
-        {/* Positions mini scoreboard */}
-        <div className="grid grid-cols-2 gap-2 w-full">
+      {/* Player card */}
+      <div className="flex-1 flex flex-col items-center px-4 pb-4 gap-3">
+        <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 w-full max-w-sm">
+          <div className="flex items-center gap-4 mb-4">
+            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl`}>{player?.name?.[0]}</div>
+            <div><p className="text-slate-500 text-xs">Vez de</p><h2 className="text-white font-black text-xl">{player?.name}</h2><p className="text-slate-600 text-xs">Casa {pos}/{TOTAL-1}</p></div>
+          </div>
+          {!rolled?(
+            <div className="w-full space-y-3">
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-slate-400 text-sm">Máximo definido antes do jogo: {diceSides}</span>
+              </div>
+              <BoardDie onRoll={handleRoll} disabled={false} color="#be185d" maxDice={diceSides}/>
+            </div>
+          )
+            :!activeTile&&<button onClick={nextTurn} className="w-full text-white font-bold rounded-2xl py-4" style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>Próximo Turno 💕</button>}
+          )
+        </div>
+        <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
           {players.map((p,i)=>(
             <div key={i} className={`bg-white/[0.04] rounded-2xl p-3 flex items-center gap-3 border ${i===turn%2?'border-rose-500/40':'border-white/[0.05]'}`}>
               <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-sm font-black shadow`}>{p.name[0]}</div>
-              <div>
-                <p className="text-white text-sm font-semibold">{p.name}</p>
-                <p className="text-slate-500 text-xs">Casa {positions[i]}</p>
-              </div>
-              {i===turn%2&&<motion.div animate={{scale:[1,1.3,1]}} transition={{repeat:Infinity,duration:1.2}} className="ml-auto w-2 h-2 rounded-full bg-rose-400 flex-shrink-0"/>}
+              <div><p className="text-white text-sm font-semibold">{p.name}</p><p className="text-slate-500 text-xs">Casa {positions[i]}</p></div>
             </div>
           ))}
         </div>
       </div>
 
       <AnimatePresence>
-        {activeTile&&(
-          <TileModal tile={activeTile} players={players} turn={turn} onDone={nextTurn}/>
-        )}
+        {activeTile&&<TileModal tile={activeTile} players={players} turn={turn} onDone={nextTurn}/>}
       </AnimatePresence>
     </div>
   )

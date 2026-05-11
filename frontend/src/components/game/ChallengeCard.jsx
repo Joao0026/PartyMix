@@ -1,92 +1,151 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, XCircle, Clock } from 'lucide-react'
-import { CATEGORY_CONFIG, weightedSips } from '../../utils/game'
+import { X, Clock } from 'lucide-react'
+import { playSuccessSound, playFailSound } from '../../utils/sounds'
 
-export default function ChallengeCard({challenge,player,mode,penaltyType,onResult,onClose}){
-  const [timeLeft,setTimeLeft]=useState(challenge?.time_limit||0)
-  const [sips]=useState(weightedSips())
-  const [hasPenalty]=useState(Math.random()<0.15)
-  const [accepted,setAccepted]=useState(false)
-  const cat=CATEGORY_CONFIG[challenge?.category]||{emoji:'🎲',label:'Desafio',color:'from-violet-500 to-purple-600'}
-  const maxTime=challenge?.time_limit||0
-  const timerPct=maxTime>0?(timeLeft/maxTime)*100:100
+export default function ChallengeCard({ challenge, player, mode, penaltyType = 'sips', onResult, onClose }) {
+  const [timeLeft,   setTimeLeft]   = useState(null)
+  const [timerDone,  setTimerDone]  = useState(false)
+  const [showResult, setShowResult] = useState(false)
 
-  useEffect(()=>{
-    if(!challenge?.time_limit||timeLeft<=0)return
-    const t=setInterval(()=>setTimeLeft(s=>{if(s<=1){clearInterval(t);return 0}return s-1}),1000)
-    return()=>clearInterval(t)
-  },[challenge?.time_limit])
+  const isFamily  = mode === 'family'
+  const hasTimer  = challenge?.time_limit && challenge.time_limit > 0
 
-  if(!challenge)return null
-  return(
+  useEffect(() => {
+    if (!hasTimer) return
+    setTimeLeft(challenge.time_limit)
+  }, [challenge])
+
+  useEffect(() => {
+    if (timeLeft === null || timeLeft <= 0) { if (timeLeft === 0) { setTimerDone(true); handleResult('fail'); } return }
+    const tm = setTimeout(() => setTimeLeft(t => t-1), 1000)
+    return () => clearTimeout(tm)
+  }, [timeLeft])
+
+  const CATEGORY_EMOJIS = {
+    mimica:'🎭', desenho:'🎨', palavra:'💬', acao:'⚡', verdade:'❓',
+    consequencia:'🎲', cultura:'📚', desporto:'⚽', musica:'🎵', cinema:'🎬',
+    erotico:'🔥', casal_pergunta:'💬', dados:'🎲',
+  }
+  const CATEGORY_COLORS = {
+    mimica:'from-violet-600 to-purple-700', desenho:'from-pink-600 to-rose-700',
+    palavra:'from-blue-600 to-cyan-700', acao:'from-orange-600 to-amber-700',
+    verdade:'from-red-600 to-rose-700', consequencia:'from-slate-600 to-slate-800',
+    cultura:'from-emerald-600 to-teal-700', desporto:'from-green-600 to-emerald-700',
+    musica:'from-fuchsia-600 to-pink-700', cinema:'from-slate-700 to-zinc-800',
+    erotico:'from-rose-700 to-pink-800', casal_pergunta:'from-violet-700 to-purple-800',
+  }
+
+  const catColor = CATEGORY_COLORS[challenge?.category] || 'from-violet-600 to-purple-700'
+  const catEmoji = CATEGORY_EMOJIS[challenge?.category] || '🎴'
+
+  const handleResult = (res) => {
+    if (res === 'success') playSuccessSound()
+    else if (res === 'fail') playFailSound()
+    setShowResult(true)
+    setTimeout(() => { onResult(res) }, 800)
+  }
+
+  const getPenaltyText = () => {
+    if (isFamily) return null // No drinking in family mode
+    const sips = Math.floor(Math.random() * 5) + 1
+    if (penaltyType === 'sips')    return `🍺 ${player?.name} bebe ${sips} golo${sips>1?'s':''}!`
+    if (penaltyType === 'penalty') return `⚽ ${player?.name} marca um penálti!`
+    // both — show generic message, actual penalty handled by parent
+    return Math.random() < 0.5
+      ? `🍺 ${player?.name} bebe ${sips} golo${sips>1?'s':''}!`
+      : `⚽ ${player?.name} marca um penálti!`
+  }
+
+  return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
-      <motion.div initial={{opacity:0,y:100}} animate={{opacity:1,y:0}} exit={{opacity:0,y:100}} transition={{type:'spring',damping:18}}
-        className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <div className={`bg-gradient-to-r ${cat.color} p-4 relative overflow-hidden`}>
-          <div className="absolute inset-0 bg-black/20"/>
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <motion.span animate={{scale:[1,1.2,1],rotate:[0,10,-10,0]}} transition={{duration:2,repeat:Infinity}} className="text-3xl">{cat.emoji}</motion.span>
-              <div><div className="text-white/70 text-xs">{player?.name}</div><div className="text-white font-bold text-lg">{cat.label}</div></div>
-            </div>
-            <div className="flex items-center gap-3">
-              {maxTime>0&&(
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-white/70"/>
-                  <motion.span animate={timeLeft<=5?{scale:[1,1.3,1]}:{}} transition={{repeat:Infinity,duration:0.5}}
-                    className={`text-white font-mono font-black text-xl ${timeLeft<=5?'text-red-200':''}`}>{timeLeft}</motion.span>
-                </div>
-              )}
-              <button onClick={onClose} className="text-white/50 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-all"><X className="w-5 h-5"/></button>
-            </div>
+      <motion.div initial={{y:120,opacity:0}} animate={{y:0,opacity:1}} exit={{y:120,opacity:0}}
+        transition={{type:'spring',damping:20}}
+        className="w-full max-w-lg bg-[#0d0f1c] border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl">
+
+        {/* Category header */}
+        <div className={`bg-gradient-to-r ${catColor} px-5 py-4 flex items-center gap-3`}>
+          <span className="text-3xl">{catEmoji}</span>
+          <div className="flex-1">
+            <p className="text-white/70 text-xs capitalize">{challenge?.category || 'desafio'}</p>
+            <p className="text-white font-black text-lg">{player?.name}</p>
           </div>
-          {maxTime>0&&(
-            <div className="mt-3 h-1 bg-white/20 rounded-full overflow-hidden">
-              <motion.div className={`h-full rounded-full ${timeLeft<=5?'bg-red-300':'bg-white'}`} animate={{width:`${timerPct}%`}} transition={{duration:1,ease:'linear'}}/>
+          {/* Timer */}
+          {hasTimer && (
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${timerDone?'bg-red-500/30':'bg-black/20'}`}>
+              <Clock className="w-3.5 h-3.5 text-white/70"/>
+              <span className={`text-sm font-black ${timerDone?'text-red-300':'text-white'}`}>
+                {timeLeft !== null ? timeLeft : challenge.time_limit}s
+              </span>
             </div>
           )}
+          <button onClick={onClose} className="text-white/50 hover:text-white w-8 h-8 flex items-center justify-center">
+            <X className="w-5 h-5"/>
+          </button>
         </div>
-        <div className="p-5 space-y-4">
-          <motion.p initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:0.1}} className="text-white text-xl font-semibold leading-relaxed text-center py-2">{challenge.text}</motion.p>
-          <div className="flex justify-center">
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${challenge.difficulty==='facil'?'bg-green-500/20 text-green-400':challenge.difficulty==='dificil'?'bg-red-500/20 text-red-400':'bg-amber-500/20 text-amber-400'}`}>
-              {challenge.difficulty==='facil'?'🟢 Fácil':challenge.difficulty==='dificil'?'🔴 Difícil':'🟡 Médio'}
-            </span>
+
+        {/* Timer bar */}
+        {hasTimer && timeLeft !== null && (
+          <div className="h-1 bg-white/[0.08]">
+            <motion.div
+              className={`h-full ${timeLeft<=5?'bg-red-500':'bg-white/40'}`}
+              animate={{width:`${(timeLeft/challenge.time_limit)*100}%`}}
+              transition={{duration:1,ease:'linear'}}/>
           </div>
-          {mode==='friends'&&!challenge.is_ongoing&&(
-            <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:0.2}} className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-center">
-              <p className="text-slate-400 text-xs mb-1">Penalização se falhar</p>
-              <p className="text-amber-400 font-bold text-base">🍺 {typeof sips==='number'?`${sips} golo${sips>1?'s':''}`:sips}</p>
-              {hasPenalty&&<p className="text-green-400 text-xs mt-1">⚽ + Marca um penálti!</p>}
+        )}
+
+        <div className="p-5 space-y-4">
+          {/* Challenge text */}
+          <div className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-5 min-h-28 flex items-center justify-center">
+            <p className="text-white font-bold text-xl text-center leading-relaxed">
+              {challenge?.text?.replace(/{player}/g, player?.name || 'Um jogador') || 'Desafio'}
+            </p>
+          </div>
+          
+          {/* Family mode answer */}
+          {isFamily && challenge?.answer && (
+            <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
+              className="bg-gradient-to-r from-emerald-500/15 to-teal-500/15 border border-emerald-500/30 rounded-2xl p-4 text-center">
+              <p className="text-emerald-400 text-xs uppercase tracking-wide font-semibold mb-1">✓ Resposta Correta</p>
+              <p className="text-white font-bold text-lg">{challenge.answer}</p>
             </motion.div>
           )}
-          {challenge.is_ongoing&&!accepted?(
-            <div className="flex gap-3 pt-1">
-              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.95}} onClick={()=>{setAccepted(true);onResult('accepted',challenge)}}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl py-4 text-lg">Aceito! 🤝</motion.button>
-              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.95}} onClick={()=>onResult('refused',challenge)}
-                className="flex-1 bg-white/10 border border-white/10 text-white font-bold rounded-2xl py-4">Recuso</motion.button>
+
+          {/* Ongoing indicator */}
+          {challenge?.is_ongoing && (
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 text-center">
+              <p className="text-orange-400 text-sm">🔁 Contínuo durante {challenge.ongoing_rounds} turno{challenge.ongoing_rounds>1?'s':''}</p>
+              {challenge.ongoing_instruction && <p className="text-orange-300/70 text-xs mt-0.5">{challenge.ongoing_instruction}</p>}
             </div>
-          ):challenge.is_ongoing&&accepted?(
-            <div className="text-center space-y-3">
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-3">
-                <p className="text-emerald-400 font-bold mb-1">🔁 Desafio Contínuo Ativo!</p>
-                <p className="text-slate-300 text-sm">{challenge.ongoing_instruction}</p>
-              </div>
-              <button onClick={()=>onResult('done',challenge)} className="w-full bg-white/10 text-white rounded-2xl py-3 font-medium">Continuar →</button>
-            </div>
-          ):(
-            <div className="flex gap-3 pt-1">
-              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.95}} onClick={()=>onResult('success',challenge)}
-                className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-2xl py-4 text-lg flex items-center justify-center gap-2">
-                <Check className="w-5 h-5"/>Consegui!
-              </motion.button>
-              <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.95}} onClick={()=>onResult('fail',challenge)}
-                className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold rounded-2xl py-4 text-lg flex items-center justify-center gap-2">
-                <XCircle className="w-5 h-5"/>Falhei
-              </motion.button>
-            </div>
+          )}
+
+          {/* Result buttons */}
+          <AnimatePresence>
+            {!showResult ? (
+              <motion.div exit={{opacity:0,scale:0.95}} className="flex gap-3">
+                <motion.button whileTap={{scale:0.95}} onClick={() => handleResult('success')}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black rounded-2xl py-4 text-xl">
+                  ✅ Conseguiu!
+                </motion.button>
+                <motion.button whileTap={{scale:0.95}} onClick={() => handleResult('fail')}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-black rounded-2xl py-4 text-xl">
+                  ❌ Falhou!
+                </motion.button>
+              </motion.div>
+            ) : (
+              <motion.div initial={{opacity:0,scale:0.9}} animate={{opacity:1,scale:1}}
+                className="text-center py-4 space-y-2">
+                <p className="text-slate-400 text-sm">A registar resultado...</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Ongoing accept button */}
+          {challenge?.is_ongoing && !showResult && (
+            <button onClick={() => handleResult('accepted')}
+              className="w-full bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-2xl py-3 text-sm font-bold">
+              🔁 Aceitar Desafio Contínuo
+            </button>
           )}
         </div>
       </motion.div>

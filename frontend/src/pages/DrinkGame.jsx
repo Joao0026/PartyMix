@@ -116,7 +116,7 @@ const DECK_CATEGORIES = [
   },
   // Premium placeholder — easy to unlock
   {
-    id: 'extreme', label: '💣 Extremo 🔒', desc: 'Só para os verdadeiramente corajosos', premium: true,
+    id: 'extreme', label: '💣 Extremo 🔒', desc: 'Só para os verdadeiramente corajosos', premium: false,
     cards: []
   },
 ]
@@ -274,24 +274,28 @@ function CardDeck({activeDeck,players,currentPlayerIdx,onNext}){
   return(
     <div className="flex flex-col items-center gap-4 w-full">
       <div className="flex items-center gap-3 w-full">
-        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${player?.color||'from-slate-500 to-slate-700'} flex items-center justify-center text-white font-black flex-shrink-0`}>{player?.name?.[0]||'?'}</div>
-        <div><p className="text-white font-bold">{player?.name}</p><p className="text-slate-500 text-xs">{deck.length} cartas restantes</p></div>
+        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${player?.color||'from-slate-500 to-slate-700'} flex items-center justify-center text-white font-black text-lg flex-shrink-0`}>{player?.name?.[0]||'?'}</div>
+        <div>
+          <p className="text-slate-400 text-xs uppercase tracking-[0.2em] mb-1">Turno de</p>
+          <p className="text-white font-black text-lg leading-none">{player?.name}</p>
+          <p className="text-slate-500 text-xs mt-1">{deck.length} cartas restantes</p>
+        </div>
       </div>
 
       <AnimatePresence mode="wait">
         {current?(
           <motion.div key={current.title+current.text}
             initial={{scale:0.85,opacity:0,y:-16}} animate={{scale:1,opacity:1,y:0}} exit={{scale:0.9,opacity:0}}
-            className={`w-full bg-gradient-to-br ${TYPE_COLORS[current.type]||'from-violet-600 to-purple-700'} rounded-3xl p-6 text-center shadow-2xl min-h-44 flex flex-col justify-center`}>
-            <p className="text-white/60 text-xs font-semibold tracking-widest uppercase mb-2">{current.type}</p>
-            <p className="text-4xl mb-3">{current.emoji}</p>
-            <h3 className="text-white font-black text-xl mb-3">{current.title}</h3>
-            <p className="text-white/90 font-medium leading-relaxed">{current.text}</p>
+            className={`w-full bg-gradient-to-br ${TYPE_COLORS[current.type]||'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}>
+            <p className="text-white/70 text-xs uppercase tracking-[0.2em] mb-3">Turno</p>
+            <p className="text-6xl mb-4">{current.emoji}</p>
+            <h3 className="text-white font-black text-3xl mb-4">{current.title}</h3>
+            <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
           </motion.div>
         ):(
-          <div className="w-full h-44 bg-white/[0.04] border-2 border-dashed border-white/[0.1] rounded-3xl flex flex-col items-center justify-center gap-2">
-            <span className="text-4xl">🃏</span>
-            <p className="text-slate-500 text-sm">Toca para virar a carta</p>
+          <div className="w-full h-56 bg-white/[0.04] border-2 border-dashed border-white/[0.1] rounded-[2rem] flex flex-col items-center justify-center gap-3 px-6">
+            <span className="text-5xl">🃏</span>
+            <p className="text-slate-400 text-sm">Toca para virar a carta</p>
           </div>
         )}
       </AnimatePresence>
@@ -384,7 +388,7 @@ export default function DrinkGame(){
           </div>
         </div>
         {/* AI Button */}
-        {players.length>=2&&(
+        {false&&players.length>=2&&(
           <button onClick={()=>setShowAI(true)}
             className="w-full mb-4 bg-violet-600/15 border border-violet-500/30 text-violet-300 font-bold rounded-2xl py-3 flex items-center justify-center gap-2 hover:bg-violet-600/25 transition-all">
             <Sparkles className="w-4 h-4"/>✨ Adicionar Cartas Personalizadas com IA
@@ -417,7 +421,7 @@ export default function DrinkGame(){
       </div>
       {/* Tabs */}
       <div className="flex bg-white/[0.04] mx-4 mt-4 rounded-2xl p-1 max-w-lg mx-auto w-full border border-white/[0.06]">
-        {[['deck','🃏 Baralho'],['roulette','🎰 Roleta'],['ai','✨ IA']].map(([id,label])=>(
+        {[['deck','🃏 Baralho']].map(([id,label])=>(
           <button key={id} onClick={()=>setTab(id)}
             className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab===id?'bg-amber-500 text-black':'text-slate-400 hover:text-white'}`}>
             {label}
@@ -428,25 +432,6 @@ export default function DrinkGame(){
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="w-full">
             {tab==='deck'&&<CardDeck activeDeck={activeDeck} players={players} currentPlayerIdx={currentPlayerIdx} onNext={()=>setCurrentPlayerIdx(i=>(i+1)%players.length)}/>}
-            {tab==='roulette'&&<Roulette players={players} currentPlayerIdx={currentPlayerIdx}/>}
-            {tab==='ai'&&(
-              <div className="space-y-4">
-                <div className="bg-violet-500/10 border border-violet-500/30 rounded-2xl p-4 text-center">
-                  <Sparkles className="text-violet-400 w-8 h-8 mx-auto mb-2"/>
-                  <p className="text-white font-bold">Cartas Personalizadas com IA</p>
-                  <p className="text-slate-400 text-sm mt-1">A IA cria cartas com os vossos nomes e bebidas!</p>
-                </div>
-                {aiCards.length>0&&(
-                  <div className="space-y-2">
-                    {aiCards.map((c,i)=><div key={i} className="bg-violet-900/30 border border-violet-500/30 rounded-xl p-3"><p className="text-white text-sm">🤖 {c.text}</p></div>)}
-                  </div>
-                )}
-                <button onClick={()=>setShowAI(true)}
-                  className="w-full bg-violet-600/20 border border-violet-500/40 text-violet-300 font-bold rounded-2xl py-4 flex items-center justify-center gap-2">
-                  <Sparkles className="w-4 h-4"/>Gerar Novas Cartas IA
-                </button>
-              </div>
-            )}
           </motion.div>
         </AnimatePresence>
       </div>

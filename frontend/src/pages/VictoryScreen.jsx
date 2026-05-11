@@ -1,207 +1,219 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Star, Home, RotateCcw, Award } from 'lucide-react'
-import { useLang } from '../contexts/LangContext'
+import { Trophy, Home, RotateCcw } from 'lucide-react'
 
-// ── CONFETTI ─────────────────────────────────────────
-function Confetti() {
-  const ref = useRef(null)
-  useEffect(() => {
-    const canvas = ref.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-    const COLORS = ['#f43f5e','#a855f7','#06b6d4','#f59e0b','#10b981','#3b82f6','#ec4899','#8b5cf6']
-    const pieces = Array.from({ length: 150 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height - canvas.height,
-      r: Math.random() * 7 + 3,
-      d: Math.random() * 80 + 20,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      tilt: Math.random() * 10 - 10,
-      tiltAngle: 0,
-      tiltSpeed: Math.random() * 0.1 + 0.04,
-      shape: Math.random() > 0.5 ? 'circle' : 'rect',
-    }))
-    let angle = 0, raf
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      angle += 0.008
-      pieces.forEach(p => {
-        p.tiltAngle += p.tiltSpeed
-        p.y += (Math.cos(angle + p.d) + 2.5) * 1.1
-        p.x += Math.sin(angle) * 0.8
-        p.tilt = Math.sin(p.tiltAngle) * 14
-        if (p.y > canvas.height + 10) { p.y = -10; p.x = Math.random() * canvas.width }
-        ctx.beginPath()
-        ctx.fillStyle = p.color
-        if (p.shape === 'circle') { ctx.arc(p.x + p.tilt, p.y, p.r, 0, Math.PI * 2); ctx.fill() }
-        else { ctx.fillRect(p.x + p.tilt, p.y, p.r, p.r / 2) }
-      })
-      raf = requestAnimationFrame(draw)
+// ── WEB AUDIO SOUNDS ─────────────────────────────────────────
+function playVictorySound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const notes = [523, 659, 784, 1047] // C E G C
+    notes.forEach((freq, i) => {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.connect(g); g.connect(ctx.destination)
+      o.frequency.value = freq
+      o.type = 'sine'
+      const t = ctx.currentTime + i * 0.15
+      g.gain.setValueAtTime(0, t)
+      g.gain.linearRampToValueAtTime(0.25, t + 0.05)
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.4)
+      o.start(t); o.stop(t + 0.5)
+    })
+  } catch {}
+}
+
+function playConfettiSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    for (let i = 0; i < 6; i++) {
+      const o = ctx.createOscillator()
+      const g = ctx.createGain()
+      o.connect(g); g.connect(ctx.destination)
+      o.frequency.value = 300 + Math.random() * 800
+      o.type = 'sine'
+      const t = ctx.currentTime + i * 0.08
+      g.gain.setValueAtTime(0.15, t)
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.3)
+      o.start(t); o.stop(t + 0.35)
     }
-    draw()
-    return () => cancelAnimationFrame(raf)
-  }, [])
-  return <canvas ref={ref} className="fixed inset-0 pointer-events-none z-40" />
+  } catch {}
 }
 
-// ── TITLE GENERATION ─────────────────────────────────
-function generateTitles(players, scores, lang = 'pt') {
-  if (!players?.length) return []
+// ── CONFETTI ─────────────────────────────────────────────────
+const COLORS = ['#f43f5e','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ec4899']
 
-  const ranked = players.map((p, i) => ({ ...p, score: scores?.[i] || 0, idx: i }))
-    .sort((a, b) => b.score - a.score)
-
-  const defs = {
-    pt: [
-      { id: 'winner',      icon: '👑', get: (r) => r[0],           cond: () => true,                   text: (p) => `Rei/Rainha da Festa` },
-      { id: 'loser',       icon: '🐢', get: (r) => r[r.length-1],  cond: (r) => r.length > 2,          text: (p) => `Mestre da Derrota` },
-      { id: 'clutch',      icon: '⚡', get: (r) => r[1],           cond: (r) => r.length > 1 && r[0].score - r[1].score <= 1, text: () => `Rei/Rainha do Clutch` },
-      { id: 'shy',         icon: '🙈', get: (r) => r.find(p => p.score === 0), cond: (r) => r.some(p => p.score === 0), text: () => `A Grande Vergonha` },
-      { id: 'dominant',    icon: '🔥', get: (r) => r[0],           cond: (r) => r[0].score >= 5,        text: () => `O Intocável` },
-      { id: 'comeback',    icon: '🚀', get: (r) => r[r.length-2],  cond: (r) => r.length > 2,          text: () => `Rei/Rainha da Remontada` },
-      { id: 'silver',      icon: '🥈', get: (r) => r[1],           cond: (r) => r.length > 1,          text: () => `Eterno Segundo Lugar` },
-    ],
-    es: [
-      { id: 'winner',      icon: '👑', get: (r) => r[0],           cond: () => true,                   text: () => `Rey/Reina de la Fiesta` },
-      { id: 'loser',       icon: '🐢', get: (r) => r[r.length-1],  cond: (r) => r.length > 2,          text: () => `Maestro de la Derrota` },
-      { id: 'clutch',      icon: '⚡', get: (r) => r[1],           cond: (r) => r.length > 1 && r[0].score - r[1].score <= 1, text: () => `Rey/Reina del Clutch` },
-      { id: 'shy',         icon: '🙈', get: (r) => r.find(p => p.score === 0), cond: (r) => r.some(p => p.score === 0), text: () => `La Gran Vergüenza` },
-      { id: 'dominant',    icon: '🔥', get: (r) => r[0],           cond: (r) => r[0].score >= 5,        text: () => `El Intocable` },
-      { id: 'silver',      icon: '🥈', get: (r) => r[1],           cond: (r) => r.length > 1,          text: () => `Eterno Segundo Lugar` },
-    ],
-    en: [
-      { id: 'winner',      icon: '👑', get: (r) => r[0],           cond: () => true,                   text: () => `Party King/Queen` },
-      { id: 'loser',       icon: '🐢', get: (r) => r[r.length-1],  cond: (r) => r.length > 2,          text: () => `Master of Defeat` },
-      { id: 'clutch',      icon: '⚡', get: (r) => r[1],           cond: (r) => r.length > 1 && r[0].score - r[1].score <= 1, text: () => `Clutch King/Queen` },
-      { id: 'shy',         icon: '🙈', get: (r) => r.find(p => p.score === 0), cond: (r) => r.some(p => p.score === 0), text: () => `The Big Disgrace` },
-      { id: 'dominant',    icon: '🔥', get: (r) => r[0],           cond: (r) => r[0].score >= 5,        text: () => `The Untouchable` },
-      { id: 'silver',      icon: '🥈', get: (r) => r[1],           cond: (r) => r.length > 1,          text: () => `Eternal Second Place` },
-    ],
-  }
-
-  const langDefs = defs[lang] || defs.pt
-  const titles = []
-  const usedPlayers = new Set()
-
-  for (const def of langDefs) {
-    if (!def.cond(ranked)) continue
-    const player = def.get(ranked)
-    if (!player || usedPlayers.has(player.idx)) continue
-    usedPlayers.add(player.idx)
-    titles.push({ player: player.name, icon: def.icon, title: def.text(player), color: player.color })
-  }
-
-  return titles
+function Confetti() {
+  const pieces = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    delay: Math.random() * 1.5,
+    duration: 2 + Math.random() * 2,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    size: 6 + Math.random() * 8,
+    rotate: Math.random() * 360,
+  }))
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-10">
+      {pieces.map(p => (
+        <motion.div key={p.id}
+          initial={{ y: -20, x: `${p.x}vw`, opacity: 1, rotate: p.rotate }}
+          animate={{ y: '110vh', opacity: [1,1,0], rotate: p.rotate + 360 * 3 }}
+          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
+          style={{ position:'absolute', top:0, width:p.size, height:p.size,
+            background:p.color, borderRadius: Math.random() > 0.5 ? '50%' : 2 }}/>
+      ))}
+    </div>
+  )
 }
 
-// ── MAIN ─────────────────────────────────────────────
-const MEDALS = ['🥇', '🥈', '🥉']
+// ── TITLES ────────────────────────────────────────────────────
+const TITLES = [
+  { condition: (score, max, total) => score === max && score >= 5,                   title:'👑 O Rei da Noite',        color:'text-amber-400' },
+  { condition: (score, max, total) => score === max,                                  title:'🏆 Melhor Jogador',        color:'text-yellow-400' },
+  { condition: (score, max, total, fails) => fails >= 4,                              title:'💀 Rei do Falhanço',       color:'text-red-400' },
+  { condition: (score, max, total, fails) => fails === 0 && score > 0,               title:'⚡ Imparável',             color:'text-cyan-400' },
+  { condition: (score, max, total, fails, idx, players) => idx === players.length-1, title:'🐢 Último a Chegar',       color:'text-slate-400' },
+  { condition: () => true,                                                             title:'🎉 Participante',          color:'text-slate-300' },
+]
+
+function getTitle(score, maxScore, fails, idx, players) {
+  for (const t of TITLES) {
+    if (t.condition(score, maxScore, players.length, fails, idx, players)) return t
+  }
+  return TITLES[TITLES.length - 1]
+}
 
 export default function VictoryScreen() {
-  const navigate = useNavigate()
-  const { state } = useLocation()
-  const { t, lang } = useLang()
-  const [showTitles, setShowTitles] = useState(false)
+  const navigate   = useNavigate()
+  const location   = useLocation()
+  const soundPlayed = useRef(false)
 
-  const { players = [], scores = [], mode = 'friends' } = state || {}
-  const ranked = [...players].map((p, i) => ({ ...p, score: scores[i] || 0, idx: i })).sort((a, b) => b.score - a.score)
-  const winner = ranked[0]
-  const titles = generateTitles(players, scores, lang)
+  // Get data from navigation state or fallback to saved game
+  const state    = location.state || {}
+  const players  = state.players  || []
+  const scores   = state.scores   || players.map(() => 0)
+  const fails    = state.fails    || players.map(() => 0)
+  const mode     = state.mode     || 'friends'
 
-  const bgAccent = {
-    couple: 'from-rose-900/30',
-    friends: 'from-cyan-900/20',
-    family: 'from-sky-900/20',
-    drink: 'from-amber-900/20',
-  }
+  const [show, setShow] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowTitles(true), 1800)
-    return () => clearTimeout(timer)
+    if (soundPlayed.current) return
+    soundPlayed.current = true
+    setTimeout(() => { playVictorySound(); setShow(true) }, 300)
+    setTimeout(() => playConfettiSound(), 600)
+    setTimeout(() => playConfettiSound(), 1200)
   }, [])
 
+  if (!players.length) return (
+    <div className="min-h-screen bg-[#080b14] flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <p className="text-white font-bold text-xl">Nenhum jogo encontrado</p>
+        <button onClick={() => navigate('/')} className="bg-violet-600 text-white px-6 py-3 rounded-2xl font-bold">Início</button>
+      </div>
+    </div>
+  )
+
+  const maxScore  = Math.max(...scores, 1)
+  const winnerIdx = scores.indexOf(maxScore)
+
+  // Sort by score descending for the leaderboard
+  const ranked = players
+    .map((p, i) => ({ ...p, score: scores[i], fails: fails[i] || 0, originalIdx: i }))
+    .sort((a, b) => b.score - a.score)
+
   return (
-    <div className={`min-h-screen bg-gradient-to-br from-slate-900 ${bgAccent[mode] || ''} to-slate-900 flex flex-col items-center px-4 py-8`}>
-      <Confetti />
+    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 relative overflow-hidden">
+      <Confetti/>
 
-      <div className="relative z-50 w-full max-w-lg space-y-5">
-        {/* Winner hero */}
-        <motion.div initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', damping: 10, delay: 0.2 }}
-          className="text-center">
-          <motion.div animate={{ rotate: [-8, 8, -4, 4, 0] }} transition={{ delay: 0.8, duration: 0.6 }}
-            className="text-7xl mb-3 select-none">🏆</motion.div>
-          <h1 className="text-white font-black text-3xl">{winner?.name}</h1>
-          <p className="text-amber-400 font-bold text-lg">{t.wonWith} {winner?.score} {t.pts}!</p>
-          <div className="flex justify-center mt-2 gap-0.5">
-            {[...Array(Math.min(winner?.score || 0, 5))].map((_, i) => (
-              <motion.div key={i} initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.5 + i * 0.08 }}>
-                <Star className="text-amber-400 w-5 h-5 fill-amber-400" />
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
+      {/* Background glow */}
+      <div className="fixed inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse at 50% 20%, rgba(245,158,11,0.12) 0%, transparent 60%)'}}/>
 
-        {/* Podium */}
-        <div className="space-y-2">
-          {ranked.map((p, rank) => (
-            <motion.div key={p.idx}
-              initial={{ opacity: 0, x: -24 }} animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 + rank * 0.08 }}
-              className={`flex items-center gap-4 rounded-2xl p-4 ${rank === 0 ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-white/[0.04] border border-white/[0.06]'}`}>
-              <span className="text-2xl w-8 text-center select-none">{MEDALS[rank] || `${rank + 1}`}</span>
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white font-black text-xl shadow`}>
-                {p.name[0]}
-              </div>
-              <p className="flex-1 text-white font-bold">{p.name}</p>
-              <div className="text-right">
-                <p className="text-white font-black text-2xl">{p.score}</p>
-                <p className="text-slate-500 text-xs">{t.pts}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Night Titles */}
+      <div className="w-full max-w-lg relative z-20 space-y-6">
+        {/* Trophy header */}
         <AnimatePresence>
-          {showTitles && titles.length > 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
-              <div className="flex items-center gap-2 mb-3">
-                <Award className="text-violet-400 w-5 h-5" />
-                <h2 className="text-white font-bold">{t.nightTitle}</h2>
-              </div>
-              {titles.map((ti, i) => (
-                <motion.div key={i}
-                  initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: i * 0.12 }}
-                  className="bg-gradient-to-r from-violet-900/40 to-purple-900/40 border border-violet-500/30 rounded-2xl px-4 py-3 flex items-center gap-3">
-                  <span className="text-2xl select-none">{ti.icon}</span>
-                  <div>
-                    <p className="text-violet-300 text-xs font-semibold uppercase tracking-wider">{ti.title}</p>
-                    <p className="text-white font-bold">{ti.player}</p>
-                  </div>
-                </motion.div>
-              ))}
+          {show && (
+            <motion.div initial={{scale:0,opacity:0}} animate={{scale:1,opacity:1}} transition={{type:'spring',damping:12,delay:0.1}}
+              className="text-center space-y-3">
+              <motion.div animate={{rotate:[0,-5,5,-5,5,0],scale:[1,1.1,1.05,1.1,1]}} transition={{duration:0.8,delay:0.3}}>
+                <span className="text-8xl">🏆</span>
+              </motion.div>
+              <h1 className="text-white font-black text-3xl">Jogo Terminado!</h1>
+              <p className="text-amber-400 font-bold text-lg">
+                {players[winnerIdx]?.name} venceu com {maxScore} pontos!
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Leaderboard */}
+        <div className="space-y-3">
+          {ranked.map((p, rank) => {
+            const title = getTitle(p.score, maxScore, p.fails, p.originalIdx, players)
+            return (
+              <motion.div key={p.originalIdx}
+                initial={{opacity:0, x:-20}} animate={{opacity:1, x:0}}
+                transition={{delay:0.3 + rank * 0.1, type:'spring', damping:15}}
+                className={`rounded-3xl p-4 flex items-center gap-4 border ${rank===0?'border-amber-500/40 bg-amber-500/8':'border-white/[0.07] bg-white/[0.04]'}`}
+                style={rank===0?{boxShadow:'0 0 24px rgba(245,158,11,0.15)'}:{}}>
+
+                {/* Rank */}
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-black text-lg flex-shrink-0 ${rank===0?'bg-amber-500 text-black':rank===1?'bg-slate-600 text-white':rank===2?'bg-amber-800 text-white':'bg-white/[0.06] text-slate-400'}`}>
+                  {rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':rank+1}
+                </div>
+
+                {/* Avatar */}
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white font-black text-xl shadow-lg flex-shrink-0`}>
+                  {p.name[0]}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-black text-lg ${rank===0?'text-amber-400':'text-white'}`}>{p.name}</p>
+                  <p className={`text-sm font-bold ${title.color}`}>{title.title}</p>
+                </div>
+
+                {/* Score */}
+                <div className="text-right flex-shrink-0">
+                  <p className={`font-black text-2xl ${rank===0?'text-amber-400':'text-white'}`}>{p.score}</p>
+                  <p className="text-slate-500 text-xs">{p.score===1?'ponto':'pontos'}</p>
+                </div>
+              </motion.div>
+            )
+          })}
+        </div>
+
         {/* Actions */}
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}
-          className="flex gap-3 pt-2">
-          <button onClick={() => navigate('/')}
-            className="flex-1 bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2">
-            <Home className="w-5 h-5" /> {t.backHome}
+        <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.8}}
+          className="grid grid-cols-2 gap-3">
+          <button onClick={() => navigate(`/GameSetup?mode=${mode}`)}
+            className="bg-white/[0.06] border border-white/[0.1] text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2">
+            <RotateCcw className="w-5 h-5"/> Jogar de Novo
           </button>
-          <button onClick={() => navigate(-2)}
-            className="flex-1 bg-white/[0.06] border border-white/10 text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2">
-            <RotateCcw className="w-5 h-5" /> {t.playAgain}
+          <button onClick={() => navigate('/')}
+            className="bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2">
+            <Home className="w-5 h-5"/> Início
           </button>
         </motion.div>
+
+        {/* Fun stats */}
+        {fails.some(f => f > 0) && (
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
+            className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+            <p className="text-slate-500 text-xs text-center mb-2 uppercase tracking-wider">Estatísticas da Noite</p>
+            <div className="grid grid-cols-2 gap-3 text-center">
+              <div>
+                <p className="text-white font-black text-2xl">{scores.reduce((a,b)=>a+b,0)}</p>
+                <p className="text-slate-500 text-xs">Desafios completos</p>
+              </div>
+              <div>
+                <p className="text-white font-black text-2xl">{fails.reduce((a,b)=>a+b,0)}</p>
+                <p className="text-slate-500 text-xs">Falhanços épicos</p>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   )

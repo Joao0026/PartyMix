@@ -8,17 +8,24 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'PartyMix',
-        short_name: 'PartyMix',
-        description: 'O jogo de festa definitivo',
-        theme_color: '#6d28d9',
-        background_color: '#0f172a',
-        display: 'standalone',
-        orientation: 'portrait',
-        start_url: '/',
+        name: "PartyMix",
+        short_name: "PartyMix",
+        description: "Jogo de festa",
+        theme_color: "#a78bfa",
+        background_color: "#0f172a",
+        display: "standalone",
+        start_url: "/",
         icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+          {
+            src: "/icon-192.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
         ]
       }
     })
@@ -26,6 +33,11 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    proxy: { '/api': { target: 'http://localhost:3001', changeOrigin: true } }
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true
+      }
+    }
   }
 })

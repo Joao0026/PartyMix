@@ -27,10 +27,10 @@ function EroticDie({options,label,color,rolling,value}){
     <div className="flex flex-col gap-2 flex-1">
       <p className="text-slate-400 text-xs uppercase tracking-wider text-center font-semibold">{label}</p>
       <motion.div
-        animate={rolling?{rotateX:[0,360,720,1080],rotateY:[0,270,540],scale:[1,1.08,0.96,1.08,1]}:value?{scale:[1.15,1]}:{}}
+        animate={rolling?{rotateX:[0,360,720,1080],rotateY:[0,270,540,810,1080],scale:[1,1.08,0.96,1.08,1]}:value?{scale:[1.15,1]}:{}}
         transition={rolling?{duration:1.4,ease:'easeInOut'}:{duration:0.35,type:'spring',damping:10}}
         className="w-full rounded-3xl py-5 px-4 flex items-center justify-center shadow-2xl min-h-24"
-        style={{background:`linear-gradient(135deg,${color}dd,${color})`,boxShadow:`0 6px 28px ${color}45`,perspective:800}}>
+        style={{background:`linear-gradient(135deg,${color}dd,${color})`,boxShadow:`0 6px 28px ${color}45`,perspective:800,backfaceVisibility:'hidden'}}>
         <p className="text-white font-black text-base text-center leading-snug">{display}</p>
       </motion.div>
     </div>
@@ -51,10 +51,10 @@ function EroticDieReal({options,label,color,rolling,value}){
     <div className="flex flex-col gap-2 flex-1">
       <p className="text-slate-400 text-xs uppercase tracking-wider text-center font-semibold">{label}</p>
       <motion.div
-        animate={rolling?{rotateX:[0,360,720,1080],rotateY:[0,270,540],scale:[1,1.08,0.96,1.08,1]}:value?{scale:[1.15,1]}:{}}
+        animate={rolling?{rotateX:[0,360,720,1080],rotateY:[0,270,540,810,1080],scale:[1,1.08,0.96,1.08,1]}:value?{scale:[1.15,1]}:{}}
         transition={rolling?{duration:1.4,ease:'easeInOut'}:{duration:0.35,type:'spring',damping:10}}
         className="w-full rounded-3xl py-5 px-4 flex items-center justify-center shadow-2xl min-h-24"
-        style={{background:`linear-gradient(135deg,${color}dd,${color})`,boxShadow:`0 6px 28px ${color}45`,perspective:800}}>
+        style={{background:`linear-gradient(135deg,${color}dd,${color})`,boxShadow:`0 6px 28px ${color}45`,perspective:800,backfaceVisibility:'hidden'}}>
         <p className="text-white font-black text-base text-center leading-snug">{display}</p>
       </motion.div>
     </div>
@@ -266,6 +266,7 @@ export default function CoupleGame(){
   const [showScratch,setShowScratch]=useState(false)
   const [turn,setTurn]=useState(0)
   const [currentAct,setCurrentAct]=useState(null)
+  const [maxDice,setMaxDice]=useState(6)
 
   const players=game?.players||[{name:'Jogador 1',color:'from-pink-400 to-rose-500'},{name:'Jogador 2',color:'from-cyan-400 to-blue-500'}]
   const player=players[turn%2]
@@ -280,8 +281,9 @@ export default function CoupleGame(){
   }
 
   const start=()=>{
-    if(selected.includes('map')&&playableActs.length===0){setPhase('map');return}
-    // Pick first activity randomly
+    // If map is selected (with or without other activities), start with map immediately
+    if(selected.includes('map')){setPhase('map');return}
+    // Otherwise pick first activity randomly
     const pool=playableActs
     setCurrentAct(pickNextActivity(pool))
     setPhase('playing')
@@ -339,6 +341,25 @@ export default function CoupleGame(){
             <p className="text-cyan-400 text-xs">🎲 Com {playableActs.length} atividades selecionadas, vão sair aleatoriamente!</p>
           </div>
         )}
+        {selected.includes('map')&&(
+          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+            <p className="text-white font-bold text-sm mb-3">🎲 Máximo no Dado</p>
+            <div className="flex gap-2 justify-center mb-3">
+              {[3,4,5,6].map(num=>(
+                <motion.button key={num} whileHover={{scale:1.08}} whileTap={{scale:0.92}}
+                  onClick={()=>setMaxDice(num)}
+                  className={`w-12 h-12 rounded-xl font-black text-lg transition-all ${
+                    maxDice===num
+                      ?'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40 scale-105'
+                      :'bg-white/[0.08] border border-white/[0.15] text-slate-400 hover:border-white/[0.25]'
+                  }`}>
+                  {num}
+                </motion.button>
+              ))}
+            </div>
+            <p className="text-slate-400 text-xs text-center">Máximo: {maxDice} casas</p>
+          </div>
+        )}
         <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={start}
           disabled={selected.filter(s=>s!=='scratch').length===0}
           className="w-full text-white font-black rounded-2xl py-5 text-lg mt-2 disabled:opacity-40"
@@ -358,7 +379,7 @@ export default function CoupleGame(){
         <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
         <div className="w-5"/>
       </div>
-      <CoupleMap players={players} onExit={()=>setPhase('menu')}/>
+      <CoupleMap players={players} selected={selected} maxDice={maxDice} onExit={()=>setPhase('menu')}/>
     </div>
   )
 

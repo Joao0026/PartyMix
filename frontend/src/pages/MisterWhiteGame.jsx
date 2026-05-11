@@ -58,7 +58,8 @@ export default function MisterWhiteGame() {
       ...roleMap[i]
     }))
     setRoles(assigned)
-    setRevealCursor(0); setShowRole(false)
+    setRevealCursor(Math.floor(Math.random() * valid.length))
+    setShowRole(false)
     setEliminated([]); setVotes({}); setVoteCandidate(null); setConfirmed(false)
     setMwGuess(''); setMwEliminatedIdx(null); setGameResult(null); setRoundNum(1)
     setStep('reveal')
@@ -243,7 +244,7 @@ export default function MisterWhiteGame() {
                   {eliminated.map(i=>(
                     <div key={i} className="bg-white/[0.02] rounded-xl px-4 py-2 flex items-center gap-3 opacity-35">
                       <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-xs font-black`}>{roles[i].name[0]}</div>
-                      <span className="text-slate-500 text-sm">{roles[i].name}</span>
+                      <span className="text-slate-500 text-sm">{roles[i].name} ({roles[i].role === 'civil' ? 'Civil' : roles[i].role === 'undercover' ? 'Undercover' : 'Mister White'})</span>
                     </div>
                   ))}
                 </div>

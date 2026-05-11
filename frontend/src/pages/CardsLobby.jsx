@@ -1,125 +1,127 @@
-import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { api } from '../utils/api'
-import { Copy, Users } from 'lucide-react'
+import { ChevronLeft, Wifi } from 'lucide-react'
+import { io } from 'socket.io-client'
+import { setGlobalSocket } from '../utils/socketStore'
+
+const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
 
 export default function CardsLobby() {
   const navigate = useNavigate()
-  const [params] = useSearchParams()
-  const [lobby, setLobby] = useState(null)
-  const [myName, setMyName] = useState('')
-  const [joinCode, setJoinCode] = useState(params.get('code') || '')
-  const [mode, setMode] = useState('choose')
-  const [isHost, setIsHost] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [name,    setName]    = useState('')
+  const [code,    setCode]    = useState('')
+  const [error,   setError]   = useState(null)
+  const [joining, setJoining] = useState(false)
+  const [room,    setRoom]    = useState(null)
+  const [socket,  setSocket]  = useState(null)
+  const roomRef = useRef(null)
+  const handRef = useRef(null)
+  const hasNavigatedRef = useRef(false)
 
-  useEffect(() => {
-    if (!lobby) return
-    const interval = setInterval(async () => {
-      const updated = await api.getLobby(lobby.code)
-      if (updated && !updated.error) setLobby(updated)
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [lobby])
+  const join = () => {
+    if (!name.trim() || !code.trim()) return
+    setJoining(true); setError(null)
 
-  const createLobby = async () => {
-    if (!myName.trim()) return
-    const l = await api.createLobby(myName.trim())
-    setLobby(l)
-    setIsHost(true)
-    setMode('waiting')
-  }
+    const s = io(API_URL, { transports:['websocket','polling'] })
+    setSocket(s)
+    setGlobalSocket(s)
 
-  const joinLobby = async () => {
-    if (!myName.trim() || !joinCode.trim()) return
-    const l = await api.joinLobby(joinCode.trim().toUpperCase(), myName.trim())
-    if (l.error) { alert('Lobby não encontrado!'); return }
-    setLobby(l)
-    setMode('waiting')
-  }
+    const enterGame = (state) => {
+      if (hasNavigatedRef.current) return
+      hasNavigatedRef.current = true
+      navigate('/CardsGame', { state: { online:true, socket:s, room:roomRef.current, playerName:name.trim(), gameState:state, hand:handRef.current } })
+    }
 
-  const startGame = async () => {
-    await api.startLobby(lobby.code, { players: lobby.players })
-    navigate('/CardsGame', { state: { lobby } })
-  }
+    s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
+    s.on('room_joined', ({ room:r }) => {
+      setRoom(r)
+      roomRef.current = r
+      setJoining(false)
+      if (r.status === 'playing') {
+        enterGame({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
+      }
+    })
+    s.on('room_updated', r => {
+      setRoom(r)
+      roomRef.current = r
+      if (r.status === 'playing') {
+        enterGame({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
+      }
+    })
+    s.on('your_hand', hand => { handRef.current = hand })
+    s.on('error', msg => { setError(msg); setJoining(false); s.disconnect() })
+    s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
+    s.on('connect_failed', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
 
-  const copyCode = () => {
-    navigator.clipboard.writeText(lobby.code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    // When host starts — navigate to game as participant
+    s.on('game_started', state => {
+      enterGame(state)
+    })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-amber-900/20 to-slate-900 flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white text-sm">← Sair</button>
-          <h1 className="text-white font-bold text-xl">🃏 Modo Cartas</h1>
+    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
+      <div className="w-full max-w-lg space-y-6">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <div>
+            <h1 className="text-white font-black text-xl flex items-center gap-2"><Wifi className="text-green-400 w-5 h-5"/>Entrar na Sala</h1>
+            <p className="text-slate-500 text-sm">Entra numa sala criada por outra pessoa</p>
+          </div>
         </div>
-        {mode === 'choose' && (
-          <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} className="space-y-4">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <label className="text-slate-400 text-sm block mb-2">O teu nome</label>
-              <input value={myName} onChange={e=>setMyName(e.target.value)} placeholder="Escreve o teu nome..."
-                className="w-full bg-white/5 text-white rounded-xl px-4 py-3 outline-none border border-white/10 focus:border-amber-500/50" />
+
+        {!room ? (
+          <div className="space-y-4">
+            <div>
+              <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
+              <input value={name} onChange={e=>setName(e.target.value)}
+                placeholder="Como te chamas?" maxLength={20}
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-lg placeholder-slate-500"/>
             </div>
-            <button onClick={() => { if(myName.trim()) { setMode('join') } }}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white hover:bg-white/10 transition-all font-medium">
-              Entrar com código
-            </button>
-            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={createLobby}
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-2xl py-4">
-              Criar Sala (Host)
-            </motion.button>
-          </motion.div>
-        )}
-        {mode === 'join' && (
-          <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} className="space-y-4">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <label className="text-slate-400 text-sm block mb-2">Código da sala</label>
-              <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder="ABCD" maxLength={4}
-                className="w-full bg-white/5 text-white text-center text-3xl font-black rounded-xl px-4 py-4 outline-none border border-white/10 focus:border-amber-500/50 tracking-widest" />
+            <div>
+              <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
+              <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())}
+                placeholder="XXXX" maxLength={6}
+                className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600"/>
             </div>
-            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={joinLobby}
-              className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-2xl py-4">
-              Entrar na Sala
+            {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
+            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
+              onClick={join} disabled={joining||!name.trim()||!code.trim()}
+              className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-5 text-xl disabled:opacity-40">
+              {joining ? '⏳ A entrar...' : '🔑 Entrar na Sala'}
             </motion.button>
-          </motion.div>
-        )}
-        {mode === 'waiting' && lobby && (
-          <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} className="space-y-4">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 text-center">
-              <p className="text-slate-400 text-sm mb-2">Código da sala</p>
-              <div className="text-5xl font-black text-white tracking-widest mb-3">{lobby.code}</div>
-              <button onClick={copyCode} className="flex items-center gap-2 mx-auto text-amber-400 text-sm hover:text-amber-300">
-                <Copy className="w-4 h-4" /> {copied ? 'Copiado!' : 'Copiar código'}
+            <div className="pt-4 text-center">
+              <p className="text-slate-500 text-sm mb-2">Ainda não tens sala?</p>
+              <button onClick={() => navigate('/CardsGame')}
+                className="w-full bg-white/[0.04] border border-white/[0.08] text-white rounded-2xl py-4 text-sm hover:bg-white/[0.08] transition">
+                ✨ Criar Sala de Cartas
               </button>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Users className="text-slate-400 w-4 h-4" />
-                <span className="text-slate-400 text-sm">{lobby.players?.length || 0} jogadores</span>
-              </div>
-              <div className="space-y-2">
-                {lobby.players?.map((p, i) => (
-                  <div key={i} className="flex items-center gap-2 text-white text-sm">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-yellow-600 flex items-center justify-center font-bold text-xs">{p.name[0]}</div>
-                    {p.name} {i === 0 && <span className="text-amber-400 text-xs">(Host)</span>}
-                  </div>
-                ))}
-              </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6 text-center">
+              <p className="text-slate-400 text-sm mb-2">Sala</p>
+              <p className="text-white font-black text-4xl tracking-[0.2em]">{room.code}</p>
             </div>
-            {isHost ? (
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame}
-                disabled={!lobby.players || lobby.players.length < 3}
-                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-2xl py-4 disabled:opacity-50">
-                Iniciar Jogo ({lobby.players?.length || 0}/3 mín.)
-              </motion.button>
-            ) : (
-              <div className="text-center text-slate-400 text-sm py-4 animate-pulse">A aguardar que o host inicie...</div>
-            )}
-          </motion.div>
+            <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
+              <p className="text-slate-400 text-sm font-semibold">{room.players?.length} jogador{room.players?.length!==1?'es':''}</p>
+              {(room.players||[]).map((p,i)=>(
+                <div key={i} className="flex items-center gap-3">
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${i===0?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
+                  <span className="text-white font-medium">{p.name}{p.name===name?' (Tu)':''}</span>
+                  {i===0&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
+                </div>
+              ))}
+            </div>
+            <div className="text-center py-4 space-y-2">
+              <motion.div animate={{scale:[1,1.05,1]}} transition={{repeat:Infinity,duration:1.5}}>
+                <p className="text-slate-400 text-lg">⏳ À espera que o host inicie o jogo...</p>
+              </motion.div>
+              <p className="text-slate-600 text-sm">Quando o host carregar em "Iniciar", o jogo começa automaticamente</p>
+            </div>
+          </div>
         )}
       </div>
     </div>
