@@ -35,6 +35,7 @@ export default function CardsLobby() {
 
     s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
     s.on('room_joined', ({ room:r }) => {
+      console.log('[CLIENT] room_joined', r)
       setRoom(r)
       roomRef.current = r
       setJoining(false)
@@ -43,19 +44,24 @@ export default function CardsLobby() {
       }
     })
     s.on('room_updated', r => {
+      console.log('[CLIENT] room_updated', r)
       setRoom(r)
       roomRef.current = r
       if (r.status === 'playing') {
         enterGame({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
       }
     })
-    s.on('your_hand', hand => { handRef.current = hand })
-    s.on('error', msg => { setError(msg); setJoining(false); s.disconnect() })
-    s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
-    s.on('connect_failed', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
+    s.on('your_hand', hand => {
+      console.log('[CLIENT] your_hand', hand)
+      handRef.current = hand
+    })
+    s.on('error', msg => { console.log('[CLIENT] error', msg); setError(msg); setJoining(false); s.disconnect() })
+    s.on('connect_error', err => { console.log('[CLIENT] connect_error', err); setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
+    s.on('connect_failed', err => { console.log('[CLIENT] connect_failed', err); setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
 
     // When host starts — navigate to game as participant
     s.on('game_started', state => {
+      console.log('[CLIENT] game_started', state)
       enterGame(state)
     })
   }
