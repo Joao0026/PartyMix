@@ -147,8 +147,10 @@ export default function CardsLobby() {
             </motion.button>
             <div className="pt-4 text-center">
               <p className="text-slate-500 text-sm mb-2">Ainda não tens sala?</p>
-              <button onClick={() => navigate('/CardsGame')}
-                className="w-full bg-white/[0.04] border border-white/[0.08] text-white rounded-2xl py-4 text-sm hover:bg-white/[0.08] transition">
+              <button
+                onClick={() => navigate('/CardsGame', { state: { presetPlayerName: name.trim() } })}
+                disabled={!name.trim()}
+                className="w-full bg-white/[0.04] border border-white/[0.08] text-white rounded-2xl py-4 text-sm hover:bg-white/[0.08] transition disabled:opacity-40 disabled:hover:bg-white/[0.04]">
                 ✨ Criar Sala de Cartas
               </button>
             </div>

@@ -133,12 +133,17 @@ export function NumericDie({ value, size = 72, dotColor = '#7c3aed' }) {
 }
 
 // ── BOARD DIE ─────────────────────────────────────────────────
-export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6 }) {
+export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6, whiteDice = false }) {
   const [rolling, setRolling] = useState(false)
   const [faceVal, setFaceVal] = useState(Math.min(6,maxDice))
   const [result,  setResult]  = useState(null)
   const [hl,      setHl]      = useState(false)
   const ivRef = useRef(null)
+
+  const dotColor = whiteDice ? 'rgba(255,255,255,0.98)' : color
+  const dieFaceBg = whiteDice
+    ? 'linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%)'
+    : 'white'
 
   const roll = async () => {
     if (rolling || disabled) return
@@ -162,7 +167,7 @@ export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6 }) {
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
       {/* 3D rotating die */}
       <motion.div
-        animate={rolling?{rotateX:[0,360,720],rotateY:[0,180,360,540,720],scale:[1,1.08,0.96,1.08,1]}:hl?{scale:[1.2,1]}:{}}
+        animate={rolling?{rotateX:[0,420,840],rotateY:[0,210,420,630,840],scale:[1,1.1,0.95,1.04,1.1,1]}:hl?{scale:[1.22,1]}:{}}
         transition={rolling?{duration:0.85,ease:'easeInOut'}:{duration:0.3,type:'spring'}}
         style={{
           perspective:800,
@@ -174,14 +179,19 @@ export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6 }) {
         {/* White background die with colored dots */}
         <div style={{
           width:88, height:88,
-          background:'white',
+          background:dieFaceBg,
           borderRadius:12,
           display:'grid',
           gridTemplateColumns:'1fr 1fr 1fr',
           gridTemplateRows:'1fr 1fr 1fr',
           padding:12,
           boxSizing:'border-box',
-          boxShadow:hl?`0 0 0 3px ${color}, 0 4px 16px ${color}66`:`0 4px 12px rgba(0,0,0,0.3)`,
+          boxShadow:hl
+            ? (whiteDice
+                ? '0 0 0 3px rgba(255,255,255,0.9), 0 8px 24px rgba(0,0,0,0.18)'
+                : `0 0 0 3px ${color}, 0 4px 16px ${color}66`
+              )
+            : '0 6px 14px rgba(0,0,0,0.2)',
           gap:0,
         }}>
           {Array.from({length:9}).map((_,i)=>{
@@ -189,7 +199,18 @@ export function BoardDie({ onRoll, disabled, color = '#7c3aed', maxDice=6 }) {
             const hasDot=DOT_GRIDS[val]?.some(([r,c])=>r===Math.floor(i/3)&&c===i%3)
             return(
               <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {hasDot&&<div style={{width:14,height:14,borderRadius:'50%',background:color,boxShadow:'0 1px 3px rgba(0,0,0,0.3)'}}/>
+                {hasDot&&(
+                  <div
+                    style={{
+                      width:14,
+                      height:14,
+                      borderRadius:'50%',
+                      background:dotColor,
+                      boxShadow:'0 1px 3px rgba(0,0,0,0.25)',
+                      border: whiteDice ? '1px solid rgba(17,24,39,0.08)' : 'none',
+                    }}
+                  />
+                )}
                 }
               </div>
             )

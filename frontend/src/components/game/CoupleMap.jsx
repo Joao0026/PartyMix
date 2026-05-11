@@ -272,7 +272,7 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
               <div className="flex items-center justify-center gap-2">
                 <span className="text-slate-400 text-sm">Máximo definido antes do jogo: {diceSides}</span>
               </div>
-              <BoardDie onRoll={handleRoll} disabled={false} color="#be185d" maxDice={diceSides}/>
+              <BoardDie onRoll={handleRoll} disabled={false} color="#be185d" maxDice={diceSides} whiteDice={true}/>
             </div>
           )
             :!activeTile&&<button onClick={nextTurn} className="w-full text-white font-bold rounded-2xl py-4" style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>Próximo Turno 💕</button>}

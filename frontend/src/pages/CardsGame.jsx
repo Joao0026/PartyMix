@@ -33,9 +33,15 @@ const PACKS = {
 const ALL_PACKS = Object.values(PACKS)
 
 // ── SETUP SCREEN ─────────────────────────────────────────────
-function SetupScreen({ onCreateOnline }) {
+function SetupScreen({ onCreateOnline, initialName }) {
   const navigate = useNavigate()
   const [selPacks, setSelPacks] = useState(['base','dark'])
+  const [playerName, setPlayerName] = useState(initialName || '')
+
+  // Preencher quando vier de CardsLobby
+  useEffect(() => {
+    if (typeof initialName === 'string') setPlayerName(initialName)
+  }, [initialName])
 
   const togglePack = id => setSelPacks(s=>s.includes(id)?(s.length>1?s.filter(x=>x!==id):s):[...s,id])
 
@@ -50,6 +56,17 @@ function SetupScreen({ onCreateOnline }) {
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
           <p className="text-slate-400 text-sm mb-2">Modo apenas online</p>
           <p className="text-white font-semibold">Cada jogador abre <span className="text-amber-300">/CardsLobby</span> no seu telemóvel e usa o código da sala.</p>
+        </div>
+
+        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
+          <label className="block text-slate-400 text-xs uppercase tracking-wider mb-2">O teu nome</label>
+          <input
+            value={playerName}
+            onChange={(e) => setPlayerName(e.target.value)}
+            placeholder="Como te chamas?"
+            maxLength={20}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-3 outline-none focus:border-violet-500 text-lg placeholder-slate-500"
+          />
         </div>
 
         {/* Packs */}
@@ -77,9 +94,9 @@ function SetupScreen({ onCreateOnline }) {
         <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
           onClick={() => {
             const packs = {black:shuffle(selPacks.flatMap(id=>PACKS[id]?.black||[])),white:shuffle(selPacks.flatMap(id=>PACKS[id]?.white||[]))}
-            onCreateOnline(packs)
+            onCreateOnline(packs, playerName.trim())
           }}
-          disabled={selPacks.length===0}
+          disabled={selPacks.length===0 || !playerName.trim()}
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40">
           📡 Criar Sala Online
         </motion.button>
@@ -473,6 +490,12 @@ export default function CardsGame() {
   const [gameState,  setGameState]  = useState(null)
   const [isHost,     setIsHost]     = useState(false)
 
+  // Pré-preencher o nome quando vier da CardsLobby
+  useEffect(() => {
+    const preset = location.state?.presetPlayerName
+    if (typeof preset === 'string') setPlayerName(preset)
+  }, [location.state])
+
   useEffect(() => {
     if (!location.state?.online) return
 
@@ -514,8 +537,7 @@ export default function CardsGame() {
     setLocalPlayers(players); setPacks(packs); setGameMode('local'); setPhase('game')
   }
 
-  const handleCreateOnline = (packs) => {
-    const name = prompt('O teu nome?')
+  const handleCreateOnline = (packs, name) => {
     if (!name?.trim()) return
     const s = connectSocket()
     setGlobalSocket(s)
@@ -542,7 +564,7 @@ export default function CardsGame() {
     socket.emit('start_game',{code:room.code,cardData:packs})
   }
 
-  if(phase==='setup') return <SetupScreen onCreateOnline={handleCreateOnline}/>
+  if(phase==='setup') return <SetupScreen onCreateOnline={handleCreateOnline} initialName={playerName}/>
   if(phase==='connecting') return (
     <div className="min-h-screen bg-[#080b14] flex items-center justify-center px-4 py-8">
       <div className="text-center space-y-4">

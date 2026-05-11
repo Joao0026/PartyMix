@@ -288,7 +288,7 @@ export default function MapGame() {
             {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="text-amber-400 w-5 h-5 ml-auto flex-shrink-0"/>}
           </div>
           {!rolled
-            ?<BoardDie onRoll={handleRoll} disabled={moving} color="#7c3aed"/>
+            ?<BoardDie onRoll={handleRoll} disabled={moving} color="#7c3aed" whiteDice={true}/>
             :!moving&&(
               <motion.button initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextPlayer}
                 className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4">
