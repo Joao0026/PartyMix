@@ -42,7 +42,6 @@ function initWebSocket(httpServer) {
 
     // ── JOIN ROOM ─────────────────────────────────────────────
     socket.on('join_room', ({ code, playerName }) => {
-      console.log('[WS] join_room', { code: code.toUpperCase(), playerName, socketId: socket.id })
       const room = rooms[code.toUpperCase()]
       if (!room) { socket.emit('error', 'Sala não encontrada'); return }
       if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou'); return }
@@ -57,7 +56,6 @@ function initWebSocket(httpServer) {
     // ── START GAME (host only) ────────────────────────────────
     socket.on('start_game', ({ code, cardData }) => {
       const room = rooms[code]
-      console.log('[WS] start_game', { code, socketId: socket.id, playerCount: room?.players.length, roomStatus: room?.status })
       if (!room) return
       if (room.players[0].id !== socket.id) { socket.emit('error','Só o host pode iniciar'); return }
       if (room.players.length < 2) { socket.emit('error','Precisas de pelo menos 2 jogadores'); return }
@@ -86,9 +84,7 @@ function initWebSocket(httpServer) {
       io.to(code).emit('room_updated', sanitize(room))
       // Send each player their hand privately
       room.players.forEach(p => {
-        io.to(p.id).emit('your_hand', room.hands[p.id] || [])
-        console.log('[WS] sent your_hand', { code, playerId: p.id, handLength: (room.hands[p.id]||[]).length })
-      })
+        io.to(p.id).emit('your_hand', room.hands[p.id] || []
     })
 
     // ── SUBMIT CARD ───────────────────────────────────────────

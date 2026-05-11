@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Crown, RotateCcw, Copy, Check, Users, Wifi } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
-import { getGlobalSocket, setGlobalSocket } from '../utils/socketStore'
+import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
 
 // ── CARD PACKS (original content) ────────────────────────────
@@ -449,11 +449,16 @@ export default function CardsGame() {
 
   useEffect(() => {
     if (!location.state?.online) return
-    const { room: incomingRoom, playerName: incomingPlayerName, gameState, hand } = location.state
-    if (!incomingRoom) return
+
+    const handoff = peekCardsLobbyHandoff()
+    const legacy = location.state?.room ? location.state : null
+    const src = handoff || legacy
+    if (!src?.room) return
 
     const storedSocket = getGlobalSocket()
     if (!storedSocket) return
+
+    const { room: incomingRoom, playerName: incomingPlayerName, gameState, hand } = src
 
     setSocket(storedSocket)
     setGlobalSocket(storedSocket)
@@ -466,6 +471,10 @@ export default function CardsGame() {
     setIsHost(incomingRoom.host === incomingPlayerName)
     setGameMode('online')
     setPhase(gameState ? 'game' : 'lobby')
+
+    if (handoff) {
+      setTimeout(() => clearCardsLobbyHandoff(), 0)
+    }
   }, [location.state])
 
   // Connect socket for online mode

@@ -1,11 +1,46 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ChevronLeft, Wifi } from 'lucide-react'
 import { io } from 'socket.io-client'
-import { setGlobalSocket } from '../utils/socketStore'
+import { setGlobalSocket, setCardsLobbyHandoff } from '../utils/socketStore'
 
 const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+
+function pickRoomForHandoff(r) {
+  if (!r || typeof r !== 'object') return null
+  const players = Array.isArray(r.players)
+    ? r.players.map((p) => ({ name: String(p?.name ?? ''), score: Number(p?.score) || 0 }))
+    : []
+  return {
+    code: String(r.code ?? ''),
+    host: String(r.host ?? ''),
+    status: r.status,
+    czarIdx: r.czarIdx,
+    czarId: r.czarId,
+    round: r.round,
+    blackCard: r.blackCard,
+    revealed: r.revealed,
+    submissionCount: r.submissionCount,
+    players,
+  }
+}
+
+function pickGameStateForHandoff(s) {
+  if (!s || typeof s !== 'object') return null
+  const players = Array.isArray(s.players)
+    ? s.players.map((p) => ({ name: String(p?.name ?? ''), score: Number(p?.score) || 0 }))
+    : []
+  return {
+    status: s.status,
+    round: s.round,
+    czarIdx: s.czarIdx,
+    czarName: s.czarName,
+    czarId: s.czarId,
+    blackCard: s.blackCard,
+    players,
+  }
+}
 
 export default function CardsLobby() {
   const navigate = useNavigate()
@@ -27,15 +62,19 @@ export default function CardsLobby() {
     setSocket(s)
     setGlobalSocket(s)
 
-    const enterGame = (state) => {
+    const enterGame = (rawGameState) => {
       if (hasNavigatedRef.current) return
       hasNavigatedRef.current = true
-      navigate('/CardsGame', { state: { online:true, room:roomRef.current, playerName:name.trim(), gameState:state, hand:handRef.current } })
+      const room = pickRoomForHandoff(roomRef.current)
+      const gameState = pickGameStateForHandoff(rawGameState)
+      const hand = Array.isArray(handRef.current) ? handRef.current.map(String) : []
+      setCardsLobbyHandoff({ room, playerName: name.trim(), gameState, hand })
+      // History state must be structured-cloneable; keep only a flag — real payload is in setCardsLobbyHandoff.
+      navigate('/CardsGame', { replace: true, state: { online: true } })
     }
 
     s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
     s.on('room_joined', ({ room:r }) => {
-      console.log('[CLIENT] room_joined', r)
       setRoom(r)
       roomRef.current = r
       setJoining(false)
@@ -44,7 +83,6 @@ export default function CardsLobby() {
       }
     })
     s.on('room_updated', r => {
-      console.log('[CLIENT] room_updated', r)
       setRoom(r)
       roomRef.current = r
       if (r.status === 'playing') {
@@ -52,16 +90,14 @@ export default function CardsLobby() {
       }
     })
     s.on('your_hand', hand => {
-      console.log('[CLIENT] your_hand', hand)
       handRef.current = hand
     })
-    s.on('error', msg => { console.log('[CLIENT] error', msg); setError(msg); setJoining(false); s.disconnect() })
-    s.on('connect_error', err => { console.log('[CLIENT] connect_error', err); setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
-    s.on('connect_failed', err => { console.log('[CLIENT] connect_failed', err); setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
+    s.on('error', msg => { setError(msg); setJoining(false); s.disconnect() })
+    s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
+    s.on('connect_failed', () => { setError('Não foi possível conectar ao servidor'); setJoining(false); s.disconnect() })
 
     // When host starts — navigate to game as participant
     s.on('game_started', state => {
-      console.log('[CLIENT] game_started', state)
       enterGame(state)
     })
   }
