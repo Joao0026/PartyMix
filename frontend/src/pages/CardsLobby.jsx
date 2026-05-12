@@ -4,8 +4,9 @@ import { motion } from 'framer-motion'
 import { ChevronLeft, Wifi } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { setGlobalSocket, setCardsLobbyHandoff } from '../utils/socketStore'
+import { getSocketUrl } from '../utils/api'
 
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+const API_URL = getSocketUrl()
 
 function pickRoomForHandoff(r) {
   if (!r || typeof r !== 'object') return null

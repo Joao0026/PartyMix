@@ -1,4 +1,5 @@
 const router = require('express').Router()
+const requireAdmin = require('../middleware/requireAdmin')
 const CommunitySubmission = require('../models/CommunitySubmission')
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
@@ -59,7 +60,7 @@ router.post('/:id/vote', async (req, res) => {
 })
 
 // POST /api/community/:id/approve — admin manually approves + creates real card/challenge
-router.post('/:id/approve', async (req, res) => {
+router.post('/:id/approve', requireAdmin, async (req, res) => {
   try {
     const sub = await CommunitySubmission.findById(req.params.id)
     if (!sub) return res.status(404).json({ error: 'Not found' })
@@ -105,7 +106,7 @@ router.post('/:id/approve', async (req, res) => {
 })
 
 // POST /api/community/:id/reject
-router.post('/:id/reject', async (req, res) => {
+router.post('/:id/reject', requireAdmin, async (req, res) => {
   try {
     const sub = await CommunitySubmission.findByIdAndUpdate(
       req.params.id,
@@ -118,7 +119,7 @@ router.post('/:id/reject', async (req, res) => {
 })
 
 // DELETE /api/community/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try {
     await CommunitySubmission.findByIdAndDelete(req.params.id)
     res.json({ deleted: true })
@@ -126,7 +127,7 @@ router.delete('/:id', async (req, res) => {
 })
 
 // GET /api/community/stats — for admin dashboard
-router.get('/stats', async (req, res) => {
+router.get('/stats', requireAdmin, async (req, res) => {
   try {
     const [pending, approved, rejected, total] = await Promise.all([
       CommunitySubmission.countDocuments({ status: 'pending' }),

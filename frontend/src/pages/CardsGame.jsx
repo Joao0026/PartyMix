@@ -5,7 +5,9 @@ import { ChevronLeft, Crown, RotateCcw, Copy, Check, Users, Wifi } from 'lucide-
 import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
-const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:3001`
+import { getSocketUrl } from '../utils/api'
+
+const API_URL = getSocketUrl()
 
 // ── CARD PACKS (original content) ────────────────────────────
 const PACKS = {

@@ -10,6 +10,8 @@ const server = http.createServer(app) // Use http server for Socket.io
 app.use(cors({ origin: '*' }))
 app.use(express.json())
 
+app.use('/api/admin', require('./routes/admin'))
+
 // Existing routes
 app.use('/api/challenges', require('./routes/challenges'))
 app.use('/api/cards',      require('./routes/cards'))

@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const requireAdmin = require('../middleware/requireAdmin');
 const Challenge = require('../models/Challenge');
 
 router.get('/', async (req, res) => {
@@ -24,12 +25,12 @@ router.get('/random', async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try { res.status(201).json(await new Challenge(req.body).save()); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try { await Challenge.findByIdAndDelete(req.params.id); res.json({ deleted: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });

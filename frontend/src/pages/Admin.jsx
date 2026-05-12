@@ -2,20 +2,28 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff } from 'lucide-react'
-import { api } from '../utils/api'
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'Joaopedro12321!'
-const AUTH_KEY = 'partymix_admin_auth'
+import { api, clearAdminToken, getAdminToken } from '../utils/api'
 
 function PasswordGate({ onUnlock }) {
   const [pw, setPw] = useState('')
   const [show, setShow] = useState(false)
   const [error, setError] = useState(false)
   const [shake, setShake] = useState(false)
+  const [msg, setMsg] = useState('')
 
-  const attempt = () => {
-    if (pw === ADMIN_PASSWORD) { sessionStorage.setItem(AUTH_KEY,'1'); onUnlock() }
-    else { setError(true); setShake(true); setTimeout(()=>setShake(false),600); setTimeout(()=>setError(false),2000); setPw('') }
+  const attempt = async () => {
+    setMsg('')
+    try {
+      await api.adminLogin(pw)
+      onUnlock()
+    } catch (e) {
+      setError(true)
+      setShake(true)
+      setMsg(e?.message || 'Erro ao entrar')
+      setTimeout(() => setShake(false), 600)
+      setTimeout(() => setError(false), 2000)
+      setPw('')
+    }
   }
 
   return (
@@ -34,7 +42,7 @@ function PasswordGate({ onUnlock }) {
             {show?<EyeOff className="w-4 h-4"/>:<Eye className="w-4 h-4"/>}
           </button>
         </div>
-        {error&&<p className="text-red-400 text-sm">Password incorreta</p>}
+        {error && <p className="text-red-400 text-sm">{msg || 'Password incorreta'}</p>}
         <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={attempt}
           className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-3">
           Entrar
@@ -258,9 +266,9 @@ const TABS=[{id:'stats',label:'📊 Stats'},{id:'community',label:'🌍 Comunida
 
 export default function Admin(){
   const navigate=useNavigate()
-  const [unlocked,setUnlocked]=useState(()=>sessionStorage.getItem(AUTH_KEY)==='1')
+  const [unlocked,setUnlocked]=useState(()=>!!getAdminToken())
   const [tab,setTab]=useState('stats')
-  const logout=()=>{sessionStorage.removeItem(AUTH_KEY);setUnlocked(false)}
+  const logout=()=>{clearAdminToken();setUnlocked(false)}
   if(!unlocked)return<PasswordGate onUnlock={()=>setUnlocked(true)}/>
   const ActiveTab={stats:StatsTab,community:CommunityTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
   return(

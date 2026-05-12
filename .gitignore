@@ -80,3 +80,5 @@ jspm_packages/
 
 # DynamoDB Local files
 .dynamodb/
+
+./partymix_for_claude.zip

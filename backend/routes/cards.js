@@ -1,4 +1,5 @@
 const router = require('express').Router();
+const requireAdmin = require('../middleware/requireAdmin');
 const Card = require('../models/Card');
 router.get('/', async (req, res) => {
   try {
@@ -8,11 +9,11 @@ router.get('/', async (req, res) => {
     res.json(await Card.find(f));
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
   try { res.status(201).json(await new Card(req.body).save()); }
   catch (e) { res.status(400).json({ error: e.message }); }
 });
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
   try { await Card.findByIdAndDelete(req.params.id); res.json({ deleted: true }); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
