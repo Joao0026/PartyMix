@@ -35,7 +35,7 @@ export default function Home() {
   const { t } = useLang()
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 overflow-hidden relative">
+    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 overflow-x-hidden overflow-y-auto relative">
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] rounded-full opacity-20"

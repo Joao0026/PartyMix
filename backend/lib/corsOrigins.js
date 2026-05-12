@@ -7,7 +7,7 @@
 function parseList() {
   return (process.env.CORS_ORIGINS || '')
     .split(',')
-    .map((s) => s.trim())
+    .map((s) => s.trim().replace(/\/+$/, ''))
     .filter(Boolean)
 }
 
@@ -27,7 +27,11 @@ function expressCorsOptions() {
   return {
     origin(origin, cb) {
       if (!origin) return cb(null, true)
-      if (list.length > 0) return cb(null, list.includes(origin))
+      if (list.length > 0) {
+        const o = origin.replace(/\/+$/, '')
+        return cb(null, list.includes(o))
+      }
+
       if (isProd) {
         console.warn('[CORS] CORS_ORIGINS empty in production — refusing unknown origins')
         return cb(null, false)

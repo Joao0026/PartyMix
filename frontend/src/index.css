@@ -2,7 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 * { font-family: 'Plus Jakarta Sans', sans-serif; }
-body { background: #0f172a; overflow-x: hidden; }
+
+/* Mobile Safari / iOS: 100vh includes chrome behind bars; dvh + fill-available match the real screen */
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+  background: #0f172a;
+  overflow-x: hidden;
+}
+#root {
+  min-height: 100%;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  min-height: 100dvh;
+}
+
+@layer utilities {
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+  }
+  .h-screen {
+    height: 100vh;
+    height: -webkit-fill-available;
+    height: 100dvh;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 999px; }
