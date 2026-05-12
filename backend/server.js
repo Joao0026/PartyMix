@@ -4,10 +4,18 @@ const cors     = require('cors')
 const http     = require('http')
 require('dotenv').config()
 
+const { expressCorsOptions, socketIoCorsOrigin } = require('./lib/corsOrigins')
+const { aiLimiter, communityWriteLimiter } = require('./middleware/rateLimits')
+
 const app    = express()
 const server = http.createServer(app) // Use http server for Socket.io
 
-app.use(cors({ origin: '*' }))
+// Render / proxies: correct client IP for rate-limit and logs
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1)
+}
+
+app.use(cors(expressCorsOptions()))
 app.use(express.json())
 
 app.use('/api/admin', require('./routes/admin'))
@@ -19,8 +27,8 @@ app.use('/api/dice',       require('./routes/dice'))
 app.use('/api/lobby',      require('./routes/lobby'))
 app.use('/api/cardroom',   require('./routes/cardroom'))
 app.use('/api/positions',  require('./routes/positions'))
-app.use('/api/ai',         require('./routes/ai'))
-app.use('/api/community',  require('./routes/community'))
+app.use('/api/ai',         aiLimiter, require('./routes/ai'))
+app.use('/api/community',  communityWriteLimiter, require('./routes/community'))
 
 app.get('/api/health', (req, res) => res.json({
   status: 'ok',
@@ -29,9 +37,9 @@ app.get('/api/health', (req, res) => res.json({
   ws:   true,
 }))
 
-// Init WebSocket
+// Init WebSocket (same allowlist as HTTP CORS when CORS_ORIGINS is set)
 const { initWebSocket } = require('./websocket')
-initWebSocket(server)
+initWebSocket(server, { corsOrigin: socketIoCorsOrigin() })
 
 const PORT      = process.env.PORT || 3001
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/partymix'

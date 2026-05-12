@@ -37,20 +37,80 @@ const authHeaders = () => {
 const get = (url, opts = {}) =>
   fetch(`${BASE}${url}`, {
     headers: { ...(opts.auth ? authHeaders() : {}) },
-  }).then((r) => r.json())
+  })
+    .catch((e) => {
+      const m = e?.message || 'Erro de rede'
+      if (m === 'Failed to fetch' || m.includes('NetworkError')) {
+        throw new Error(
+          'Sem ligação ao servidor. Confirma VITE_API_BASE_URL e que o backend está online.'
+        )
+      }
+      throw e
+    })
+    .then(async (r) => {
+      const text = await r.text()
+      try {
+        return text ? JSON.parse(text) : {}
+      } catch {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        throw new Error('Resposta inválida do servidor')
+      }
+    })
 
-const post = (url, body) =>
-  fetch(`${BASE}${url}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify(body),
-  }).then((r) => r.json())
+const post = async (url, body) => {
+  let r
+  try {
+    r = await fetch(`${BASE}${url}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    })
+  } catch (e) {
+    const m = e?.message || 'Erro de rede'
+    if (m === 'Failed to fetch' || m.includes('NetworkError')) {
+      throw new Error(
+        'Sem ligação ao servidor (rede/CORS/URL). Confirma VITE_API_BASE_URL no Netlify e que o backend Render está acordado.'
+      )
+    }
+    throw new Error(m)
+  }
+  const text = await r.text()
+  let data = {}
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error(!r.ok ? `Erro ${r.status} do servidor` : 'Resposta inválida (não JSON)')
+  }
+  if (!r.ok) throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  return data
+}
 
-const del = (url) =>
-  fetch(`${BASE}${url}`, {
-    method: 'DELETE',
-    headers: { ...authHeaders() },
-  }).then((r) => r.json())
+const del = async (url) => {
+  let r
+  try {
+    r = await fetch(`${BASE}${url}`, {
+      method: 'DELETE',
+      headers: { ...authHeaders() },
+    })
+  } catch (e) {
+    const m = e?.message || 'Erro de rede'
+    if (m === 'Failed to fetch' || m.includes('NetworkError')) {
+      throw new Error(
+        'Sem ligação ao servidor (rede/CORS/URL). Confirma VITE_API_BASE_URL no Netlify e que o backend Render está acordado.'
+      )
+    }
+    throw new Error(m)
+  }
+  const text = await r.text()
+  let data = {}
+  try {
+    data = text ? JSON.parse(text) : {}
+  } catch {
+    throw new Error(!r.ok ? `Erro ${r.status} do servidor` : 'Resposta inválida (não JSON)')
+  }
+  if (!r.ok) throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  return data
+}
 
 export const api = {
   adminLogin: async (password) => {
@@ -92,9 +152,8 @@ export const api = {
   joinLobby:          (code, name) => post(`/lobby/${code}/join`, { name }),
   startLobby:         (code, data) => post(`/lobby/${code}/start`, { gameData: data }),
 
-  // AI
-  generateDrinkCards: (players, lang = 'pt') => post('/ai/drink-cards', { players, lang }),
-  generateChallenge:  (players, mode, lang = 'pt') => post('/ai/challenge', { players, mode, lang }),
+  // players: string[] | { name, drink? }[]
+  generateChallenge: (players, mode, lang = 'pt') => post('/ai/challenge', { players, mode, lang }),
 
   // Community
   getCommunity:       (p = {}) => get(`/community?${new URLSearchParams(p)}`),

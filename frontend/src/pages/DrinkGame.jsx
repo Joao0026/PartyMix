@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, RotateCcw, Check, Sparkles, Lock } from 'lucide-react'
+import { ChevronLeft, RotateCcw, Check, Sparkles, Lock, PartyPopper } from 'lucide-react'
 import { shuffle } from '../utils/game'
-import { AISetupModal } from '../components/AISetupModal'
+import { api } from '../utils/api'
 
 // ── DECK CATEGORIES ──────────────────────────────────────────
 const DECK_CATEGORIES = [
@@ -121,32 +121,6 @@ const DECK_CATEGORIES = [
   },
 ]
 
-// ── AI PERSONALIZATION ────────────────────────────────────────
-async function generateAICard(players,drinks){
-  const names=players.map(p=>p.name)
-  const drinkMap=drinks
-  const prompt=`Gera uma carta de jogo de beber ENGRAÇADA e PERSONALIZADA em português de Portugal.
-Jogadores: ${names.join(', ')}.
-O que cada um está a beber: ${Object.entries(drinkMap).map(([n,d])=>`${n}: ${d}`).join(', ')}.
-
-A carta deve mencionar os nomes e as bebidas de forma criativa e personalizada.
-Exemplos: "Um gole desse Gin ${names[0]}, siga siga!" ou "${names[1]} e o teu vinho — bebe 2 quando quiseres impressionar alguém."
-
-Responde APENAS com o texto da carta (máx 20 palavras), sem JSON, sem explicação.`
-
-  const response=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:100,
-      messages:[{role:'user',content:prompt}]
-    })
-  })
-  const data=await response.json()
-  return data.content?.[0]?.text?.trim()||null
-}
-
 // ── ROULETTE ─────────────────────────────────────────────────
 const ROULETTE_SEGS=[
   {label:'Bebe 2',color:'#f59e0b',action:'drink',val:2},
@@ -248,69 +222,115 @@ function Roulette({players,currentPlayerIdx}){
 }
 
 // ── CARD DECK ────────────────────────────────────────────────
-function CardDeck({activeDeck,players,currentPlayerIdx,onNext}){
-  const [deck,setDeck]=useState(()=>shuffle([...activeDeck]))
-  const [current,setCurrent]=useState(null)
-  const [cidx,setCidx]=useState(currentPlayerIdx)
+function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
+  const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
+  const [current, setCurrent] = useState(null)
+  /** Índice do jogador que deve tirar a próxima carta (ou que acabou de tirar, conforme ecrã) */
+  const [nextReaderIdx, setNextReaderIdx] = useState(0)
+  /** Quem tirou a carta atualmente visível */
+  const [lastReaderIdx, setLastReaderIdx] = useState(null)
 
-  const draw=()=>{
-    if(!deck.length)return
-    const [card,...rest]=deck
-    setCurrent(card);setDeck(rest)
-    setCidx(i=>(i+1)%players.length)
+  useEffect(() => {
+    setDeck(shuffle([...activeDeck]))
+    setCurrent(null)
+    setNextReaderIdx(0)
+    setLastReaderIdx(null)
+  }, [deckSessionId, activeDeck])
+
+  const draw = () => {
+    if (!deck.length) return
+    const [card, ...rest] = deck
+    const reader = nextReaderIdx % players.length
+    setLastReaderIdx(reader)
+    setCurrent(card)
+    setDeck(rest)
+    setNextReaderIdx((reader + 1) % players.length)
+    onCardDrawn?.()
   }
 
-  const TYPE_COLORS={
-    beber:'from-amber-500 to-orange-600',
-    regra:'from-violet-600 to-purple-700',
-    desafio:'from-cyan-600 to-blue-700',
-    poder:'from-amber-400 to-yellow-500',
-    sorte:'from-emerald-600 to-teal-700',
-    azar:'from-slate-600 to-slate-800',
-    ai:'from-violet-700 to-purple-800',
-  }
-  const player=players[cidx%players.length]
+  const n = players.length || 1
+  const whoReads = current == null ? players[nextReaderIdx % n] : players[(lastReaderIdx ?? nextReaderIdx) % n]
 
-  return(
+  const TYPE_COLORS = {
+    beber: 'from-amber-500 to-orange-600',
+    regra: 'from-violet-600 to-purple-700',
+    desafio: 'from-cyan-600 to-blue-700',
+    poder: 'from-amber-400 to-yellow-500',
+    sorte: 'from-emerald-600 to-teal-700',
+    azar: 'from-slate-600 to-slate-800',
+    ai: 'from-violet-700 to-purple-800',
+  }
+
+  return (
     <div className="flex flex-col items-center gap-4 w-full">
-      <div className="flex items-center gap-3 w-full">
-        <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${player?.color||'from-slate-500 to-slate-700'} flex items-center justify-center text-white font-black text-lg flex-shrink-0`}>{player?.name?.[0]||'?'}</div>
-        <div>
-          <p className="text-slate-400 text-xs uppercase tracking-[0.2em] mb-1">Turno de</p>
-          <p className="text-white font-black text-lg leading-none">{player?.name}</p>
-          <p className="text-slate-500 text-xs mt-1">{deck.length} cartas restantes</p>
+      <div className="flex items-center gap-3 w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3">
+        <div
+          className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${whoReads?.color || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white font-black text-lg flex-shrink-0`}
+        >
+          {whoReads?.name?.[0] || '?'}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-slate-400 text-xs uppercase tracking-[0.2em] mb-0.5">
+            {current ? 'Carta tirada por' : 'Agora é a vez de'}
+          </p>
+          <p className="text-white font-black text-lg leading-tight truncate">{whoReads?.name || '—'}</p>
+          <p className="text-slate-500 text-xs mt-1">{deck.length} cartas no baralho</p>
         </div>
       </div>
 
       <AnimatePresence mode="wait">
-        {current?(
-          <motion.div key={current.title+current.text}
-            initial={{scale:0.85,opacity:0,y:-16}} animate={{scale:1,opacity:1,y:0}} exit={{scale:0.9,opacity:0}}
-            className={`w-full bg-gradient-to-br ${TYPE_COLORS[current.type]||'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}>
-            <p className="text-white/70 text-xs uppercase tracking-[0.2em] mb-3">Turno</p>
+        {current ? (
+          <motion.div
+            key={current.title + current.text}
+            initial={{ scale: 0.85, opacity: 0, y: -16 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className={`w-full bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}
+          >
+            <p className="text-white/70 text-xs uppercase tracking-[0.2em] mb-2">Carta</p>
             <p className="text-6xl mb-4">{current.emoji}</p>
             <h3 className="text-white font-black text-3xl mb-4">{current.title}</h3>
             <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
           </motion.div>
-        ):(
-          <div className="w-full h-56 bg-white/[0.04] border-2 border-dashed border-white/[0.1] rounded-[2rem] flex flex-col items-center justify-center gap-3 px-6">
+        ) : (
+          <motion.div
+            key="placeholder"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="w-full min-h-[14rem] bg-white/[0.04] border-2 border-dashed border-amber-500/25 rounded-[2rem] flex flex-col items-center justify-center gap-4 px-6 py-8"
+          >
             <span className="text-5xl">🃏</span>
-            <p className="text-slate-400 text-sm">Toca para virar a carta</p>
-          </div>
+            <p className="text-white font-bold text-center text-lg">Próxima carta é tua, {whoReads?.name}!</p>
+            <p className="text-slate-400 text-sm text-center leading-relaxed">
+              Carrega em <span className="text-amber-400 font-semibold">Ver carta</span> em baixo. Lê em voz alta para o grupo.
+            </p>
+          </motion.div>
         )}
       </AnimatePresence>
 
-      {deck.length>0?(
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={draw}
-          className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-4 text-lg">
-          {current?'Próxima Carta →':'🃏 Virar Carta'}
+      {deck.length > 0 ? (
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={draw}
+          className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-4 text-lg"
+        >
+          {current ? 'Próxima carta →' : 'Ver carta'}
         </motion.button>
-      ):(
+      ) : (
         <div className="text-center space-y-3 w-full">
           <p className="text-emerald-400 font-bold text-lg">🏆 Baralho esgotado!</p>
-          <button onClick={()=>{setDeck(shuffle([...activeDeck]));setCurrent(null)}}
-            className="w-full bg-white/[0.07] text-white rounded-2xl py-3 flex items-center justify-center gap-2 font-medium">
-            <RotateCcw className="w-4 h-4"/> Novo baralho
+          <button
+            type="button"
+            onClick={() => {
+              setDeck(shuffle([...activeDeck]))
+              setCurrent(null)
+              setNextReaderIdx(0)
+              setLastReaderIdx(null)
+            }}
+            className="w-full bg-white/[0.07] text-white rounded-2xl py-3 flex items-center justify-center gap-2 font-medium"
+          >
+            <RotateCcw className="w-4 h-4" /> Baralhar de novo
           </button>
         </div>
       )}
@@ -323,11 +343,15 @@ export default function DrinkGame(){
   const navigate=useNavigate()
   const [phase,setPhase]=useState('setup')
   const [playerNames,setPlayerNames]=useState(['','',''])
+  const [playerDrinks,setPlayerDrinks]=useState(['','',''])
   const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios'])
   const [tab,setTab]=useState('deck')
-  const [showAI,setShowAI]=useState(false)
-  const [aiCards,setAiCards]=useState([])
-  const [currentPlayerIdx,setCurrentPlayerIdx]=useState(0)
+  const [deckSessionId, setDeckSessionId] = useState(0)
+  const [surpriseCue, setSurpriseCue] = useState(false)
+  const [surpriseOpen,setSurpriseOpen]=useState(false)
+  const [surpriseLoading,setSurpriseLoading]=useState(false)
+  const [surpriseText,setSurpriseText]=useState('')
+  const [surpriseErr,setSurpriseErr]=useState(null)
 
   const toggleCat=id=>{
     const cat=DECK_CATEGORIES.find(c=>c.id===id)
@@ -335,15 +359,59 @@ export default function DrinkGame(){
     setSelectedCats(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
   }
 
-  const players=playerNames.filter(n=>n.trim()).map((name,i)=>({
-    name,
-    color:['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-rose-400 to-red-500','from-sky-400 to-blue-500'][i%8]
-  }))
+  const players=playerNames
+    .map((name,i)=>({
+      name:name.trim(),
+      drink:(playerDrinks[i]??'').trim(),
+      color:['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-rose-400 to-red-500','from-sky-400 to-blue-500'][i%8]
+    }))
+    .filter(p=>p.name)
 
-  const activeDeck=[
-    ...DECK_CATEGORIES.filter(c=>selectedCats.includes(c.id)).flatMap(c=>c.cards),
-    ...aiCards,
-  ]
+  const activeDeck = useMemo(
+    () => DECK_CATEGORIES.filter((c) => selectedCats.includes(c.id)).flatMap((c) => c.cards),
+    [selectedCats]
+  )
+
+  const cardsUntilSurpriseRef = useRef(3)
+
+  const fetchSurpriseChallenge = async () => {
+    const roster = players.map((p) => ({ name: p.name, drink: p.drink || '' }))
+    if (roster.length < 1) return
+    setSurpriseLoading(true)
+    setSurpriseErr(null)
+    setSurpriseText('')
+    const run = async () => {
+      const out = await api.generateChallenge(roster, 'drink', 'pt')
+      if (out?.error) throw new Error(out.error)
+      setSurpriseText(String(out?.text || '').trim() || 'Sem texto — tenta outra vez.')
+    }
+    try {
+      await run()
+    } catch (e1) {
+      try {
+        await new Promise((r) => setTimeout(r, 600))
+        await run()
+      } catch (e2) {
+        setSurpriseErr(e2?.message || e1?.message || 'Erro ao gerar desafio')
+      }
+    } finally {
+      setSurpriseLoading(false)
+    }
+  }
+
+  const onCardDrawn = useCallback(() => {
+    cardsUntilSurpriseRef.current -= 1
+    if (cardsUntilSurpriseRef.current <= 0) {
+      setSurpriseCue(true)
+      cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
+    }
+  }, [])
+
+  useEffect(() => {
+    cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
+    setSurpriseCue(false)
+    setSurpriseOpen(false)
+  }, [deckSessionId])
 
   if(phase==='setup')return(
     <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
@@ -354,13 +422,19 @@ export default function DrinkGame(){
         </div>
         {/* Players */}
         <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 mb-4">
-          <h3 className="text-white font-semibold mb-3">Quem joga?</h3>
+          <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
+          <p className="text-slate-500 text-xs mb-3">Opcional: o que cada um está a beber — a IA usa nos desafios surpresa (só nomes e bebidas que escreveres).</p>
           {playerNames.map((n,i)=>(
-            <input key={i} value={n} onChange={e=>setPlayerNames(ns=>ns.map((x,j)=>j===i?e.target.value:x))}
-              placeholder={`Jogador ${i+1}`}
-              className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 outline-none border border-white/[0.08] focus:border-amber-500/50 mb-2 text-sm"/>
+            <div key={i} className="mb-3 last:mb-0 space-y-1.5">
+              <input value={n} onChange={e=>setPlayerNames(ns=>ns.map((x,j)=>j===i?e.target.value:x))}
+                placeholder="Nome"
+                className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 outline-none border border-white/[0.08] focus:border-amber-500/50 text-sm"/>
+              <input value={playerDrinks[i]??''} onChange={e=>setPlayerDrinks(ds=>ds.map((x,j)=>j===i?e.target.value:x))}
+                placeholder="O que está a beber? (opcional)"
+                className="w-full bg-white/[0.03] text-slate-200 rounded-xl px-4 py-2 outline-none border border-white/[0.06] focus:border-amber-500/40 text-sm placeholder-slate-600"/>
+            </div>
           ))}
-          {playerNames.length<8&&<button onClick={()=>setPlayerNames(n=>[...n,''])} className="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Adicionar jogador</button>}
+          {playerNames.length<8&&<button type="button" onClick={()=>{setPlayerNames(n=>[...n,'']); setPlayerDrinks(d=>[...d,''])}} className="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Adicionar jogador</button>}
         </div>
         {/* Deck categories */}
         <div className="mb-6">
@@ -387,24 +461,13 @@ export default function DrinkGame(){
             })}
           </div>
         </div>
-        {/* AI Button */}
-        {false&&players.length>=2&&(
-          <button onClick={()=>setShowAI(true)}
-            className="w-full mb-4 bg-violet-600/15 border border-violet-500/30 text-violet-300 font-bold rounded-2xl py-3 flex items-center justify-center gap-2 hover:bg-violet-600/25 transition-all">
-            <Sparkles className="w-4 h-4"/>✨ Adicionar Cartas Personalizadas com IA
-            {aiCards.length>0&&<span className="bg-violet-500/30 text-violet-200 text-xs px-2 py-0.5 rounded-full">{aiCards.length} cartas</span>}
-          </button>
-        )}
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={()=>setPhase('playing')}
+        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={() => { setDeckSessionId((k) => k + 1); setPhase('playing') }}
           disabled={players.length<2||selectedCats.length===0}
           className="w-full text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40"
           style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
           🍻 Começar! ({activeDeck.length} cartas)
         </motion.button>
       </div>
-      <AnimatePresence>
-        {showAI&&<AISetupModal players={players} onGenerate={cards=>{setAiCards(c=>[...c,...cards])}} onClose={()=>setShowAI(false)}/>}
-      </AnimatePresence>
     </div>
   )
 
@@ -429,14 +492,131 @@ export default function DrinkGame(){
         ))}
       </div>
       <div className="flex-1 flex flex-col items-center px-4 py-5 max-w-lg mx-auto w-full">
+        <AnimatePresence>
+          {surpriseCue && (
+            <motion.div
+              key="surprise-cue"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="w-full mb-4 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-950/80 to-slate-900/90 p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-start gap-2">
+                <PartyPopper className="w-5 h-5 text-cyan-300 shrink-0 mt-0.5" />
+                <p className="text-white text-sm font-semibold leading-snug">
+                  Surpresa IA — queres um desafio extra para o grupo? (Não substitui cartas do baralho.)
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSurpriseCue(false)
+                    setSurpriseOpen(true)
+                    setSurpriseText('')
+                    setSurpriseErr(null)
+                    void fetchSurpriseChallenge()
+                  }}
+                  className="flex-1 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl py-3 text-sm font-black"
+                >
+                  Abrir desafio
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSurpriseCue(false)}
+                  className="flex-1 bg-white/[0.08] border border-white/10 text-slate-200 rounded-xl py-3 text-sm font-bold hover:bg-white/[0.12]"
+                >
+                  Agora não
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <AnimatePresence mode="wait">
           <motion.div key={tab} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="w-full">
-            {tab==='deck'&&<CardDeck activeDeck={activeDeck} players={players} currentPlayerIdx={currentPlayerIdx} onNext={()=>setCurrentPlayerIdx(i=>(i+1)%players.length)}/>}
+            {tab==='deck'&&(
+              <CardDeck
+                key={deckSessionId}
+                activeDeck={activeDeck}
+                players={players}
+                deckSessionId={deckSessionId}
+                onCardDrawn={onCardDrawn}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
       <AnimatePresence>
-        {showAI&&<AISetupModal players={players} onGenerate={cards=>{setAiCards(c=>[...c,...cards])}} onClose={()=>setShowAI(false)}/>}
+        {surpriseOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+            onClick={() => !surpriseLoading && setSurpriseOpen(false)}
+          >
+            <motion.div
+              initial={{ y: 40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 40, opacity: 0 }}
+              transition={{ type: 'spring', damping: 22 }}
+              className="w-full max-w-lg rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#0f1120] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="px-5 py-4 flex items-center gap-3 bg-gradient-to-r from-cyan-600 to-teal-700">
+                <PartyPopper className="text-white w-5 h-5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-white font-black text-lg leading-tight">Desafio surpresa</h3>
+                  <p className="text-cyan-100/90 text-xs">Modo beber · IA (Groq)</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={surpriseLoading}
+                  onClick={() => setSurpriseOpen(false)}
+                  className="text-white/80 hover:text-white font-bold text-xl w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 disabled:opacity-40"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                {surpriseLoading && (
+                  <div className="text-center py-8 space-y-3">
+                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                      <Sparkles className="text-cyan-400 w-10 h-10 mx-auto" />
+                    </motion.div>
+                    <p className="text-slate-400 text-sm">A inventar um desafio para o grupo…</p>
+                  </div>
+                )}
+                {!surpriseLoading && surpriseErr && (
+                  <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{surpriseErr}</p>
+                )}
+                {!surpriseLoading && surpriseText && !surpriseErr && (
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                    <p className="text-white text-lg font-semibold leading-relaxed text-center">{surpriseText}</p>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={surpriseLoading}
+                    onClick={() => void fetchSurpriseChallenge()}
+                    className="flex-1 bg-white/[0.08] border border-white/10 text-white rounded-2xl py-3 text-sm font-bold hover:bg-white/[0.12] disabled:opacity-40"
+                  >
+                    Outro desafio
+                  </button>
+                  <button
+                    type="button"
+                    disabled={surpriseLoading}
+                    onClick={() => setSurpriseOpen(false)}
+                    className="flex-1 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-2xl py-3 text-sm font-black"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   )

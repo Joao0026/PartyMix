@@ -10,9 +10,10 @@ const { Server } = require('socket.io')
 // In-memory game rooms (resets on server restart — acceptable for party game)
 const rooms = {}
 
-function initWebSocket(httpServer) {
+function initWebSocket(httpServer, options = {}) {
+  const corsOrigin = options.corsOrigin !== undefined ? options.corsOrigin : true
   const io = new Server(httpServer, {
-    cors: { origin: '*', methods: ['GET','POST'] }
+    cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
   })
 
   io.on('connection', (socket) => {
