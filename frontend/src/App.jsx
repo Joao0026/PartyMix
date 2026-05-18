@@ -13,10 +13,14 @@ import VictoryScreen from './pages/VictoryScreen'
 import CommunityCards from './pages/CommunityCards'
 import DailyScratch from './pages/DailyScratch'
 import Admin from './pages/Admin'
+import ConnectionStatus from './components/ConnectionStatus'
+import InstallPrompt from './components/InstallPrompt'
 
 export default function App() {
   return (
     <LangProvider>
+      <ConnectionStatus />
+      <InstallPrompt />
       <Routes>
         <Route path="/"                element={<Home />} />
         <Route path="/GameSetup"       element={<GameSetup />} />

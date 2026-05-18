@@ -1,46 +1,43 @@
 const router = require('express').Router();
 const Lobby = require('../models/Lobby');
+const { asyncRoute, cleanString, jsonWithinLimit, roomCode } = require('../lib/validate');
 
 function genCode() { return Math.random().toString(36).substring(2, 6).toUpperCase(); }
 
-router.post('/create', async (req, res) => {
-  try {
-    let code, exists;
-    do { code = genCode(); exists = await Lobby.findOne({ code }); } while (exists);
-    const lobby = await new Lobby({ code, host: req.body.host, players: [{ name: req.body.host }] }).save();
-    res.status(201).json(lobby);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+router.post('/create', asyncRoute(async (req, res) => {
+  const host = cleanString(req.body.host, { field: 'host', max: 50, required: true });
+  let code, exists;
+  do { code = genCode(); exists = await Lobby.findOne({ code }); } while (exists);
+  const lobby = await new Lobby({ code, host, players: [{ name: host }] }).save();
+  res.status(201).json(lobby);
+}));
 
-router.get('/:code', async (req, res) => {
-  try {
-    const lobby = await Lobby.findOne({ code: req.params.code.toUpperCase(), status: 'waiting' });
-    if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
-    res.json(lobby);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+router.get('/:code', asyncRoute(async (req, res) => {
+  const lobby = await Lobby.findOne({ code: roomCode(req.params.code), status: 'waiting' });
+  if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
+  res.json(lobby);
+}));
 
-router.post('/:code/join', async (req, res) => {
-  try {
-    const lobby = await Lobby.findOneAndUpdate(
-      { code: req.params.code.toUpperCase(), status: 'waiting' },
-      { $push: { players: { name: req.body.name } } },
-      { new: true }
-    );
-    if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
-    res.json(lobby);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+router.post('/:code/join', asyncRoute(async (req, res) => {
+  const code = roomCode(req.params.code);
+  const name = cleanString(req.body.name, { field: 'name', max: 50, required: true });
+  const lobby = await Lobby.findOneAndUpdate(
+    { code, status: 'waiting' },
+    { $push: { players: { name } } },
+    { new: true }
+  );
+  if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
+  res.json(lobby);
+}));
 
-router.post('/:code/start', async (req, res) => {
-  try {
-    const lobby = await Lobby.findOneAndUpdate(
-      { code: req.params.code.toUpperCase() },
-      { status: 'playing', gameData: req.body.gameData || {} },
-      { new: true }
-    );
-    res.json(lobby);
-  } catch (e) { res.status(500).json({ error: e.message }); }
-});
+router.post('/:code/start', asyncRoute(async (req, res) => {
+  const lobby = await Lobby.findOneAndUpdate(
+    { code: roomCode(req.params.code) },
+    { status: 'playing', gameData: jsonWithinLimit(req.body.gameData, { field: 'gameData' }) },
+    { new: true }
+  );
+  if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
+  res.json(lobby);
+}));
 
 module.exports = router;

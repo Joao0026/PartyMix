@@ -2,8 +2,12 @@ export const PLAYER_COLORS = ['from-pink-400 to-rose-500','from-cyan-400 to-blue
 export const TEAM_COLORS   = ['from-blue-500 to-cyan-600','from-red-500 to-rose-600','from-green-500 to-emerald-600','from-amber-500 to-yellow-600']
 
 export const CATEGORY_CONFIG = {
-  mimica:      { emoji:'🎭', label:'Mímica',       color:'from-purple-500 to-violet-600' },
-  desenho:     { emoji:'🎨', label:'Desenho',      color:'from-blue-500 to-cyan-600' },
+  telepatia:   { emoji:'🧠', label:'Sincronia',    color:'from-cyan-500 to-blue-600' },
+  perguntas:   { emoji:'📚', label:'Sabichão',     color:'from-indigo-500 to-blue-600' },
+  desenho:     { emoji:'🎨', label:'Rabiscos',     color:'from-blue-500 to-cyan-600' },
+  mimica:      { emoji:'🎭', label:'Gestos',       color:'from-purple-500 to-violet-600' },
+  proibido:    { emoji:'🚫', label:'Palavra Tabu', color:'from-amber-500 to-orange-600' },
+  caos:        { emoji:'💥', label:'Caos',         color:'from-red-500 to-rose-600' },
   palavra:     { emoji:'💬', label:'Palavra',      color:'from-green-500 to-emerald-600' },
   acao:        { emoji:'⚡', label:'Ação',         color:'from-yellow-500 to-amber-600' },
   verdade:     { emoji:'❓', label:'Verdade',      color:'from-pink-500 to-rose-600' },
@@ -13,6 +17,10 @@ export const CATEGORY_CONFIG = {
   musica:      { emoji:'🎵', label:'Música',       color:'from-fuchsia-500 to-pink-600' },
   cinema:      { emoji:'🎬', label:'Cinema',       color:'from-orange-500 to-red-600' },
   erotico:     { emoji:'🔥', label:'Erótico',      color:'from-red-500 to-rose-700' },
+  romantico:   { emoji:'🌹', label:'Conexão',      color:'from-rose-400 to-pink-500' },
+  picante:     { emoji:'🔥', label:'Picante',      color:'from-red-500 to-rose-700' },
+  roleplay:    { emoji:'🎭', label:'Cena',         color:'from-slate-500 to-slate-700' },
+  casal_pergunta:{ emoji:'💬', label:'Quanto me conheces?', color:'from-violet-500 to-purple-700' },
   dados:       { emoji:'🎲', label:'Dados',        color:'from-slate-500 to-slate-700' },
 }
 

@@ -10,6 +10,13 @@ import { ChevronLeft, Dice6, Heart, Film, HelpCircle, Ticket, Map, Lock, Check }
 // ── EROTIC DICE ──────────────────────────────────────────────
 const BODY_OPTIONS=['Lábios','Pescoço','Orelhas','Ombros','Costas','Barriga','Pés','Mãos','Pulsos','Clavícula','Joelhos','Tornozelos','Nuca','Cotovelos','Dedos','Testa','Bochechas','Queixo','Peito','Cintura']
 const ACTION_OPTIONS=['Massagem suave','Beijos lentos','Mordidas suaves','Carícias longas','Sopros quentes','Toque com pontas dos dedos','Sussurros','Beijos húmidos','Pressão com as palmas','Roçar com os lábios','Lambidas suaves','Beijinhos rápidos','Amassar gentilmente','Traçar com o dedo','Soprar frio','Friccionar devagar','Apertar com delicadeza','Deslizar com a língua','Circular com a ponta do dedo','Cobrir de beijos']
+const SAFE_BODY_OPTIONS=['Mãos','Ombros','Costas','Braço','Testa','Bochechas','Pescoço']
+const SAFE_ACTION_OPTIONS=['Massagem suave','Beijos lentos','Sussurros','Toque com pontas dos dedos','Beijinhos rápidos','Traçar com o dedo']
+const INTENSITIES={
+  pacifico:{label:'🌹 Pacífico',desc:'Romântico, sem nudez nem desafios demasiado explícitos'},
+  picante:{label:'🔥 Picante',desc:'Toque e provocação, mas sem ir ao extremo'},
+  hardcore:{label:'🔞 Hardcore',desc:'Tudo ligado: desafios intensos e cartas mais ousadas'},
+}
 
 function EroticDie({options,label,color,rolling,value}){
   const [display,setDisplay]=useState(options[0])
@@ -61,21 +68,23 @@ function EroticDieReal({options,label,color,rolling,value}){
   )
 }
 
-function EroticDiceSection({onNext}){
+function EroticDiceSection({onNext,intensity}){
   const [rolling,setRolling]=useState(false),[body,setBody]=useState(null),[action,setAction]=useState(null)
+  const bodyOptions=intensity==='pacifico'?SAFE_BODY_OPTIONS:BODY_OPTIONS
+  const actionOptions=intensity==='pacifico'?SAFE_ACTION_OPTIONS:ACTION_OPTIONS
   const roll=async()=>{
     if(rolling)return
     setRolling(true);setBody(null);setAction(null)
     await new Promise(r=>setTimeout(r,1450))
-    setBody(BODY_OPTIONS[Math.floor(Math.random()*BODY_OPTIONS.length)])
-    setAction(ACTION_OPTIONS[Math.floor(Math.random()*ACTION_OPTIONS.length)])
+    setBody(bodyOptions[Math.floor(Math.random()*bodyOptions.length)])
+    setAction(actionOptions[Math.floor(Math.random()*actionOptions.length)])
     setRolling(false)
   }
   return(
     <div className="space-y-4">
       <div className="flex gap-3">
-        <EroticDieReal options={BODY_OPTIONS} label="Parte do Corpo" color="#e11d48" rolling={rolling} value={body}/>
-        <EroticDieReal options={ACTION_OPTIONS} label="Ação" color="#be185d" rolling={rolling} value={action}/>
+        <EroticDieReal options={bodyOptions} label="Parte do Corpo" color="#e11d48" rolling={rolling} value={body}/>
+        <EroticDieReal options={actionOptions} label="Ação" color="#be185d" rolling={rolling} value={action}/>
       </div>
       {body&&action&&!rolling&&(
         <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}
@@ -117,14 +126,16 @@ const UNIQUE_CHALLENGES=[
   {text:'Escolhe uma parte do teu parceiro e dá-lhe atenção exclusiva durante 1 minuto.',type:'bold'},
 ]
 
-function ChallengesSection({players,turn,onNext}){
+function ChallengesSection({players,turn,onNext,intensity}){
   const [current,setCurrent]=useState(null),[done,setDone]=useState(false)
   const used=useState(new Set())[0]
   const player=players[turn%2]
+  const allowedTypes=intensity==='pacifico'?['romantico','emocional','playful']:intensity==='picante'?['sensorial','fisico','romantico','emocional','playful']:null
   const draw=()=>{
-    const rem=UNIQUE_CHALLENGES.filter((_,i)=>!used.has(i))
+    const base=allowedTypes?UNIQUE_CHALLENGES.filter(c=>allowedTypes.includes(c.type)):UNIQUE_CHALLENGES
+    const rem=base.filter(c=>!used.has(UNIQUE_CHALLENGES.indexOf(c)))
     if(!rem.length)used.clear()
-    const pool=rem.length?rem:UNIQUE_CHALLENGES
+    const pool=rem.length?rem:base
     const pi=Math.floor(Math.random()*pool.length)
     used.add(UNIQUE_CHALLENGES.indexOf(pool[pi]));setCurrent(pool[pi]);setDone(false)
   }
@@ -267,6 +278,9 @@ export default function CoupleGame(){
   const [turn,setTurn]=useState(0)
   const [currentAct,setCurrentAct]=useState(null)
   const [maxDice,setMaxDice]=useState(6)
+  const [intensity,setIntensity]=useState('pacifico')
+  const [loopGoal,setLoopGoal]=useState('free')
+  const [targetLaps,setTargetLaps]=useState(3)
 
   const players=game?.players||[{name:'Jogador 1',color:'from-pink-400 to-rose-500'},{name:'Jogador 2',color:'from-cyan-400 to-blue-500'}]
   const player=players[turn%2]
@@ -307,6 +321,16 @@ export default function CoupleGame(){
         <div><h1 className="text-white font-black text-xl">💕 Modo Casal</h1><p className="text-slate-500 text-sm">Escolhe o que queres jogar</p></div>
       </div>
       <div className="flex-1 px-4 pb-8 max-w-lg mx-auto w-full space-y-2.5">
+        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
+          <h3 className="text-white font-bold">Intensidade</h3>
+          {Object.entries(INTENSITIES).map(([id,opt])=>(
+            <button key={id} onClick={()=>setIntensity(id)}
+              className={`w-full rounded-xl border p-3 text-left transition-all ${intensity===id?'bg-rose-500/15 border-rose-500/45':'bg-white/[0.03] border-white/[0.07]'}`}>
+              <p className={intensity===id?'text-white font-bold':'text-slate-400 font-bold'}>{opt.label}</p>
+              <p className="text-slate-500 text-xs">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
         {ACTIVITIES.map((act,i)=>{
           const isSel=selected.includes(act.id)
           return(
@@ -342,7 +366,33 @@ export default function CoupleGame(){
           </div>
         )}
         {selected.includes('map')&&(
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-4">
+            <div>
+              <p className="text-white font-bold text-sm mb-3">💕 Objetivo do Loop</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  {id:'free',label:'Sem vencedor',desc:'Jogam até parar'},
+                  {id:'laps',label:'Por voltas',desc:'Ganha quem completar primeiro'},
+                ].map(opt=>(
+                  <button key={opt.id} onClick={()=>setLoopGoal(opt.id)}
+                    className={`rounded-xl border p-3 text-left transition-all ${loopGoal===opt.id?'bg-rose-500/15 border-rose-500/45 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                    <p className="font-bold text-sm">{opt.label}</p>
+                    <p className="text-xs text-slate-500">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+              {loopGoal==='laps'&&(
+                <div className="flex gap-2 mt-3">
+                  {[1,2,3,5].map(n=>(
+                    <button key={n} onClick={()=>setTargetLaps(n)}
+                      className={`flex-1 rounded-xl border py-2 text-sm font-bold ${targetLaps===n?'bg-rose-500/20 border-rose-500/50 text-rose-200':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                      {n} volta{n>1?'s':''}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="text-slate-500 text-xs mt-2">Ao completar uma volta, sai sempre um prémio de volta.</p>
+            </div>
             <p className="text-white font-bold text-sm mb-3">🎲 Máximo no Dado</p>
             <div className="flex gap-2 justify-center mb-3">
               {[3,4,5,6].map(num=>(
@@ -379,7 +429,7 @@ export default function CoupleGame(){
         <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
         <div className="w-5"/>
       </div>
-      <CoupleMap players={players} selected={selected} maxDice={maxDice} onExit={()=>setPhase('menu')}/>
+      <CoupleMap players={players} selected={selected} maxDice={maxDice} loopGoal={loopGoal} targetLaps={targetLaps} onExit={()=>setPhase('menu')}/>
     </div>
   )
 
@@ -412,8 +462,8 @@ export default function CoupleGame(){
       <div className="flex-1 flex flex-col items-center px-4 py-5 max-w-lg mx-auto w-full">
         <AnimatePresence mode="wait">
           <motion.div key={`${currentAct}-${turn}`} initial={{opacity:0,y:14}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="w-full">
-            {currentAct==='dice'       &&<EroticDiceSection onNext={nextTurn}/>}
-            {currentAct==='challenges' &&<ChallengesSection players={players} turn={turn} onNext={nextTurn}/>}
+            {currentAct==='dice'       &&<EroticDiceSection onNext={nextTurn} intensity={intensity}/>}
+            {currentAct==='challenges' &&<ChallengesSection players={players} turn={turn} onNext={nextTurn} intensity={intensity}/>}
             {currentAct==='quiz'       &&<QuizSection players={players} turn={turn} onNext={nextTurn}/>}
             {currentAct==='roleplay'   &&<RoleplaySection onNext={nextTurn}/>}
           </motion.div>

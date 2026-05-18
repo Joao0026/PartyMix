@@ -9,6 +9,10 @@ import { BoardDie } from '../components/game/EroticDie'
 import { Trophy, ChevronLeft } from 'lucide-react'
 
 const CATEGORY_CONFIG = {
+  telepatia:    { emoji:'🧠', color:'#0891b2' },
+  perguntas:    { emoji:'📚', color:'#2563eb' },
+  proibido:     { emoji:'🚫', color:'#b45309' },
+  caos:         { emoji:'💥', color:'#dc2626' },
   mimica:       { emoji:'🎭', color:'#7c3aed' },
   desenho:      { emoji:'🎨', color:'#db2777' },
   palavra:      { emoji:'💬', color:'#2563eb' },
@@ -21,10 +25,47 @@ const CATEGORY_CONFIG = {
   cinema:       { emoji:'🎬', color:'#334155' },
 }
 
-function buildMap(cats, miniGames, friendsMode, rotation, n = 30) {
+const FRIENDS_SPECIALS = [
+  { type:'special', special:'duel', emoji:'⚔️', color:'#dc2626', label:'Duelo' },
+  { type:'special', special:'shot', emoji:'🍻', color:'#f97316', label:'Shot/Duelo' },
+  { type:'special', special:'rule', emoji:'📜', color:'#9333ea', label:'Regra ativa' },
+  { type:'special', special:'steal', emoji:'🕵️', color:'#0891b2', label:'Roubo' },
+  { type:'special', special:'shield', emoji:'🛡️', color:'#059669', label:'Proteção' },
+  { type:'challenge', category:'caos', emoji:'💥', color:'#dc2626', label:'Caos' },
+]
+
+const FAMILY_SPECIALS = [
+  { type:'special', special:'team_duel', emoji:'⚔️', color:'#2563eb', label:'Duelo' },
+  { type:'special', special:'bonus', emoji:'⭐', color:'#ca8a04', label:'Bónus' },
+  { type:'special', special:'risk', emoji:'⚠️', color:'#dc2626', label:'Risco' },
+  { type:'special', special:'all_play', emoji:'👨‍👩‍👧', color:'#7c3aed', label:'Todos' },
+]
+
+function fallbackChallenge(category, mode = 'friends') {
+  const shared = {
+    telepatia: { text:'Tema: coisas que existem numa cozinha. Dois jogadores dizem uma palavra ao mesmo tempo.', category:'telepatia', time_limit:10, sips_penalty:2 },
+    desenho: { text:'Desenha alguém a tentar encontrar o telemóvel perdido.', category:'desenho', time_limit:60, sips_penalty:2 },
+    mimica: { text:'Representa alguém a tentar chegar atrasado sem fazer barulho.', category:'mimica', time_limit:45, sips_penalty:2 },
+    proibido: { text:'Palavra: Férias. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', forbiddenWords:['praia','viagem','hotel','avião','verão'], sips_penalty:2 },
+    caos: { text:'Regra temporária: durante 2 turnos, quem disser nomes próprios perde/bebe.', category:'caos', is_ongoing:true, ongoing_rounds:2, ongoing_instruction:'Sem nomes próprios até acabar a regra.', sips_penalty:2 },
+  }
+  if (category === 'perguntas') {
+    return mode === 'family'
+      ? { text:'Qual é o maior oceano do mundo?', category:'perguntas', answer:'Oceano Pacífico', choices:['Atlântico','Índico','Pacífico','Ártico'], difficulty:'facil' }
+      : { text:'Que país ganhou o Euro 2016?', category:'perguntas', answer:'Portugal', choices:['França','Portugal','Espanha','Alemanha'], difficulty:'facil', sips_penalty:2 }
+  }
+  return shared[category] || { text:'Completa um desafio escolhido pelo grupo.', category:category || 'acao', sips_penalty:2 }
+}
+
+function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30) {
   const isMiniOnly = friendsMode === 'map_mini'
   return Array.from({ length: n }, (_, i) => {
     if (i === 0) return { type:'start', emoji:'🏁', color:'#059669', label:'Início' }
+    if (mapStyle === 'special' && i > 2 && i < n - 2) {
+      const specials = mode === 'family' ? FAMILY_SPECIALS : FRIENDS_SPECIALS
+      const chance = mode === 'family' ? 0.26 : 0.36
+      if (Math.random() < chance) return specials[Math.floor(Math.random()*specials.length)]
+    }
     if (isMiniOnly) {
       if (!miniGames?.length) return { type:'minigame', mini:{id:'random',label:'Mini-jogo aleatório'}, emoji:'🎮', color:'#6d28d9' }
       const mg = miniGames[Math.floor(Math.random()*miniGames.length)]
@@ -49,14 +90,25 @@ function buildMap(cats, miniGames, friendsMode, rotation, n = 30) {
 }
 
 // Snake layout grid
-function MapGrid({ tiles, positions, players, currentPlayer }) {
+function MapGrid({ tiles, positions, players, currentPlayer, layout = 'classic' }) {
   const COLS = 6
   const tileW = 50, tileH = 48, gapX = 6, gapY = 10
   const rows  = Math.ceil(tiles.length / COLS)
-  const boardW = COLS*(tileW+gapX)-gapX
-  const boardH = rows*(tileH+gapY)-gapY
+  const boardW = layout === 'party' ? 340 : COLS*(tileW+gapX)-gapX
+  const boardH = layout === 'party' ? 340 : rows*(tileH+gapY)-gapY
 
   function tilePos(idx) {
+    if (layout === 'party') {
+      if (idx === 0) return { x: boardW/2-tileW/2, y: boardH/2-tileH/2 }
+      const ring = idx <= 12 ? 86 : 145
+      const ringIdx = idx <= 12 ? idx - 1 : idx - 13
+      const ringCount = idx <= 12 ? 12 : Math.max(1, tiles.length - 13)
+      const angle = -Math.PI / 2 + (ringIdx / ringCount) * Math.PI * 2
+      return {
+        x: boardW/2 - tileW/2 + Math.cos(angle) * ring,
+        y: boardH/2 - tileH/2 + Math.sin(angle) * ring,
+      }
+    }
     const row = Math.floor(idx/COLS)
     const col = row%2===0 ? idx%COLS : COLS-1-(idx%COLS)
     return { x:col*(tileW+gapX), y:(rows-1-row)*(tileH+gapY) }
@@ -132,19 +184,23 @@ export default function MapGame() {
   const navigate    = useNavigate()
   const game        = loadGame()
   const players     = game?.players    || []
-  const cats        = game?.selectedCategories || ['mimica','verdade','acao']
+  const teams       = game?.teams      || null
+  const cats        = game?.selectedCategories || ['telepatia','perguntas','mimica']
   const miniGames   = game?.miniGames  || []
   const friendsMode = game?.friendsMode || 'map_cats'
   const mapRotation = game?.mapRotation || 'random'
+  const mapStyle    = game?.mapStyle || 'classic'
   const penaltyType = game?.penaltyType || 'sips'
   const isFamily    = game?.mode === 'family'
   const WINNING     = game?.winningScore || 5
 
-  const MAP = useRef(buildMap(cats, miniGames, friendsMode, mapRotation, 30)).current
+  const MAP = useRef(buildMap(cats, miniGames, friendsMode, mapRotation, mapStyle, game?.mode || 'friends', 30)).current
 
   const [positions,     setPositions]     = useState(players.map(()=>0))
   const [scores,        setScores]        = useState(players.map(()=>0))
+  const [categoryScores,setCategoryScores]= useState(() => players.map(()=>Object.fromEntries(cats.map(cat=>[cat,0]))))
   const [fails,         setFails]         = useState(players.map(()=>0))
+  const [shields,       setShields]       = useState(players.map(()=>0))
   const [currentPlayer, setCurrentPlayer] = useState(0)
   const [rolled,        setRolled]        = useState(false)
   const [moving,        setMoving]        = useState(false)
@@ -153,7 +209,27 @@ export default function MapGame() {
   const [miniGame,      setMiniGame]      = useState(null)
   const [ongoings,      setOngoings]      = useState([])
   const [penaltyAnim,   setPenaltyAnim]   = useState(null)
+  const [specialNotice, setSpecialNotice] = useState(null)
+  const [specialPicker, setSpecialPicker] = useState(null)
+  const [finalBossFor,  setFinalBossFor]  = useState(null)
   const [round,         setRound]         = useState(1)
+  const usesCategoryProgress = (game?.mode === 'family' || game?.mode === 'friends') && cats.length > 0
+
+  const competitiveOptions = () => {
+    if (!challenge) return []
+    if (challenge.special === 'team_duel') {
+      const teamList = teams?.length ? teams : [
+        {name:'Equipa A', color:'from-blue-500 to-cyan-600'},
+        {name:'Equipa B', color:'from-red-500 to-rose-600'},
+      ]
+      return teamList.map((team, idx)=>({label:team.name || `Equipa ${idx+1}`, winnerTeam:idx}))
+    }
+    if (challenge.special === 'all_play') return [{label:'A mesa conseguiu', winnerIndex:currentPlayer}]
+    if (['duel','shot'].includes(challenge.special)) {
+      return players.map((p, idx)=>({label:p.name, winnerIndex:idx}))
+    }
+    return []
+  }
 
   useEffect(() => { if (!game) navigate('/') }, [])
 
@@ -170,20 +246,108 @@ export default function MapGame() {
     const final=(start+val)%MAP.length
     const tile=MAP[final]
     setTimeout(async()=>{
+      if(tile.type==='special'){handleSpecialTile(tile);return}
       if(tile.type==='minigame'){setMiniGame(tile.mini);return}
       if(tile.type==='challenge'||tile.type==='start'){
+        const category = tile.category || cats[0]
         try{
-          const c=await api.getRandomChallenge({category:tile.category||cats[0],mode_type:game?.mode||'friends'})
+          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends'})
           if(c&&!c.error){setChallenge(c);setShowChallenge(true);return}
         }catch{}
-        setChallenge({text:`Desafio de ${tile.category||'mímica'}!`,category:tile.category||cats[0],sips_penalty:2})
+        setChallenge(fallbackChallenge(category, game?.mode || 'friends'))
         setShowChallenge(true)
       }
     },400)
   }
 
-  const triggerPenalty = playerName => {
+  const openSpecialChallenge = async (tile, category) => {
+    const effectiveCategory = category || cats[Math.floor(Math.random()*cats.length)] || 'perguntas'
+    const intro = {
+      all_play: { emoji:'👨‍👩‍👧', title:'Todos jogam!', text:'Toda a mesa participa neste desafio. Se acertarem, o jogador da vez ganha ponto.' },
+      team_duel:{ emoji:'⚔️', title:'Duelo de equipas', text:'A equipa adversária lê. Quem responder melhor ganha o ponto.' },
+      duel:     { emoji:'⚔️', title:'Duelo', text:'Escolhe um adversário. Quem vencer fica com o ponto.' },
+      shot:     { emoji:'🍻', title:'Shot/Duelo', text:'Escolhe um adversário. Perdedor bebe 2 golos.' },
+      bonus:    { emoji:'⭐', title:'Bónus difícil', text:'Pergunta difícil. Se acertar, vale 2 pontos.' },
+      risk:     { emoji:'⚠️', title:'Risco', text:'Se falhar, perde 1 ponto. Pensa bem antes de responder.' },
+    }[tile.special]
+    setSpecialNotice({...intro, continueAction: async () => {
+      setSpecialNotice(null)
+      const specialPrefix = tile.special === 'all_play'
+        ? 'Todos jogam: '
+        : tile.special === 'team_duel'
+        ? 'Duelo de equipas: '
+        : tile.special === 'bonus'
+        ? 'Bónus valendo 2 pontos: '
+        : tile.special === 'risk'
+        ? 'Risco, se falhar perde 1 ponto: '
+        : 'Duelo: '
+      try{
+        const params = {category:effectiveCategory,mode_type:game?.mode||'friends'}
+        if (tile.special === 'bonus') params.difficulty = 'dificil'
+        const c=await api.getRandomChallenge(params)
+        const base = (c&&!c.error) ? c : fallbackChallenge(effectiveCategory, game?.mode || 'friends')
+        setChallenge({...base, special:tile.special, text:`${specialPrefix}${base.text}`})
+      }catch{
+        const base = fallbackChallenge(effectiveCategory, game?.mode || 'friends')
+        setChallenge({...base, special:tile.special, text:`${specialPrefix}${base.text}`})
+      }
+      setShowChallenge(true)
+    }})
+  }
+
+  const handleSpecialTile = async tile => {
+    const randomCat = cats[Math.floor(Math.random()*cats.length)] || 'perguntas'
+    if (['duel','shot','team_duel','bonus','risk','all_play'].includes(tile.special)) {
+      if (['duel','shot','team_duel'].includes(tile.special)) {
+        setSpecialPicker({tile, title: tile.special === 'shot' ? 'Escolhe categoria do Shot/Duelo' : 'Escolhe categoria do Duelo'})
+        return
+      }
+      await openSpecialChallenge(tile, tile.special === 'bonus' ? 'perguntas' : randomCat)
+      return
+    }
+    if (tile.special === 'rule') {
+      setOngoings(o=>[...o,{instruction:'Regra ativa: o grupo cria uma regra por 2 turnos.',playerIdx:currentPlayer,turnsLeft:2}])
+      setSpecialNotice({emoji:'📜',title:'Regra ativa',text:'Criem uma regra temporária por 2 turnos. Quem quebrar, bebe.'})
+      return
+    }
+    if (tile.special === 'steal') {
+      const target = scores.findIndex((score, idx)=>idx!==currentPlayer&&score>0)
+      if (target >= 0) {
+        setScores(s=>s.map((score,idx)=>idx===target?Math.max(0,score-1):idx===currentPlayer?score+1:score))
+        setSpecialNotice({emoji:'🕵️',title:'Roubo!',text:`${players[currentPlayer]?.name} roubou 1 ponto a ${players[target]?.name}.`})
+      } else {
+        setSpecialNotice({emoji:'🕵️',title:'Roubo falhou',text:'Ninguém tinha pontos para roubar.'})
+      }
+      return
+    }
+    if (tile.special === 'shield') {
+      setShields(s=>s.map((v,idx)=>idx===currentPlayer?v+1:v))
+      setSpecialNotice({emoji:'🛡️',title:'Proteção!',text:'Imune à próxima penalização.'})
+    }
+  }
+
+  const triggerPenalty = (playerName, failedChallenge, playerIdx = currentPlayer) => {
     if(isFamily)return
+    if ((shields[playerIdx] || 0) > 0) {
+      setShields(s=>s.map((v,idx)=>idx===playerIdx?Math.max(0,v-1):v))
+      setPenaltyAnim({ name: playerName, type: 'shield' })
+      setTimeout(()=>setPenaltyAnim(null),2800)
+      return
+    }
+    if (game?.mode === 'friends') {
+      if (failedChallenge?.category === 'perguntas') {
+        playPenaltySound('sips')
+        setPenaltyAnim({ name: playerName, type: 'sips', sips: 2 })
+        setTimeout(()=>setPenaltyAnim(null),2800)
+        return
+      }
+      if (['mimica','desenho','telepatia','proibido'].includes(failedChallenge?.category)) {
+        playPenaltySound('sips')
+        setPenaltyAnim({ name: playerName, type: 'sips', sips: 2 })
+        setTimeout(()=>setPenaltyAnim(null),2800)
+        return
+      }
+    }
     const sips=Math.floor(Math.random()*3)+1
     let anim
     if(penaltyType==='sips')      anim={name:playerName,type:'sips',sips}
@@ -194,27 +358,76 @@ export default function MapGame() {
     setTimeout(()=>setPenaltyAnim(null),2800)
   }
 
-  const handleResult = result => {
+  const handleResult = (result, options = {}) => {
     setShowChallenge(false)
+    let autoNext = false
+    if (finalBossFor !== null) {
+      if (result === 'success') {
+        setTimeout(()=>navigate('/VictoryScreen',{state:{players,scores,fails,mode:game?.mode,finalBoss:true}}),400)
+      } else {
+        setScores(s=>s.map((score,i)=>i===finalBossFor?Math.max(0,score-1):score))
+        setSpecialNotice({emoji:'👑',title:'Desafio final falhado',text:'Perde 1 ponto e tem de tentar chegar à meta outra vez.'})
+      }
+      setFinalBossFor(null)
+      return
+    }
     if(result==='success'){
-      const ns=scores.map((sc,i)=>i===currentPlayer?sc+1:sc)
+      const points = challenge?.special === 'bonus' ? 2 : 1
+      const awardTargets = options.winnerTeam !== undefined
+        ? players.map((p, idx)=>p.team===options.winnerTeam?idx:null).filter(idx=>idx!==null)
+        : [options.winnerIndex ?? currentPlayer]
+      const targets = awardTargets.length ? awardTargets : [currentPlayer]
+      let ns
+      let categoryDone = false
+      if (usesCategoryProgress && cats.includes(challenge?.category)) {
+        const nextCategoryScores = categoryScores.map((row, i) => {
+          if (!targets.includes(i)) return row
+          return {...row, [challenge.category]: Math.min(3, (row[challenge.category] || 0) + points)}
+        })
+        setCategoryScores(nextCategoryScores)
+        ns = nextCategoryScores.map(row => cats.reduce((sum, cat) => sum + (row[cat] || 0), 0))
+        categoryDone = targets.some(target => cats.every(cat => (nextCategoryScores[target][cat] || 0) >= 3))
+      } else {
+        ns=scores.map((sc,i)=>targets.includes(i)?sc+points:sc)
+      }
       setScores(ns)
-      if(ns[currentPlayer]>=WINNING){
-        setTimeout(()=>navigate('/VictoryScreen',{state:{players,scores:ns,fails,mode:game?.mode}}),400)
+      if((usesCategoryProgress ? categoryDone : targets.some(target => ns[target]>=WINNING))){
+        setFinalBossFor(targets[0] ?? currentPlayer)
+        setChallenge({
+          text: isFamily ? 'Desafio final: a equipa adversária escolhe uma categoria. Se acertarem, ganham o jogo.' : 'Boss final: completa um último desafio escolhido pelo grupo para confirmar a vitória.',
+          category: 'caos',
+          special: 'final_boss',
+        })
+        setShowChallenge(true)
         return
       }
+      autoNext = options.autoNext
     }
     if(result==='fail'){
       setFails(f=>f.map((v,i)=>i===currentPlayer?v+1:v))
-      triggerPenalty(players[currentPlayer]?.name)
+      if (challenge?.special === 'risk') {
+        if (usesCategoryProgress && cats.includes(challenge?.category)) {
+          const nextCategoryScores = categoryScores.map((row, i) => {
+            if (i !== currentPlayer) return row
+            return {...row, [challenge.category]: Math.max(0, (row[challenge.category] || 0) - 1)}
+          })
+          setCategoryScores(nextCategoryScores)
+          setScores(nextCategoryScores.map(row => cats.reduce((sum, cat) => sum + (row[cat] || 0), 0)))
+        } else {
+          setScores(s=>s.map((score,i)=>i===currentPlayer?Math.max(0,score-1):score))
+        }
+      }
+      triggerPenalty(players[currentPlayer]?.name, challenge, currentPlayer)
+      autoNext = options.autoNext
     }
     if(result==='accepted'&&challenge?.is_ongoing){
       setOngoings(o=>[...o,{instruction:challenge.ongoing_instruction,playerIdx:currentPlayer,turnsLeft:challenge.ongoing_rounds||2}])
     }
+    if (autoNext) setTimeout(nextPlayer, result === 'fail' && !isFamily ? 3000 : 500)
   }
 
   const nextPlayer = () => {
-    setRolled(false);setChallenge(null);setShowChallenge(false);setMiniGame(null)
+    setRolled(false);setChallenge(null);setShowChallenge(false);setMiniGame(null);setSpecialPicker(null);setSpecialNotice(null)
     const next=(currentPlayer+1)%players.length
     if(next===0)setRound(r=>r+1)
     setCurrentPlayer(next)
@@ -233,7 +446,7 @@ export default function MapGame() {
           <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
           <div className="flex items-center gap-2">
             <Trophy className="text-amber-400 w-4 h-4"/>
-            <span className="text-white font-bold text-sm">R{round} · Meta: {WINNING} pts</span>
+            <span className="text-white font-bold text-sm">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta: ${WINNING} pts`}</span>
           </div>
           <div className="flex gap-2">
             {players.map((p,i)=>(
@@ -258,12 +471,36 @@ export default function MapGame() {
 
       {/* Map */}
       <div className="px-4 py-3 overflow-x-auto max-w-lg mx-auto w-full">
-        <MapGrid tiles={MAP} positions={positions} players={players} currentPlayer={currentPlayer}/>
+        <MapGrid tiles={MAP} positions={positions} players={players} currentPlayer={currentPlayer} layout="party"/>
       </div>
 
       {/* Score bars */}
       <div className="px-4 max-w-lg mx-auto w-full mb-2">
-        {players.map((p,i)=>(
+        {usesCategoryProgress&&(
+          <div className="mb-3 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-white text-xs font-black uppercase tracking-[0.18em]">Falta a {player?.name}</p>
+              <p className="text-slate-500 text-xs">{scores[currentPlayer]}/{cats.length*3}</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {cats.map(cat=>{
+                const count=categoryScores[currentPlayer]?.[cat]||0
+                return(
+                  <div key={cat} className="rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate text-xs font-bold text-slate-300">{CATEGORY_CONFIG[cat]?.emoji || '🎴'} {cat}</span>
+                      <span className={`text-xs font-black ${count>=3?'text-emerald-300':'text-white'}`}>{count}/3</span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500" style={{width:`${Math.min(100,(count/3)*100)}%`}}/>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        {!usesCategoryProgress&&players.map((p,i)=>(
           <div key={i} className="flex items-center gap-2 mb-1">
             <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-xs font-black flex-shrink-0`}>{p.name[0]}</div>
             <div className="flex-1 h-2 bg-white/[0.05] rounded-full overflow-hidden">
@@ -284,6 +521,7 @@ export default function MapGame() {
               <p className="text-slate-500 text-xs">Vez de</p>
               <motion.h2 key={currentPlayer} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} className="text-white font-black text-xl">{player?.name}</motion.h2>
               <p className="text-slate-600 text-xs">Casa {positions[currentPlayer]} · {scores[currentPlayer]}/{WINNING} pts</p>
+              {shields[currentPlayer]>0&&<p className="text-emerald-400 text-xs">🛡️ Proteção ativa</p>}
             </div>
             {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="text-amber-400 w-5 h-5 ml-auto flex-shrink-0"/>}
           </div>
@@ -303,18 +541,59 @@ export default function MapGame() {
         {penaltyAnim&&(
           <motion.div key="pen" initial={{opacity:0,scale:0.6,y:40}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:0.6,y:-40}}
             className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-            <div className={`backdrop-blur-sm rounded-3xl px-8 py-6 text-center shadow-2xl ${penaltyAnim.type==='penalty'?'bg-emerald-500/90':'bg-amber-500/90'}`}>
-              <div className="text-5xl mb-2">{penaltyAnim.type==='penalty'?'⚽':'🍺'}</div>
+            <div className={`backdrop-blur-sm rounded-3xl px-8 py-6 text-center shadow-2xl ${penaltyAnim.type==='penalty'||penaltyAnim.type==='shield'?'bg-emerald-500/90':'bg-amber-500/90'}`}>
+              <div className="text-5xl mb-2">{penaltyAnim.type==='penalty'?'⚽':penaltyAnim.type==='shield'?'🛡️':penaltyAnim.type==='distribute'?'👑':'🍺'}</div>
               <div className="text-black font-black text-2xl">{penaltyAnim.name}</div>
-              <div className="text-black/80 font-bold text-lg">{penaltyAnim.type==='penalty'?'marca um penálti!':`bebe ${penaltyAnim.sips} golo${penaltyAnim.sips>1?'s':''}!`}</div>
+              <div className="text-black/80 font-bold text-lg">
+                {penaltyAnim.type==='penalty'
+                  ? 'marca um penálti!'
+                  : penaltyAnim.type==='shield'
+                  ? 'usou a proteção!'
+                  : penaltyAnim.type==='distribute'
+                  ? `distribui ${penaltyAnim.sips} golos!`
+                  : `bebe ${penaltyAnim.sips} golo${penaltyAnim.sips>1?'s':''}!`}
+              </div>
             </div>
           </motion.div>
         )}
         {showChallenge&&challenge&&(
           <ChallengeCard challenge={challenge} player={player} mode={game?.mode} penaltyType={isFamily?'none':penaltyType}
-            onResult={handleResult} onClose={()=>setShowChallenge(false)}/>
+            competitors={competitiveOptions()} onResult={handleResult} onClose={()=>setShowChallenge(false)}/>
         )}
         {miniGame&&<MiniGameModal type={miniGame} players={players} currentPlayer={currentPlayer} onClose={nextPlayer}/>}
+        {specialNotice&&(
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#111827] p-6 text-center space-y-4">
+              <div className="text-6xl">{specialNotice.emoji}</div>
+              <h3 className="text-white font-black text-2xl">{specialNotice.title}</h3>
+              <p className="text-slate-300">{specialNotice.text}</p>
+              <button onClick={()=>specialNotice.continueAction?void specialNotice.continueAction():(()=>{setSpecialNotice(null);nextPlayer()})()} className="w-full rounded-2xl bg-violet-600 py-4 text-white font-black">
+                {specialNotice.continueAction?'Revelar desafio':'Continuar'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+        {specialPicker&&(
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
+            className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#111827] p-6 space-y-4">
+              <div className="text-center">
+                <div className="text-6xl mb-2">{specialPicker.tile.emoji}</div>
+                <h3 className="text-white font-black text-2xl">{specialPicker.title}</h3>
+                <p className="text-slate-400 text-sm mt-1">A categoria define que tipo de desafio sai.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {cats.map(cat=>(
+                  <button key={cat} onClick={()=>{setSpecialPicker(null);void openSpecialChallenge(specialPicker.tile, cat)}}
+                    className="rounded-2xl border border-white/[0.08] bg-white/[0.05] p-3 text-left text-white font-bold">
+                    <span className="mr-2">{CATEGORY_CONFIG[cat]?.emoji || '🎴'}</span>{cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   )

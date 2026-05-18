@@ -1,0 +1,13 @@
+{
+  "name": "Modo Cartas - Base",
+  "mode": "cards",
+  "description": "Cartas brancas e pretas para o modo de cartas.",
+  "white": [
+    "Uma desculpa que ninguém acreditou",
+    "O amigo que desaparece quando chega a conta"
+  ],
+  "black": [
+    "A festa acabou quando alguém trouxe ___.",
+    "O segredo para sobreviver a uma segunda-feira é ___."
+  ]
+}

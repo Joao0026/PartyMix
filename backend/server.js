@@ -16,7 +16,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 app.use(cors(expressCorsOptions()))
-app.use(express.json())
+app.use(express.json({ limit: '1mb' }))
 
 app.use('/api/admin', require('./routes/admin'))
 

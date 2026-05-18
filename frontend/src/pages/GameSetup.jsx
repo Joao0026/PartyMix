@@ -6,15 +6,19 @@ import { PLAYER_COLORS, TEAM_COLORS, saveGame } from '../utils/game'
 import { NumericDie } from '../components/game/EroticDie'
 
 const MODE_CONFIG = {
-  couple:  { label:'Modo Casal',   color:'from-rose-500 to-pink-600',  min:2, max:2,  cats:['erotico','verdade','acao'],                                         hasTeams:false, hasMini:false },
-  friends: { label:'Modo Amigos',  color:'from-cyan-400 to-blue-500',  min:2, max:20, cats:['mimica','desenho','palavra','acao','verdade','consequencia'],        hasTeams:true,  hasMini:true  },
-  family:  { label:'Modo Família', color:'from-sky-400 to-indigo-500', min:2, max:20, cats:['mimica','desenho','palavra','cultura','desporto','musica','cinema'], hasTeams:true,  hasMini:false },
+  couple:  { label:'Modo Casal',   color:'from-rose-500 to-pink-600',  min:2, max:2,  cats:['romantico','picante','verdade','acao','roleplay','casal_pergunta'], hasTeams:false, hasMini:false },
+  friends: { label:'Modo Amigos',  color:'from-cyan-400 to-blue-500',  min:2, max:20, cats:['telepatia','perguntas','desenho','mimica','proibido','caos'],           hasTeams:true,  hasMini:true  },
+  family:  { label:'Modo Família', color:'from-sky-400 to-indigo-500', min:2, max:20, cats:['telepatia','perguntas','desenho','mimica','proibido'],           hasTeams:true,  hasMini:false },
 }
 
 const CAT_LABELS = {
-  mimica:'🎭 Mímica', desenho:'🎨 Desenho', palavra:'💬 Palavra', acao:'⚡ Ação',
+  telepatia:'🧠 Sincronia', perguntas:'📚 Sabichão', desenho:'🎨 Rabiscos',
+  mimica:'🎭 Gestos', proibido:'🚫 Palavra Tabu', caos:'💥 Caos',
+  palavra:'💬 Palavra', acao:'⚡ Ação',
   verdade:'❓ Verdade', consequencia:'🎲 Consequência', cultura:'📚 Cultura',
-  desporto:'⚽ Desporto', musica:'🎵 Música', cinema:'🎬 Cinema', erotico:'🔥 Erótico',
+  desporto:'⚽ Desporto', musica:'🎵 Música', cinema:'🎬 Cinema',
+  erotico:'🔥 Erótico', romantico:'🌹 Conexão', picante:'🔥 Picante',
+  roleplay:'🎭 Cena', casal_pergunta:'💬 Quanto me conheces?',
 }
 
 const MINI_GAMES = [
@@ -88,6 +92,7 @@ export default function GameSetup() {
   const [penalty,    setPenalty]    = useState('sips')
   const [friendsMode,setFriendsMode]= useState('map_cats')
   const [mapRotation,setMapRotation]= useState('random')
+  const [mapStyle,   setMapStyle]   = useState('classic')
 
   // Score mode for friends: '3_per_cat' (like Party & Co) or 'max_points'
   const [scoreMode,  setScoreMode]  = useState('max_points')
@@ -116,6 +121,7 @@ export default function GameSetup() {
       miniGames: isFamily ? [] : miniGames,
       friendsMode,
       mapRotation,
+      mapStyle,
       winningScore,
     })
     if (mode==='couple')                 navigate('/CoupleGame')
@@ -202,6 +208,24 @@ export default function GameSetup() {
                 </div>
               )}
 
+              {(mode==='family'||(mode==='friends'&&(friendsMode==='map_cats'||friendsMode==='map_mini')))&&(
+                <div>
+                  <h3 className="text-white font-semibold mb-2">🧩 Modo de Regras</h3>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      {id:'classic',label:'Clássico',desc:'Só categorias e mini-jogos no tabuleiro'},
+                      {id:'special',label:'Especial',desc:mode==='family'?'Adiciona duelos, bónus, risco e todos jogam':'Adiciona caos, duelos, roubo e proteção'},
+                    ].map(opt=>(
+                      <button key={opt.id} onClick={()=>setMapStyle(opt.id)}
+                        className={`p-3 rounded-xl border text-left text-sm transition-all ${mapStyle===opt.id?'bg-emerald-600/15 border-emerald-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                        <p className="font-bold">{opt.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Teams */}
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -236,7 +260,7 @@ export default function GameSetup() {
               </div>
 
               {/* Categories */}
-              {(mode !== 'friends' || friendsMode !== 'map_cats') && (
+              {(mode !== 'friends' || friendsMode !== 'map_mini') && (
                 <div>
                   <h3 className="text-white font-semibold mb-2">Categorias</h3>
                   <div className="grid grid-cols-2 gap-2">
@@ -280,7 +304,7 @@ export default function GameSetup() {
                     <div className="flex items-center gap-2">
                       <span className="text-sky-300 text-sm font-bold">🏡 3 pontos por categoria (obrigatório)</span>
                     </div>
-                    <p className="text-slate-400 text-xs">Como o Party & Company — cada categoria vale 3 pontos.</p>
+                    <p className="text-slate-400 text-xs">Cada tipo de desafio vale 3 pontos.</p>
                     <div className="bg-sky-900/30 rounded-xl p-3 flex items-center justify-between">
                       <span className="text-slate-300 text-sm">{categories.length} categori{categories.length===1?'a':'as'} × 3 pontos</span>
                       <span className="text-white font-black text-2xl">= {winningScore} pts</span>
@@ -292,7 +316,7 @@ export default function GameSetup() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        {id:'3_per_cat', label:'📦 3 por categoria', desc:'Como Party & Company'},
+                        {id:'3_per_cat', label:'📦 3 por tipo', desc:'Cada tipo vale 3 pontos'},
                         {id:'max_points', label:'🎯 Pontuação máxima', desc:'Escolhes o número'},
                       ].map(opt=>(
                         <button key={opt.id} onClick={()=>setScoreMode(opt.id)}

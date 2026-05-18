@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus, ChevronLeft, Eye, EyeOff, Users } from 'lucide-react'
@@ -13,6 +13,57 @@ const WORD_PAIRS = [
   ['Praia','Lago'],['Chocolate','Caramelo'],['Castelo','Palácio'],['Tubarão','Baleia'],
   ['Computador','Tablet'],['Vinho','Cerveja'],['Montanha','Colina'],['Janela','Porta'],
 ]
+const WORD_PACKS = {
+  geral: {
+    label: '🌍 Geral',
+    pairs: WORD_PAIRS.map(([civil, undercover]) => ({ civil, undercover, difficulty: 'normal' })),
+  },
+  comida: {
+    label: '🍕 Comida',
+    pairs: [
+      { civil:'Pizza', undercover:'Focaccia', difficulty:'facil' },
+      { civil:'Café', undercover:'Chá', difficulty:'facil' },
+      { civil:'Chocolate', undercover:'Caramelo', difficulty:'normal' },
+      { civil:'Bacalhau', undercover:'Polvo', difficulty:'dificil' },
+    ],
+  },
+  portugal: {
+    label: '🇵🇹 Portugal',
+    pairs: [
+      { civil:'Benfica', undercover:'Sporting', difficulty:'facil' },
+      { civil:'Lisboa', undercover:'Porto', difficulty:'facil' },
+      { civil:'Pastel de nata', undercover:'Queijada', difficulty:'normal' },
+      { civil:'Fado', undercover:'Cante alentejano', difficulty:'dificil' },
+    ],
+  },
+  marcas: {
+    label: '🏷️ Marcas',
+    pairs: [
+      { civil:'Coca-Cola', undercover:'Pepsi', difficulty:'facil' },
+      { civil:"McDonald's", undercover:'Burger King', difficulty:'facil' },
+      { civil:'Instagram', undercover:'TikTok', difficulty:'normal' },
+      { civil:'Netflix', undercover:'HBO', difficulty:'normal' },
+    ],
+  },
+  filmes: {
+    label: '🎬 Filmes',
+    pairs: [
+      { civil:'Cinema', undercover:'Teatro', difficulty:'facil' },
+      { civil:'Harry Potter', undercover:'Senhor dos Anéis', difficulty:'normal' },
+      { civil:'Batman', undercover:'Superman', difficulty:'normal' },
+      { civil:'Terror', undercover:'Suspense', difficulty:'dificil' },
+    ],
+  },
+  escola: {
+    label: '🎒 Escola',
+    pairs: [
+      { civil:'Professor', undercover:'Aluno', difficulty:'facil' },
+      { civil:'Teste', undercover:'Exame', difficulty:'normal' },
+      { civil:'Recreio', undercover:'Intervalo', difficulty:'normal' },
+      { civil:'Caderno', undercover:'Manual', difficulty:'dificil' },
+    ],
+  },
+}
 const COLORS = ['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-lime-400 to-green-500','from-sky-400 to-indigo-500','from-red-400 to-rose-600','from-teal-400 to-cyan-500','from-orange-400 to-amber-500','from-indigo-400 to-violet-500']
 
 export default function MisterWhiteGame() {
@@ -21,6 +72,9 @@ export default function MisterWhiteGame() {
   const [playerNames, setPlayerNames] = useState(['','','',''])
   const [numUndercover, setNumUndercover] = useState(1)
   const [numMW, setNumMW] = useState(1)
+  const [wordPack, setWordPack] = useState('geral')
+  const [difficulty, setDifficulty] = useState('normal')
+  const [discussionSeconds, setDiscussionSeconds] = useState(90)
 
   // Game state
   const [roles, setRoles] = useState([])           // [{name, color, role, word, origIdx}] — in original player order
@@ -36,21 +90,24 @@ export default function MisterWhiteGame() {
   const [mwEliminatedIdx, setMwEliminatedIdx] = useState(null)
   const [gameResult, setGameResult] = useState(null)
   const [roundNum, setRoundNum] = useState(1)
+  const [timeLeft, setTimeLeft] = useState(discussionSeconds)
 
   const valid = playerNames.filter(n => n.trim())
   const maxSpec = Math.max(0, valid.length - 2)
 
   const startGame = () => {
-    const pair = WORD_PAIRS[Math.floor(Math.random() * WORD_PAIRS.length)]
-    setCivilWord(pair[0]); setUndercoverWord(pair[1])
+    const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
+    const candidates = packPairs.filter(p => difficulty === 'normal' ? true : p.difficulty === difficulty)
+    const pair = (candidates.length ? candidates : packPairs)[Math.floor(Math.random() * (candidates.length ? candidates : packPairs).length)]
+    setCivilWord(pair.civil); setUndercoverWord(pair.undercover)
     // Assign roles randomly but KEEP original player order for reveals/turns
     const indices = Array.from({ length: valid.length }, (_, i) => i)
     const shuffledIdxs = shuffle([...indices])
     // Assign MW and undercover roles to shuffled positions
     const roleMap = {}
     shuffledIdxs.slice(0, numMW).forEach(i => { roleMap[i] = { role: 'mister_white', word: '' } })
-    shuffledIdxs.slice(numMW, numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'undercover', word: pair[1] } })
-    shuffledIdxs.slice(numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'civil', word: pair[0] } })
+    shuffledIdxs.slice(numMW, numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'undercover', word: pair.undercover } })
+    shuffledIdxs.slice(numMW + numUndercover).forEach(i => { roleMap[i] = { role: 'civil', word: pair.civil } })
     // Build roles array in ORIGINAL order
     const assigned = valid.map((name, i) => ({
       name, origIdx: i,
@@ -62,6 +119,7 @@ export default function MisterWhiteGame() {
     setShowRole(false)
     setEliminated([]); setVotes({}); setVoteCandidate(null); setConfirmed(false)
     setMwGuess(''); setMwEliminatedIdx(null); setGameResult(null); setRoundNum(1)
+    setTimeLeft(discussionSeconds)
     setStep('reveal')
   }
 
@@ -78,6 +136,17 @@ export default function MisterWhiteGame() {
   const startVoting = () => {
     setVoteCandidate(null); setConfirmed(false); setVotes({}); setStep('vote')
   }
+
+  useEffect(() => {
+    if (step !== 'playing') return
+    setTimeLeft(discussionSeconds)
+  }, [step, roundNum, discussionSeconds])
+
+  useEffect(() => {
+    if (step !== 'playing' || timeLeft <= 0) return
+    const timer = setTimeout(() => setTimeLeft(t => Math.max(0, t - 1)), 1000)
+    return () => clearTimeout(timer)
+  }, [step, timeLeft])
 
   const selectCandidate = (idx) => { setVoteCandidate(idx); setConfirmed(false) }
 
@@ -179,9 +248,36 @@ export default function MisterWhiteGame() {
                   </div>
                 ))}
               </div>
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
+                <h3 className="text-white font-semibold">Tema e dificuldade</h3>
+                <select value={wordPack} onChange={e=>setWordPack(e.target.value)}
+                  className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
+                  {Object.entries(WORD_PACKS).map(([id, pack]) => <option key={id} value={id}>{pack.label}</option>)}
+                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  {[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([id,label])=>(
+                    <button key={id} onClick={()=>setDifficulty(id)}
+                      className={`rounded-xl border px-3 py-2 text-xs font-bold ${difficulty===id?'bg-slate-500/30 border-slate-400 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-slate-400 text-xs mb-2">Timer de discussão</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[60,90,120].map(seconds=>(
+                      <button key={seconds} onClick={()=>setDiscussionSeconds(seconds)}
+                        className={`rounded-xl border px-3 py-2 text-xs font-bold ${discussionSeconds===seconds?'bg-violet-600/30 border-violet-500 text-violet-200':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                        {seconds}s
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
               <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-4 text-sm text-slate-400 space-y-1">
                 <p>📖 <span className="text-white">Civis</span> conhecem a palavra. <span className="text-blue-400">Undercoveres</span> têm palavra similar. <span className="text-red-400">Mister White</span> não tem palavra.</p>
                 <p>🗳️ Grupo discute, vota num suspeito, e o dono do telemóvel confirma a eliminação.</p>
+                <p>⏱️ Usa o timer para limitar a discussão antes da votação.</p>
                 <p>🔄 Após a primeira ronda, o turno de revelar avança um para a direita.</p>
               </div>
               <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame} disabled={valid.length<3}
@@ -228,6 +324,12 @@ export default function MisterWhiteGame() {
             <motion.div key={`playing-${roundNum}`} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
                 <p className="text-slate-300 text-sm leading-relaxed">Cada jogador diz <b className="text-white">uma pista</b> sobre a sua palavra — nem demasiado óbvia nem demasiado vaga.</p>
+                <div className={`mt-3 rounded-2xl border px-4 py-3 ${timeLeft===0?'border-red-500/40 bg-red-500/10':'border-violet-500/30 bg-violet-500/10'}`}>
+                  <p className={`font-black text-3xl ${timeLeft===0?'text-red-300':'text-white'}`}>
+                    {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}
+                  </p>
+                  <p className="text-slate-500 text-xs">{timeLeft===0?'Tempo terminado. Podem votar.':'Tempo de discussão'}</p>
+                </div>
               </div>
               <div className="space-y-2">
                 {activeIndices.map(i => (

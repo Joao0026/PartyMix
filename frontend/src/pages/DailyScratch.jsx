@@ -141,6 +141,42 @@ function FlameRating({ count }) {
   )
 }
 
+function PositionIllustration({ variant = 0 }) {
+  const layouts = [
+    { a:[54,72,54,114], b:[118,58,93,100], c:[70,112,122,112] },
+    { a:[48,118,90,118], b:[116,84,116,126], c:[76,92,128,92] },
+    { a:[62,64,62,116], b:[116,68,92,112], c:[58,118,122,118] },
+    { a:[44,86,88,86], b:[118,72,118,118], c:[68,118,132,118] },
+    { a:[54,54,54,104], b:[112,58,88,94], c:[52,110,118,110] },
+    { a:[42,112,92,112], b:[120,72,104,116], c:[74,88,130,88] },
+  ][variant % 6]
+
+  const Limb = ({ points, color }) => (
+    <polyline
+      points={`${points[0]},${points[1]} ${points[2]},${points[3]}`}
+      fill="none"
+      stroke={color}
+      strokeWidth="10"
+      strokeLinecap="round"
+    />
+  )
+
+  return (
+    <div className="relative w-full rounded-2xl border border-white/10 bg-white/95 p-2 shadow-inner">
+      <svg viewBox="0 0 170 140" className="h-32 w-full">
+        <rect x="5" y="5" width="160" height="130" rx="14" fill="#fff" stroke="#111827" strokeWidth="4" />
+        <Limb points={layouts.a} color="#2563eb" />
+        <Limb points={layouts.b} color="#ec4899" />
+        <Limb points={layouts.c} color="#334155" />
+        <circle cx={layouts.a[0]} cy={layouts.a[1]-15} r="9" fill="#2563eb" />
+        <circle cx={layouts.b[0]} cy={layouts.b[1]-15} r="9" fill="#ec4899" />
+        <circle cx="145" cy="24" r="10" fill="#ec4899" opacity="0.16" />
+        <circle cx="28" cy="116" r="12" fill="#2563eb" opacity="0.12" />
+      </svg>
+    </div>
+  )
+}
+
 export default function DailyScratch({ onClose, standalone = false }) {
   const today = getToday()
   const posIdx = (today.day - 1) % 31 // 0-30
@@ -207,18 +243,18 @@ export default function DailyScratch({ onClose, standalone = false }) {
         {/* Scratch card */}
         <div className="relative w-full rounded-2xl overflow-hidden shadow-2xl" style={{ height: 280, background: 'linear-gradient(135deg, #1a0a2e, #2d1b4e)' }}>
           {/* Position content underneath */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-5 text-center">
-            <motion.div animate={state.scratched ? { scale: [0, 1.2, 1] } : {}} transition={{ delay: 0.1, type: 'spring', damping: 10 }}>
-              <div className="text-5xl mb-1">💋</div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
+            <motion.div className="w-full" animate={state.scratched ? { scale: [0.9, 1.04, 1] } : {}} transition={{ delay: 0.1, type: 'spring', damping: 10 }}>
+              <PositionIllustration variant={posIdx} />
             </motion.div>
             <div>
-              <h3 className="text-white font-black text-2xl leading-tight">{position.name}</h3>
+              <h3 className="text-white font-black text-xl leading-tight">{position.name}</h3>
               <div className="mt-1"><FlameRating count={position.difficulty}/></div>
             </div>
-            <p className="text-slate-300 text-sm leading-relaxed">{position.description}</p>
+            <p className="text-slate-300 text-xs leading-relaxed">{position.description}</p>
             {state.scratched && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-                className="bg-white/5 border border-white/10 rounded-xl px-4 py-2">
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2">
                 <p className="text-rose-300 text-xs">{position.tip}</p>
               </motion.div>
             )}

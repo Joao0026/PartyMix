@@ -8,6 +8,13 @@ const ACTIONS    = ['Massagem suave','Beijos lentos','Mordidas suaves','Carícia
 const DARE_CARDS = ['Massagem nas costas durante 2 minutos','Beija no pescoço durante 30 segundos','Sussurra o teu maior fantasma ao ouvido','Remove uma peça de roupa do parceiro','Diz 3 elogios específicos ao corpo do parceiro','Beija em 5 sítios diferentes sem ser os lábios','Dança sensualmente durante 1 minuto','Venda os olhos e surpreende o parceiro com um toque','Escreve com o dedo nas costas — parceiro adivinha','Olha nos olhos durante 30 segundos sem falar','Beija o parceiro durante 1 minuto sem parar','Faz uma massagem nos pés durante 1 minuto','Mostra ao teu parceiro como gostas de ser beijado']
 const QUIZ_Q     = ['O que é que o teu parceiro mais gosta em ti?','Qual foi o momento mais íntimo que passaram juntos?','O que o teu parceiro adora que tu faças?','Qual seria o destino de férias perfeito para o teu parceiro?','O que faz o teu parceiro quando está com medo?','Qual é o maior sonho do teu parceiro?','O que faz o teu parceiro sorrir mesmo nos dias maus?']
 const ROLEPLAY   = [{title:'Desconhecidos no Bar',desc:'Fingem que nunca se conheceram.'},{title:'Médico e Paciente',desc:'Consulta muito profissional... ou não.'},{title:'Vizinhos',desc:'O ruído ao lado leva a um encontro.'},{title:'Estranhos no Elevador',desc:'Presos. 5 minutos. Sem sair.'}]
+const LAP_PRIZES = [
+  'Abre uma raspadinha/posição especial agora.',
+  'Escolhe o próximo desafio do parceiro.',
+  'Podes trocar o próximo resultado do dado por uma nova rolagem.',
+  'Escolhe: beijo longo, massagem ou pergunta íntima.',
+  'Prémio de poder: no próximo turno escolhes entre Dados, Desafio ou Quiz.',
+]
 
 const TILE_DEFS_SELECTABLE = [
   {id:'dare',    emoji:'🔥',label:'Desafio',       bg:'#9d174d',prob:0.28, activity:'challenges'},
@@ -16,8 +23,9 @@ const TILE_DEFS_SELECTABLE = [
   {id:'roleplay',emoji:'🎭',label:'Roleplay',       bg:'#134e4a',prob:0.12, activity:'roleplay'},
 ]
 const TILE_DEFS_FIXED = [
-  {id:'forward', emoji:'💘',label:'+2 Casas',       bg:'#14532d',prob:0.11},
+  {id:'forward', emoji:'💘',label:'+1 Casa',        bg:'#14532d',prob:0.10},
   {id:'back',    emoji:'💔',label:'-1 Casa',        bg:'#7f1d1d',prob:0.11},
+  {id:'prize',   emoji:'🎁',label:'Prémio',         bg:'#b45309',prob:0.10},
 ]
 
 function getTileDefs(selected){
@@ -31,7 +39,7 @@ function pickTile(defs){
   for(const t of defs){cum+=t.prob; if(r<cum) return {...t}}
   return {...defs[0]}
 }
-const COLS=10,ROWS=5,TOTAL=COLS*ROWS
+const TOTAL=18
 function buildBoard(tileDefs){
   const board = Array.from({length:TOTAL},(_,i)=>{
     if(i===0) return {id:'start',emoji:'💕',label:'Início',bg:'#7c3aed'}
@@ -46,10 +54,22 @@ function buildBoard(tileDefs){
       board[i] = alt ? {...alt} : {id:'dare',emoji:'🔥',label:'Desafio',bg:'#9d174d'}
     }
   }
-  board[board.length-1] = {id:'end',emoji:'🏆',label:'Fim!',bg:'#b45309'}
   return board
 }
-function posToGrid(pos){const row=Math.floor(pos/COLS);const col=row%2===0?pos%COLS:COLS-1-(pos%COLS);return{row,col}}
+const HEART_POINTS = [
+  [0.50,0.92],[0.38,0.82],[0.28,0.70],[0.18,0.56],[0.12,0.40],
+  [0.15,0.25],[0.24,0.14],[0.39,0.12],[0.42,0.24],[0.50,0.36],
+  [0.58,0.24],[0.61,0.12],[0.76,0.14],[0.85,0.25],[0.88,0.40],
+  [0.82,0.56],[0.72,0.70],[0.62,0.82],
+]
+
+function posToBoard(pos, tileW, tileH, boardW, boardH) {
+  const [x, y] = HEART_POINTS[pos % HEART_POINTS.length]
+  return {
+    left: x * boardW - tileW / 2,
+    top: y * boardH - tileH / 2,
+  }
+}
 
 // Erotic dice inside modal — the modal is on document.body so NO ancestor 3D context
 function EroticDiceInModal({onDone}){
@@ -92,6 +112,7 @@ function TileModal({tile,players,turn,onDone}){
     if(tile.id==='dare')return DARE_CARDS[Math.floor(Math.random()*DARE_CARDS.length)]
     if(tile.id==='quiz')return QUIZ_Q[Math.floor(Math.random()*QUIZ_Q.length)]
     if(tile.id==='roleplay')return ROLEPLAY[Math.floor(Math.random()*ROLEPLAY.length)]
+    if(tile.id==='prize')return ['Abre a raspadinha/posição do dia.','Escolhe o próximo desafio do parceiro.','Vale trocar o próximo dado por outro lançamento.','Prémio: escolhe entre beijo, massagem ou pergunta íntima.'][Math.floor(Math.random()*4)]
     return null
   })
   return(
@@ -122,8 +143,9 @@ function TileModal({tile,players,turn,onDone}){
               <p className="text-slate-300 text-sm">{content.desc}</p>
             </div>
           )}
-          {tile.id==='forward'&&<p className="text-green-400 font-black text-2xl text-center py-2">💘 Avança 2 casas extra!</p>}
+          {tile.id==='forward'&&<p className="text-green-400 font-black text-2xl text-center py-2">💘 Avança 1 casa extra!</p>}
           {tile.id==='back'&&<p className="text-red-400 font-black text-2xl text-center py-2">💔 Recua 1 casa!</p>}
+          {tile.id==='prize'&&<p className="text-amber-300 font-black text-xl text-center py-2">{content}</p>}
           {tile.id!=='dice'&&(
             <button onClick={onDone} className="w-full text-white font-black rounded-2xl py-4 text-lg" style={{background:tile.bg}}>
               {['dare','roleplay','quiz'].includes(tile.id)?'✅ Feito!':'Continuar →'}
@@ -135,17 +157,18 @@ function TileModal({tile,players,turn,onDone}){
   )
 }
 
-export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
+export default function CoupleMap({players,onExit,selected=[],maxDice=6,loopGoal='free',targetLaps=3}){
   const tileDefs = getTileDefs(selected)
   const BOARD=useRef(buildBoard(tileDefs)).current
   const [positions,setPositions]=useState([0,0])
+  const [laps,setLaps]=useState([0,0])
   const [turn,setTurn]=useState(0)
   const [diceResult,setDiceResult]=useState(null)
   const [animatingPos,setAnimatingPos]=useState(null)
   const [rolled,setRolled]=useState(false)
   const [activeTile,setActiveTile]=useState(null)
+  const [lapPrize,setLapPrize]=useState(null)
   const [winner,setWinner]=useState(null)
-  const [curTile,setCurTile]=useState(null)
   const [diceSides,setDiceSides]=useState(maxDice)
   const player=players[turn%2],pos=positions[turn%2]
 
@@ -155,33 +178,38 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
     setDiceResult(val)
     
     let currentPos=pos
-    let finalPos=pos+val
+    let finalPos=(pos+val)%TOTAL
+    let completedLap=false
     
     // Animate step by step
     for(let step=1;step<=val;step++){
       await new Promise(r=>setTimeout(r,300))
-      const stepPos=Math.min(pos+step,TOTAL-1)
+      const stepPos=(pos+step)%TOTAL
+      if(pos+step>=TOTAL) completedLap=true
       setAnimatingPos(stepPos)
       setPositions(p=>p.map((v,i)=>i===turn%2?stepPos:v))
     }
     
-    finalPos=Math.min(finalPos,TOTAL-1)
+    finalPos=finalPos%TOTAL
     let tileToCheck=BOARD[finalPos]
     
     if(tileToCheck.id==='forward'){
-      finalPos=Math.min(finalPos+2,TOTAL-1)
-      // Animate the +2 bonus
-      for(let step=1;step<=2;step++){
+      const startForward = finalPos
+      finalPos=(finalPos+1)%TOTAL
+      if(startForward+1>=TOTAL) completedLap=true
+      // Animate the +1 bonus
+      for(let step=1;step<=1;step++){
         await new Promise(r=>setTimeout(r,300))
-        setAnimatingPos(Math.min(finalPos-2+step,TOTAL-1))
-        setPositions(p=>p.map((v,i)=>i===turn%2?Math.min(finalPos-2+step,TOTAL-1):v))
+        const stepPos=(startForward+step)%TOTAL
+        setAnimatingPos(stepPos)
+        setPositions(p=>p.map((v,i)=>i===turn%2?stepPos:v))
       }
       // Get the tile at final position after bonus
       tileToCheck=BOARD[finalPos]
     }
     
     if(tileToCheck.id==='back'){
-      const backPos=Math.max(finalPos-1,0)
+      const backPos=(finalPos-1+TOTAL)%TOTAL
       // Animate going back
       await new Promise(r=>setTimeout(r,300))
       setAnimatingPos(backPos)
@@ -190,25 +218,24 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
       tileToCheck=BOARD[finalPos]
     }
     
-    setCurTile(finalPos)
-    if(finalPos>=TOTAL-1){setWinner(turn%2);return}
     setAnimatingPos(null)
     await new Promise(r=>setTimeout(r,600))
+    if(completedLap){
+      const nextLaps=laps.map((lap,i)=>i===turn%2?lap+1:lap)
+      setLaps(nextLaps)
+      const prize = LAP_PRIZES[Math.floor(Math.random()*LAP_PRIZES.length)]
+      setLapPrize({playerIdx:turn%2,prize,laps:nextLaps[turn%2]})
+      if(loopGoal==='laps'&&nextLaps[turn%2]>=targetLaps){
+        setWinner(turn%2)
+      }
+      return
+    }
     setActiveTile(tileToCheck)
   }
-  const nextTurn=()=>{setActiveTile(null);setRolled(false);setDiceResult(null);setTurn(t=>t+1)}
+  const nextTurn=()=>{setActiveTile(null);setLapPrize(null);setRolled(false);setDiceResult(null);setTurn(t=>t+1)}
 
-  if(winner!==null)return(
-    <div className="flex-1 flex flex-col items-center justify-center px-4 text-center gap-5">
-      <span className="text-7xl">🏆</span>
-      <h2 className="text-white font-black text-3xl">{players[winner]?.name} chegou primeiro!</h2>
-      <p className="text-rose-300 text-lg">Escolhe uma recompensa especial 💕</p>
-      <button onClick={onExit} className="text-white font-bold rounded-2xl px-8 py-4" style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>Terminar 💕</button>
-    </div>
-  )
-
-  const tileW=44,tileH=42,gap=2
-  const boardW=COLS*(tileW+gap)-gap,boardH=ROWS*(tileH+gap)-gap
+  const tileW=38,tileH=36
+  const boardW=390,boardH=370
 
   return(
     <div className="flex flex-col flex-1">
@@ -221,14 +248,23 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
             </div>
           ))}
         </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {players.map((p,i)=>(
+            <div key={i} className={`rounded-xl border px-3 py-2 text-xs ${i===turn%2?'border-rose-500/40 bg-rose-500/10':'border-white/[0.07] bg-white/[0.03]'}`}>
+              <span className="text-white font-bold">{p.name}</span>
+              <span className="text-slate-500"> · {laps[i]} volta{laps[i]===1?'':'s'}</span>
+              {loopGoal==='laps'&&<span className="text-rose-300"> / {targetLaps}</span>}
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Board — NO Framer Motion on tiles, pure CSS only */}
-      <div className="flex justify-center px-4 py-3">
+      <div className="overflow-x-auto px-4 py-3" style={{scrollbarWidth:'thin'}}>
         {diceResult&&<div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-white/[0.1] border border-rose-500/30 rounded-2xl px-6 py-3"><p className="text-white font-black text-2xl">🎲 {diceResult}</p></div>}
-        <div style={{position:'relative',width:boardW,height:boardH}}>
+        <div style={{position:'relative',width:boardW,height:boardH,margin:'0 auto'}}>
           {BOARD.map((tile,idx)=>{
-            const {row,col}=posToGrid(idx)
+            const {left,top}=posToBoard(idx,tileW,tileH,boardW,boardH)
             const p0here=positions[0]===idx,p1here=positions[1]===idx
             const isCur=(turn%2===0?p0here:p1here)
             const isAnimating=animatingPos===idx
@@ -236,11 +272,11 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
               <div key={idx}
                 style={{
                   position:'absolute',
-                  left:col*(tileW+gap),
-                  top:(ROWS-1-row)*(tileH+gap),
+                  left,
+                  top,
                   width:tileW, height:tileH,
                   background:tile.bg+'cc',
-                  borderRadius:9,
+                  borderRadius:8,
                   border:`0.5px solid ${isCur||isAnimating?tile.bg:'rgba(255,255,255,0.07)'}`,
                   boxShadow:(isCur||isAnimating)?`0 0 10px ${tile.bg}cc`:'none',
                   outline:(isCur||isAnimating)?`2px solid ${tile.bg}`:'none',
@@ -252,8 +288,7 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
                   {p0here&&<div style={{width:17,height:17,borderRadius:'50%',background:'linear-gradient(135deg,#ec4899,#f43f5e)',border:'1.5px solid rgba(255,255,255,0.7)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:9,fontWeight:900,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}>{players[0]?.name?.[0]}</div>}
                   {p1here&&<div style={{width:17,height:17,borderRadius:'50%',background:'linear-gradient(135deg,#06b6d4,#3b82f6)',border:'1.5px solid rgba(255,255,255,0.7)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontSize:9,fontWeight:900,boxShadow:'0 2px 6px rgba(0,0,0,0.5)'}}>{players[1]?.name?.[0]}</div>}
                 </div>
-                <span style={{fontSize:18,lineHeight:1}}>{tile.emoji}</span>
-                <span style={{fontSize:8,color:'rgba(255,255,255,0.3)',fontFamily:'monospace'}}>{idx}</span>
+                <span style={{fontSize:16,lineHeight:1}}>{tile.emoji}</span>
               </div>
             )
           })}
@@ -265,7 +300,7 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
         <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 w-full max-w-sm">
           <div className="flex items-center gap-4 mb-4">
             <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl`}>{player?.name?.[0]}</div>
-            <div><p className="text-slate-500 text-xs">Vez de</p><h2 className="text-white font-black text-xl">{player?.name}</h2><p className="text-slate-600 text-xs">Casa {pos}/{TOTAL-1}</p></div>
+            <div><p className="text-slate-500 text-xs">Vez de</p><h2 className="text-white font-black text-xl">{player?.name}</h2><p className="text-slate-600 text-xs">Mapa em loop · sem fim obrigatório</p></div>
           </div>
           {!rolled?(
             <div className="w-full space-y-3">
@@ -276,13 +311,12 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
             </div>
           )
             :!activeTile&&<button onClick={nextTurn} className="w-full text-white font-bold rounded-2xl py-4" style={{background:'linear-gradient(135deg,#be185d,#9d174d)'}}>Próximo Turno 💕</button>}
-          )
         </div>
         <div className="grid grid-cols-2 gap-2 w-full max-w-sm">
           {players.map((p,i)=>(
             <div key={i} className={`bg-white/[0.04] rounded-2xl p-3 flex items-center gap-3 border ${i===turn%2?'border-rose-500/40':'border-white/[0.05]'}`}>
               <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-sm font-black shadow`}>{p.name[0]}</div>
-              <div><p className="text-white text-sm font-semibold">{p.name}</p><p className="text-slate-500 text-xs">Casa {positions[i]}</p></div>
+              <div><p className="text-white text-sm font-semibold">{p.name}</p><p className="text-slate-500 text-xs">A jogar no coração</p></div>
             </div>
           ))}
         </div>
@@ -290,6 +324,28 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6}){
 
       <AnimatePresence>
         {activeTile&&<TileModal tile={activeTile} players={players} turn={turn} onDone={nextTurn}/>}
+        {lapPrize&&(
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center p-4">
+            <motion.div initial={{y:100,opacity:0}} animate={{y:0,opacity:1}} exit={{y:100,opacity:0}}
+              transition={{type:'spring',damping:20}}
+              className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-amber-500/40 bg-[#140812]">
+              <div className="px-5 py-4 flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-600">
+                <span className="text-4xl">{winner!==null?'🏆':'🎁'}</span>
+                <div>
+                  <h3 className="text-white font-black text-xl">{winner!==null?'Vitória por voltas!':'Prémio de Volta'}</h3>
+                  <p className="text-white/75 text-sm">{players[lapPrize.playerIdx]?.name} completou {lapPrize.laps} volta{lapPrize.laps===1?'':'s'}</p>
+                </div>
+              </div>
+              <div className="p-5 space-y-4 text-center">
+                {winner!==null&&<p className="text-amber-300 font-black text-2xl">{players[winner]?.name} venceu o loop!</p>}
+                <p className="text-white text-xl font-semibold leading-relaxed">{lapPrize.prize}</p>
+                <button onClick={winner!==null?onExit:nextTurn} className="w-full text-white font-black rounded-2xl py-4 text-lg bg-gradient-to-r from-amber-500 to-orange-600">
+                  {winner!==null?'Terminar 💕':'Continuar →'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   )

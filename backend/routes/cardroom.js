@@ -1,6 +1,17 @@
 const router = require('express').Router();
 const CardRoom = require('../models/CardRoom');
 const Card = require('../models/Card');
+const {
+  asyncRoute,
+  cleanString,
+  intInRange,
+  mongoId,
+  mongoIdList,
+  oneOf,
+  roomCode,
+} = require('../lib/validate');
+
+const GAME_TYPES = ['dare','truth','drinking','trivia'];
 
 // Generate a unique 4-character alphanumeric code
 function genCode() { 
@@ -8,57 +19,46 @@ function genCode() {
 }
 
 // Create a new card room
-router.post('/create', async (req, res) => {
-  try {
-    const { creator, creatorId, title, maxPoints, maxPlayers, gameType, selectedCards } = req.body;
-    
-    if (!creator || !creatorId) {
-      return res.status(400).json({ error: 'Creator information required' });
-    }
+router.post('/create', asyncRoute(async (req, res) => {
+  const creator = cleanString(req.body.creator, { field: 'creator', max: 50, required: true });
+  const creatorId = cleanString(req.body.creatorId, { field: 'creatorId', max: 80, required: true });
 
-    let code, exists;
-    do { 
-      code = genCode(); 
-      exists = await CardRoom.findOne({ code }); 
-    } while (exists);
+  let code, exists;
+  do { 
+    code = genCode(); 
+    exists = await CardRoom.findOne({ code }); 
+  } while (exists);
 
-    const room = await new CardRoom({ 
-      code, 
-      creator,
-      creatorId,
-      title,
-      maxPoints: maxPoints || 21,
-      maxPlayers: maxPlayers || 8,
-      gameType: gameType || 'dare',
-      selectedCards: selectedCards || [],
-      players: [{ id: creatorId, name: creator, isJury: false }]
-    }).save();
+  const room = await new CardRoom({ 
+    code, 
+    creator,
+    creatorId,
+    title: cleanString(req.body.title, { field: 'title', max: 80, defaultValue: 'Custom Cards Game' }),
+    maxPoints: intInRange(req.body.maxPoints, { field: 'maxPoints', min: 1, max: 100, defaultValue: 21 }),
+    maxPlayers: intInRange(req.body.maxPlayers, { field: 'maxPlayers', min: 2, max: 20, defaultValue: 8 }),
+    gameType: oneOf(req.body.gameType, GAME_TYPES, { field: 'gameType', defaultValue: 'dare' }),
+    selectedCards: mongoIdList(req.body.selectedCards),
+    players: [{ id: creatorId, name: creator, isJury: false }]
+  }).save();
 
-    res.status(201).json({ code: room.code, roomId: room._id });
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+  res.status(201).json({ code: room.code, roomId: room._id });
+}));
 
 // Get room info by code
-router.get('/:code', async (req, res) => {
-  try {
-    const room = await CardRoom.findOne({ 
-      code: req.params.code.toUpperCase(),
-      status: { $ne: 'finished' }
-    });
-    if (!room) return res.status(404).json({ error: 'Room not found' });
-    res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+router.get('/:code', asyncRoute(async (req, res) => {
+  const room = await CardRoom.findOne({ 
+    code: roomCode(req.params.code),
+    status: { $ne: 'finished' }
+  });
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  res.json(room);
+}));
 
 // Join a room
-router.post('/:code/join', async (req, res) => {
-  try {
-    const { playerId, playerName } = req.body;
-    const code = req.params.code.toUpperCase();
+router.post('/:code/join', asyncRoute(async (req, res) => {
+    const playerId = cleanString(req.body.playerId, { field: 'playerId', max: 80, required: true });
+    const playerName = cleanString(req.body.playerName, { field: 'playerName', max: 50, required: true });
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code, status: 'waiting' });
     if (!room) return res.status(404).json({ error: 'Room not found or already started' });
@@ -71,39 +71,34 @@ router.post('/:code/join', async (req, res) => {
     room.players.push({ id: playerId, name: playerName, isJury: false });
     await room.save();
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Update room settings (creator only)
-router.put('/:code/settings', async (req, res) => {
-  try {
-    const { creatorId, maxPoints, maxPlayers, gameType, selectedCards } = req.body;
-    const code = req.params.code.toUpperCase();
+router.put('/:code/settings', asyncRoute(async (req, res) => {
+    const creatorId = cleanString(req.body.creatorId, { field: 'creatorId', max: 80, required: true });
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (room.creatorId !== creatorId) return res.status(403).json({ error: 'Only creator can update settings' });
     if (room.status !== 'waiting') return res.status(400).json({ error: 'Cannot modify room during game' });
 
-    if (maxPoints) room.maxPoints = Math.max(1, Math.min(100, maxPoints));
-    if (maxPlayers) room.maxPlayers = Math.max(2, Math.min(20, maxPlayers));
-    if (gameType) room.gameType = gameType;
-    if (selectedCards) room.selectedCards = selectedCards;
+    if (req.body.maxPoints !== undefined) room.maxPoints = intInRange(req.body.maxPoints, { field: 'maxPoints', min: 1, max: 100, defaultValue: room.maxPoints });
+    if (req.body.maxPlayers !== undefined) room.maxPlayers = intInRange(req.body.maxPlayers, { field: 'maxPlayers', min: 2, max: 20, defaultValue: room.maxPlayers });
+    if (req.body.gameType) room.gameType = oneOf(req.body.gameType, GAME_TYPES, { field: 'gameType' });
+    if (req.body.selectedCards) room.selectedCards = mongoIdList(req.body.selectedCards);
 
     await room.save();
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Set jury members (creator only)
-router.post('/:code/jury', async (req, res) => {
-  try {
-    const { creatorId, juryIds } = req.body;
-    const code = req.params.code.toUpperCase();
+router.post('/:code/jury', asyncRoute(async (req, res) => {
+    const creatorId = cleanString(req.body.creatorId, { field: 'creatorId', max: 80, required: true });
+    const juryIds = Array.isArray(req.body.juryIds)
+      ? req.body.juryIds.map((id) => cleanString(id, { field: 'juryId', max: 80 })).filter(Boolean).slice(0, 20)
+      : [];
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -117,16 +112,12 @@ router.post('/:code/jury', async (req, res) => {
 
     await room.save();
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Start the game
-router.post('/:code/start', async (req, res) => {
-  try {
-    const { creatorId } = req.body;
-    const code = req.params.code.toUpperCase();
+router.post('/:code/start', asyncRoute(async (req, res) => {
+    const creatorId = cleanString(req.body.creatorId, { field: 'creatorId', max: 80, required: true });
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -139,16 +130,15 @@ router.post('/:code/start', async (req, res) => {
     await room.save();
 
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Record a round result
-router.post('/:code/result', async (req, res) => {
-  try {
-    const { playerId, cardId, result, pointsEarned } = req.body;
-    const code = req.params.code.toUpperCase();
+router.post('/:code/result', asyncRoute(async (req, res) => {
+    const playerId = cleanString(req.body.playerId, { field: 'playerId', max: 80, required: true });
+    const cardId = req.body.cardId ? mongoId(req.body.cardId, 'cardId') : undefined;
+    const result = cleanString(req.body.result, { field: 'result', max: 40, defaultValue: 'completed' });
+    const pointsEarned = intInRange(req.body.pointsEarned, { field: 'pointsEarned', min: -20, max: 20, defaultValue: 0 });
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -166,7 +156,7 @@ router.post('/:code/result', async (req, res) => {
       player: playerId,
       cardId,
       result,
-      pointsEarned: pointsEarned || 0
+      pointsEarned
     });
 
     // Check for victory condition
@@ -183,16 +173,12 @@ router.post('/:code/result', async (req, res) => {
 
     await room.save();
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Leave a room
-router.post('/:code/leave', async (req, res) => {
-  try {
-    const { playerId } = req.body;
-    const code = req.params.code.toUpperCase();
+router.post('/:code/leave', asyncRoute(async (req, res) => {
+    const playerId = cleanString(req.body.playerId, { field: 'playerId', max: 80, required: true });
+    const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
@@ -206,20 +192,13 @@ router.post('/:code/leave', async (req, res) => {
 
     await room.save();
     res.json(room);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+}));
 
 // Get room history
-router.get('/:code/history', async (req, res) => {
-  try {
-    const room = await CardRoom.findOne({ code: req.params.code.toUpperCase() });
-    if (!room) return res.status(404).json({ error: 'Room not found' });
-    res.json(room.history);
-  } catch (e) { 
-    res.status(500).json({ error: e.message }); 
-  }
-});
+router.get('/:code/history', asyncRoute(async (req, res) => {
+  const room = await CardRoom.findOne({ code: roomCode(req.params.code) });
+  if (!room) return res.status(404).json({ error: 'Room not found' });
+  res.json(room.history);
+}));
 
 module.exports = router;

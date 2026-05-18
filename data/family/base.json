@@ -1,0 +1,90 @@
+{
+  "name": "Família - Base",
+  "mode": "family",
+  "description": "Conteúdo familiar por tipos: Sincronia, Sabichão, Rabiscos, Gestos e Palavra Tabu.",
+  "categories": {
+    "telepatia": [
+      {
+        "text": "Tema: animais de estimação. Dois jogadores dizem uma palavra ao mesmo tempo."
+      }
+    ],
+    "perguntas": [
+      {
+        "text": "Qual é a capital de Portugal?",
+        "answer": "Lisboa",
+        "choices": ["Porto", "Lisboa", "Coimbra", "Braga"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual destes planetas é conhecido como o planeta vermelho?",
+        "answer": "Marte",
+        "choices": ["Vénus", "Marte", "Júpiter", "Mercúrio"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Quem escreveu Os Lusíadas?",
+        "answer": "Luís de Camões",
+        "choices": ["Fernando Pessoa", "Luís de Camões", "Eça de Queirós", "José Saramago"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Em que continente fica o Egito?",
+        "answer": "África",
+        "choices": ["Europa", "Ásia", "África", "América"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual é o maior oceano do mundo?",
+        "answer": "Oceano Pacífico",
+        "choices": ["Atlântico", "Índico", "Pacífico", "Ártico"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Que instrumento mede a temperatura?",
+        "answer": "Termómetro",
+        "choices": ["Barómetro", "Termómetro", "Velocímetro", "Altímetro"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Quem pintou a Mona Lisa?",
+        "answer": "Leonardo da Vinci",
+        "choices": ["Picasso", "Van Gogh", "Leonardo da Vinci", "Michelangelo"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Qual destes animais é um mamífero?",
+        "answer": "Golfinho",
+        "choices": ["Tubarão", "Golfinho", "Polvo", "Sardinha"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Em Portugal, que rio passa por Lisboa?",
+        "answer": "Tejo",
+        "choices": ["Douro", "Mondego", "Tejo", "Guadiana"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual é o símbolo químico da água?",
+        "answer": "H2O",
+        "choices": ["CO2", "H2O", "O2", "NaCl"],
+        "difficulty": "medio"
+      }
+    ],
+    "desenho": [
+      {
+        "text": "Desenha uma ida à praia em família."
+      }
+    ],
+    "mimica": [
+      {
+        "text": "Representa alguém a procurar o comando da televisão."
+      }
+    ],
+    "proibido": [
+      {
+        "text": "Palavra: Escola. Faz a equipa adivinhar sem dizer as palavras proibidas.",
+        "forbiddenWords": ["professor", "aluno", "aula", "teste", "recreio"]
+      }
+    ]
+  }
+}

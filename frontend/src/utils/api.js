@@ -124,6 +124,8 @@ export const api = {
     setAdminToken(data.token)
     return data
   },
+  importPack:         (pack) => post('/admin/import-pack', { pack }),
+  updateCommunityMeta:(id, d) => post(`/admin/community/${id}/meta`, d),
 
   // Challenges
   getChallenges:      (p = {}) => get(`/challenges?${new URLSearchParams(p)}`),
@@ -154,6 +156,7 @@ export const api = {
 
   // players: string[] | { name, drink? }[]
   generateChallenge: (players, mode, lang = 'pt') => post('/ai/challenge', { players, mode, lang }),
+  generateCards:     (players, lang = 'pt') => post('/ai/cards', { players, lang }),
 
   // Community
   getCommunity:       (p = {}) => get(`/community?${new URLSearchParams(p)}`),

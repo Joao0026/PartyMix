@@ -60,6 +60,15 @@ const SYSTEM_DRINK_CARDS_EN = `Write 4 short drinking-game lines for PartyMix. M
 
 const SYSTEM_DRINK_CARDS_ES = `Escribe 4 tarjetas cortas para un juego de beber (PartyMix). Máx. 20 palabras cada una. Solo un array JSON de 4 strings. Sin violencia, odio, sexo explícito, conducir borracho.`
 
+const SYSTEM_PARTY_CARDS = `És o gerador de cartas do PartyMix para um jogo de festa estilo cartas brancas/pretas.
+Regras:
+- Usa apenas os nomes enviados pelo utilizador; nunca inventes nomes.
+- Tom irreverente e divertido, mas sem ódio, discriminação, violência ou sexo explícito.
+- Cartas brancas são respostas curtas.
+- Cartas pretas são perguntas/frases com "___" para preencher.
+- Máximo 15 palavras por carta.
+Output: APENAS JSON válido neste formato: {"white":["..."],"black":["..."]}. Sem markdown.`
+
 async function callGroq(userContent, { system } = {}) {
   if (!fetchFn) throw new Error('Global fetch not available — usa Node.js 18+ no servidor (Render: defina versão Node ≥ 18).')
   const key = process.env.GROQ_API_KEY
@@ -172,6 +181,60 @@ Genera 4 tarjetas distintas. Responde SOLO con un array JSON de 4 strings.
         { text: `Brinde ao ${names[Math.floor(Math.random()*names.length)] || 'grupo'}! Toda a gente bebe 1!`, type:'ai', emoji:'🤖', title:'Carta IA', is_ai:true },
         { text: `${names[1] || names[0] || 'Jogador'} distribui 2 golos como quiser. Poder!`, type:'ai', emoji:'🤖', title:'Carta IA', is_ai:true },
         { text: `Quem tem ${drinks[0] || 'a bebida'} mais fraca bebe 2!`, type:'ai', emoji:'🤖', title:'Carta IA', is_ai:true },
+      ],
+      fallback: true,
+    })
+  }
+})
+
+// POST /api/ai/cards
+// Body: { players: string[] | { name }[], lang: 'pt'|'es'|'en' }
+router.post('/cards', async (req, res) => {
+  try {
+    const { players: playersField = [], lang = 'pt' } = req.body
+    const roster = rosterFromPlayersField(playersField).slice(0, 20)
+    if (!roster.length) return res.status(400).json({ error: 'At least one player name required' })
+
+    const names = roster.map((r) => r.name).join(', ')
+    const language = lang === 'en' ? 'English' : lang === 'es' ? 'Spanish' : 'Português de Portugal'
+    const prompt = `Idioma: ${language}
+Nomes válidos: ${names}
+
+Gera exatamente:
+- 4 cartas brancas
+- 2 cartas pretas
+
+Inclui ocasionalmente nomes da lista para personalizar. Responde só com JSON:
+{"white":["...","...","...","..."],"black":["... ___","... ___"]}`
+
+    const raw = await callGroq(prompt, { system: SYSTEM_PARTY_CARDS })
+    const clean = raw.replace(/```json|```/g, '').trim()
+    const cards = JSON.parse(clean)
+
+    if (!Array.isArray(cards.white) || !Array.isArray(cards.black)) {
+      throw new Error('Invalid response format')
+    }
+
+    res.json({
+      white: cards.white.filter(Boolean).slice(0, 4).map(String),
+      black: cards.black.filter(Boolean).slice(0, 2).map(String),
+    })
+  } catch (err) {
+    console.error('AI cards error:', err.message)
+    const { players = [] } = req.body
+    const roster = rosterFromPlayersField(players)
+    const names = roster.map((p) => p.name)
+    const pick = (i) => names[i % Math.max(names.length, 1)] || 'Jogador'
+    res.json({
+      white: [
+        `${pick(0)} a tentar parecer normal`,
+        `A desculpa perfeita para chegar tarde`,
+        `${pick(1)} com uma teoria impossível`,
+        `Um plano secreto que ninguém devia saber`,
+      ],
+      black: [
+        `O maior talento escondido de ${pick(0)} é ___.`,
+        `A festa mudou quando alguém trouxe ___.`,
       ],
       fallback: true,
     })

@@ -98,11 +98,22 @@ function initWebSocket(httpServer, options = {}) {
       if (!player || player.id===czar.id) return // czar can't submit
       if (room.submissions[socket.id]) return // already submitted
 
-      room.submissions[socket.id] = cardText
-      // Remove from hand, draw new card
-      room.hands[socket.id] = (room.hands[socket.id]||[]).filter(c=>c!==cardText)
-      const newCard = room.whiteDeck.shift()
-      if (newCard) room.hands[socket.id].push(newCard)
+      const submittedCards = (Array.isArray(cardText) ? cardText : [cardText])
+        .map((card) => String(card || '').trim())
+        .filter(Boolean)
+        .slice(0, 2)
+      if (!submittedCards.length) return
+
+      room.submissions[socket.id] = {
+        cards: submittedCards,
+        text: submittedCards.join(' + '),
+      }
+      // Remove submitted cards from hand, then draw the same number back.
+      room.hands[socket.id] = (room.hands[socket.id]||[]).filter(c=>!submittedCards.includes(c))
+      submittedCards.forEach(() => {
+        const newCard = room.whiteDeck.shift()
+        if (newCard) room.hands[socket.id].push(newCard)
+      })
       socket.emit('your_hand', room.hands[socket.id])
 
       const nonCzars = room.players.filter(p=>p.id!==czar.id)

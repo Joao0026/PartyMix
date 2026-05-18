@@ -195,6 +195,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const [scores,       setScores]       = useState({})
   const [roundNum,     setRoundNum]     = useState(1)
   const [subCount,     setSubCount]     = useState({count:0,total:0,allDone:false})
+  const [selectedWhiteCards, setSelectedWhiteCards] = useState([])
+  const [submittedThisRound, setSubmittedThisRound] = useState(false)
   const [gameEnded,    setGameEnded]    = useState(false)
   const [finalScores,  setFinalScores]  = useState([])
   const [czarId,       setCzarId]       = useState(null)
@@ -246,6 +248,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setSubmissions({})
       setRevealed(false)
       setRoundWinner(null)
+      setSelectedWhiteCards([])
+      setSubmittedThisRound(false)
     }
     const onYourHand = (hand) => setMyHand(Array.isArray(hand) ? [...hand] : [])
     const onSubUpdate = (d) => setSubCount(d)
@@ -268,6 +272,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setRevealed(false)
       setRoundWinner(null)
       setSubCount({ count: 0, total: 0, allDone: false })
+      setSelectedWhiteCards([])
+      setSubmittedThisRound(false)
     }
     const onGameEnded = (d) => {
       setGameEnded(true)
@@ -320,7 +326,12 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   }
 
   // Online helpers
-  const onlineSubmit = card => socket.emit('submit_card',{code:initialRoom.code,cardText:card})
+  const onlineSubmit = cards => {
+    const payload = Array.isArray(cards) ? cards : [cards]
+    socket.emit('submit_card',{code:initialRoom.code,cardText:payload})
+    setSubmittedThisRound(true)
+    setSelectedWhiteCards([])
+  }
   const onlineReveal = () => socket.emit('reveal_cards',{code:initialRoom.code})
   const onlinePickWinner = id => socket.emit('pick_winner',{code:initialRoom.code,winnerId:id})
   const onlineNextRound = () => socket.emit('next_round',{code:initialRoom.code})
@@ -334,10 +345,17 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const nonCzars = players.filter(p=>p!==czarName)
   const myName = mode==='local'?null:playerName
   const imCzar = mode==='online'?(czarId===socket?.id):false
+  const requiredCards = Math.min(2, Math.max(1, (String(currentBlack || '').match(/___/g) || []).length))
 
   // For local: current player whose turn it is to play
   const [localTurnIdx, setLocalTurnIdx] = useState(0)
   const localTurnPlayer = mode==='local'?(nonCzars[localTurnIdx]||null):null
+
+  const submissionCards = submission => {
+    if (Array.isArray(submission?.cards)) return submission.cards
+    if (Array.isArray(submission)) return submission
+    return String(submission || '').split(' + ').filter(Boolean)
+  }
 
   const handleLocalCardPick = (card) => {
     localSubmit(localTurnPlayer, card)
@@ -369,7 +387,14 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   // Current hand to display
   const displayHand = mode==='online' ? myHand : (hands[localTurnPlayer]||[])
   const allSub = mode==='local' ? nonCzars.every(p=>submissions[p]) : subCount.allDone
-  const mySubmitted = mode==='online' ? (socket && Object.keys(submissions).includes(socket.id)) : (localTurnPlayer && submissions[localTurnPlayer])
+  const mySubmitted = mode==='online' ? submittedThisRound : (localTurnPlayer && submissions[localTurnPlayer])
+  const toggleSelectedWhiteCard = card => {
+    setSelectedWhiteCards(prev => {
+      if (prev.includes(card)) return prev.filter(c => c !== card)
+      if (prev.length >= requiredCards) return prev
+      return [...prev, card]
+    })
+  }
 
   return(
     <div className="min-h-screen bg-[#080b14] flex flex-col">
@@ -419,16 +444,40 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         {/* ONLINE: your hand */}
         {mode==='online'&&!revealed&&!imCzar&&!mySubmitted&&(
           <div className="min-h-0 shrink-0">
-            <p className="text-white font-bold mb-2 text-center">{playerName}, escolhe a tua carta:</p>
+            <p className="text-white font-bold mb-2 text-center">
+              {playerName}, escolhe {requiredCards === 2 ? 'duas cartas' : 'a tua carta'}:
+            </p>
+            {requiredCards === 2 && (
+              <div className="mb-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-3">
+                <p className="text-amber-300 text-xs font-bold text-center uppercase tracking-[0.18em]">Escolhe 2 cartas</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {[0,1].map(idx=>(
+                    <div key={idx} className="min-h-16 rounded-xl border border-white/[0.08] bg-black/25 p-2 text-center">
+                      <p className="text-slate-500 text-[10px] font-bold uppercase">{idx+1}.º espaço</p>
+                      <p className="mt-1 text-xs font-bold text-white">{selectedWhiteCards[idx] || 'Ainda vazio'}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex gap-2 overflow-x-auto pb-2 min-h-[5.5rem] touch-pan-x" style={{scrollbarWidth:'none'}}>
               {myHand.map((card,i)=>(
                 <motion.button key={i} whileHover={{y:-4}} whileTap={{scale:0.96}}
-                  onClick={()=>onlineSubmit(card)}
-                  className="flex-shrink-0 w-32 bg-white rounded-2xl p-3 text-slate-900 text-xs font-semibold text-center leading-snug shadow-lg min-h-20 flex items-center justify-center">
+                  onClick={()=>requiredCards === 1 ? onlineSubmit([card]) : toggleSelectedWhiteCard(card)}
+                  className={`flex-shrink-0 w-32 bg-white rounded-2xl p-3 text-slate-900 text-xs font-semibold text-center leading-snug shadow-lg min-h-20 flex items-center justify-center transition-all ${selectedWhiteCards.includes(card)?'ring-4 ring-amber-400 -translate-y-1':''}`}>
                   {card}
                 </motion.button>
               ))}
             </div>
+            {requiredCards === 2 && (
+              <button
+                onClick={() => onlineSubmit(selectedWhiteCards)}
+                disabled={selectedWhiteCards.length !== requiredCards}
+                className="mt-3 w-full rounded-2xl bg-amber-500 py-3 text-sm font-black text-black disabled:opacity-40"
+              >
+                Submeter {selectedWhiteCards.length}/{requiredCards}
+              </button>
+            )}
           </div>
         )}
         {mode==='online'&&!revealed&&!imCzar&&mySubmitted&&(
@@ -457,7 +506,18 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
                   pickWinner(pid)
                 }}
                 className={`w-full text-left bg-white rounded-2xl p-5 transition-all ${roundWinner===pid?'ring-4 ring-amber-400 shadow-xl':''} ${roundWinner&&roundWinner!==pid?'opacity-40':''} ${mode==='online'&&!imCzar?'opacity-60 pointer-events-none':''}`}>
-                <p className="text-slate-900 font-black text-lg">{card}</p>
+                {submissionCards(card).length > 1 ? (
+                  <div className="space-y-2">
+                    {submissionCards(card).map((slotCard, idx)=>(
+                      <div key={idx} className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-wide">{idx+1}.º espaço</p>
+                        <p className="text-slate-900 font-black text-base">{slotCard}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-slate-900 font-black text-lg">{submissionCards(card)[0] || card}</p>
+                )}
                 {roundWinner===pid&&<p className="text-amber-600 text-sm font-bold mt-2">👑 Vencedor desta ronda!</p>}
               </motion.button>
             ))}

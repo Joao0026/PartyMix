@@ -7,7 +7,10 @@
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
-    "seed": "cd backend && npm run seed"
+    "seed": "cd backend && npm run seed",
+    "import:pack": "cd backend && npm run import:pack --",
+    "check": "cd backend && npm run check && cd ../frontend && npm run build",
+    "test": "cd backend && npm test"
   },
   "devDependencies": {
     "concurrently": "^8.2.0"

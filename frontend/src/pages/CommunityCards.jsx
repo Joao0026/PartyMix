@@ -9,35 +9,36 @@ const MODES = [
     id:'friends', label:'👥 Modo Amigos', color:'bg-cyan-500/15 border-cyan-500/40 text-cyan-300',
     showBlackWhite:false, showAnswer:true,
     cardTypes:[
-      {id:'mimica',label:'🎭 Mímica'},{id:'desenho',label:'🎨 Desenho'},
-      {id:'palavra',label:'💬 Palavra'},{id:'acao',label:'⚡ Ação'},
-      {id:'verdade',label:'❓ Verdade'},{id:'consequencia',label:'🎲 Consequência'},
+      {id:'telepatia',label:'🧠 Sincronia'},{id:'perguntas',label:'📚 Sabichão'},
+      {id:'desenho',label:'🎨 Rabiscos'},{id:'mimica',label:'🎭 Gestos'},
+      {id:'proibido',label:'🚫 Palavra Tabu'},{id:'caos',label:'💥 Caos'},
     ],
   },
   {
     id:'family', label:'🏡 Modo Família', color:'bg-sky-500/15 border-sky-500/40 text-sky-300',
     showBlackWhite:false, showAnswer:true,
     cardTypes:[
-      {id:'cultura',label:'📚 Cultura'},{id:'desporto',label:'⚽ Desporto'},
-      {id:'musica',label:'🎵 Música'},{id:'cinema',label:'🎬 Cinema'},
-      {id:'mimica',label:'🎭 Mímica'},{id:'desenho',label:'🎨 Desenho'},
+      {id:'telepatia',label:'🧠 Sincronia'},{id:'perguntas',label:'📚 Sabichão'},
+      {id:'desenho',label:'🎨 Rabiscos'},{id:'mimica',label:'🎭 Gestos'},
+      {id:'proibido',label:'🚫 Palavra Tabu'},
     ],
   },
   {
     id:'couple', label:'💕 Modo Casal', color:'bg-rose-500/15 border-rose-500/40 text-rose-300',
     showBlackWhite:false, showAnswer:true,
     cardTypes:[
-      {id:'erotico',label:'🔥 Erótico'},{id:'verdade',label:'❓ Verdade'},
-      {id:'acao',label:'⚡ Ação'},{id:'roleplay',label:'🎭 Roleplay'},
-      {id:'quiz',label:'💬 Quiz'},
+      {id:'romantico',label:'🌹 Conexão'},{id:'picante',label:'🔥 Picante'},
+      {id:'verdade',label:'❓ Confissão'},{id:'acao',label:'⚡ Atitude'},
+      {id:'roleplay',label:'🎭 Cena'},{id:'quiz',label:'💬 Quanto me conheces?'},
     ],
   },
   {
     id:'drink', label:'🍺 Modo Beber', color:'bg-amber-500/15 border-amber-500/40 text-amber-300',
     showBlackWhite:false, showAnswer:false,
     cardTypes:[
-      {id:'beber',label:'🍺 Beber'},{id:'regra',label:'📜 Regra'},
-      {id:'desafio',label:'⚡ Desafio'},{id:'poder',label:'👑 Poder'},{id:'sorte',label:'🍀 Sorte/Azar'},
+      {id:'beber',label:'🍺 Golos'},{id:'regra',label:'📜 Regra da Mesa'},
+      {id:'desafio',label:'⚡ Missão'},{id:'duelo',label:'⚔️ Duelo'},
+      {id:'poder',label:'👑 Poder'},{id:'sorte',label:'🍀 Sorte/Azar'},
     ],
   },
   {
@@ -54,8 +55,14 @@ const IDEA_TYPES = [
   {id:'other',label:'💡 Outra Ideia'},
 ]
 
+const TYPE_ICONS = {
+  telepatia:'🧠', perguntas:'📚', desenho:'🎨', mimica:'🎭', proibido:'🚫', caos:'💥',
+  romantico:'🌹', picante:'🔥', verdade:'❓', acao:'⚡', roleplay:'🎭', quiz:'💬',
+  beber:'🍺', regra:'📜', desafio:'⚡', duelo:'⚔️', poder:'👑', sorte:'🍀', geral:'🃏',
+}
+
 // Card type that has answers (question types per mode)
-const ANSWER_TYPES = ['verdade','cultura','desporto','musica','cinema','palavra','quiz','casal_pergunta']
+const ANSWER_TYPES = ['perguntas','quiz','casal_pergunta']
 
 function loadVoted() { try { return new Set(JSON.parse(localStorage.getItem('partymix_voted_v5')||'[]')) } catch { return new Set() } }
 function saveVoted(s) { localStorage.setItem('partymix_voted_v5', JSON.stringify([...s])) }
@@ -77,6 +84,8 @@ export default function CommunityCards() {
   const [cIsBlack,  setCIsBlack]  = useState(false)
   const [cText,     setCText]     = useState('')
   const [cAnswer,   setCAnswer]   = useState('')
+  const [cChoices,  setCChoices]  = useState(['','','',''])
+  const [cForbiddenWords, setCForbiddenWords] = useState(['','','','',''])
   const [cAuthor,   setCAuthor]   = useState('')
 
   // Idea form state
@@ -88,6 +97,7 @@ export default function CommunityCards() {
   const isCardsMode     = cMode === 'cards'
   // Show answer field when type is a question type
   const showAnswerField = selectedModeObj?.showAnswer && ANSWER_TYPES.includes(cType)
+  const showForbiddenField = cType === 'proibido'
 
   const load = () => {
     setLoading(true)
@@ -110,6 +120,8 @@ export default function CommunityCards() {
   const submitCard = async () => {
     if (!cMode || !cText.trim()) return
     if (!isCardsMode && !cType) return
+    if (showAnswerField && !cAnswer.trim()) return
+    if (showForbiddenField && cForbiddenWords.filter(w=>w.trim()).length !== 5) return
     setSubmitting(true)
     await api.submitCommunity({
       submissionType:'card', mode:cMode,
@@ -117,9 +129,11 @@ export default function CommunityCards() {
       isBlack:   isCardsMode ? cIsBlack : false,
       text:      cText.trim(),
       answer:    cAnswer.trim() || undefined,
+      choices:   showAnswerField ? cChoices.map(c=>c.trim()).filter(Boolean) : undefined,
+      forbiddenWords: showForbiddenField ? cForbiddenWords.map(w=>w.trim()).filter(Boolean) : undefined,
       author:    cAuthor.trim() || 'Anónimo',
     })
-    setCMode(''); setCType(''); setCIsBlack(false); setCText(''); setCAnswer(''); setCAuthor('')
+    setCMode(''); setCType(''); setCIsBlack(false); setCText(''); setCAnswer(''); setCChoices(['','','','']); setCForbiddenWords(['','','','','']); setCAuthor('')
     setSubmitting(false); setSubmitted(true); setTimeout(()=>setSubmitted(false),3000)
     setTab('browse'); load()
   }
@@ -134,6 +148,7 @@ export default function CommunityCards() {
   }
 
   const getModeInfo  = id => MODES.find(m=>m.id===id)
+  const getCardTypeLabel = item => getModeInfo(item.mode)?.cardTypes.find(t=>t.id===item.cardType)?.label || item.cardType
   const getIdeaLabel = id => IDEA_TYPES.find(t=>t.id===id)?.label||id
 
   const inp = 'w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 outline-none focus:border-violet-500 text-sm placeholder-slate-500'
@@ -150,7 +165,7 @@ export default function CommunityCards() {
         <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
         <div className="flex-1">
           <h1 className="text-white font-black text-xl flex items-center gap-2"><Sparkles className="text-violet-400 w-5 h-5"/>Cartas da Comunidade</h1>
-          <p className="text-slate-500 text-sm">25+ votos → entra automaticamente no jogo!</p>
+          <p className="text-slate-500 text-sm">Vota nas melhores ideias. Só o admin aprova para entrar no jogo.</p>
         </div>
       </div>
 
@@ -222,6 +237,9 @@ export default function CommunityCards() {
                   return(
                     <motion.div key={item._id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.03}}
                       className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 flex items-start gap-3">
+                      <div className="grid h-12 w-12 flex-shrink-0 place-items-center rounded-2xl border border-white/[0.08] bg-white/[0.06] text-2xl">
+                        {item.submissionType==='idea'?'💡':item.mode==='cards'?(item.isBlack?'⬛':'⬜'):(TYPE_ICONS[item.cardType]||'🎴')}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap gap-1.5 mb-2">
                           {item.submissionType==='idea'?(
@@ -231,8 +249,10 @@ export default function CommunityCards() {
                           ):(
                             <>
                               {modeInfo&&<span className={`text-xs px-2 py-0.5 rounded-full border font-semibold ${modeInfo.color}`}>{modeInfo.label}</span>}
-                              {item.cardType&&!isCardsMode&&<span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-slate-400">{modeInfo?.cardTypes.find(t=>t.id===item.cardType)?.label||item.cardType}</span>}
-                              {item.isBlack&&<span className="text-xs px-2 py-0.5 rounded-full bg-slate-900 border border-white/20 text-white/60">⬛</span>}
+                              {item.mode==='cards'
+                                ? <span className={`text-xs px-2 py-0.5 rounded-full border ${item.isBlack?'bg-slate-900 border-white/20 text-white/70':'bg-white/90 border-white text-slate-900'}`}>{item.isBlack?'⬛ Preta':'⬜ Branca'}</span>
+                                : item.cardType&&<span className="text-xs px-2 py-0.5 rounded-full bg-white/[0.06] border border-white/[0.1] text-slate-400">{getCardTypeLabel(item)}</span>
+                              }
                             </>
                           )}
                           {item.status==='approved'
@@ -242,6 +262,12 @@ export default function CommunityCards() {
                         </div>
                         <p className="text-slate-200 text-sm font-medium leading-relaxed">{item.text}</p>
                         {item.answer&&<p className="text-slate-500 text-xs mt-1">💡 Resposta: {item.answer}</p>}
+                        {Array.isArray(item.choices)&&item.choices.length>0&&(
+                          <p className="text-slate-500 text-xs mt-1">🔢 Alíneas: {item.choices.join(' / ')}</p>
+                        )}
+                        {Array.isArray(item.forbiddenWords)&&item.forbiddenWords.length>0&&(
+                          <p className="text-slate-500 text-xs mt-1">🚫 Proibidas: {item.forbiddenWords.join(', ')}</p>
+                        )}
                         <p className="text-slate-600 text-xs mt-1.5">@{item.author}</p>
                       </div>
                       <button onClick={()=>vote(item._id)} disabled={voted.has(item._id)}
@@ -267,7 +293,7 @@ export default function CommunityCards() {
                   <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">1. Para que modo?</label>
                   <div className="space-y-2">
                     {MODES.map(m=>(
-                      <button key={m.id} onClick={()=>{setCMode(m.id);setCType('');setCIsBlack(false);setCAnswer('')}}
+                      <button key={m.id} onClick={()=>{setCMode(m.id);setCType('');setCIsBlack(false);setCAnswer('');setCChoices(['','','','']);setCForbiddenWords(['','','','',''])}}
                         className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cMode===m.id?m.color:'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
                         {m.label}
                       </button>
@@ -297,7 +323,7 @@ export default function CommunityCards() {
                     <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">2. Tipo de carta</label>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedModeObj.cardTypes.map(ct=>(
-                        <button key={ct.id} onClick={()=>{setCType(ct.id);setCAnswer('')}}
+                        <button key={ct.id} onClick={()=>{setCType(ct.id);setCAnswer('');setCChoices(['','','','']);setCForbiddenWords(['','','','',''])}}
                           className={`px-3 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cType===ct.id?'bg-violet-600/30 border-violet-500 text-violet-200':'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
                           {ct.label}
                         </button>
@@ -316,7 +342,12 @@ export default function CommunityCards() {
                       placeholder={
                         isCardsMode && cIsBlack ? 'Escreve a pergunta... usa ___ para espaços'
                         : isCardsMode ? 'Escreve a resposta ou piada...'
-                        : 'Escreve o desafio, pergunta ou desafio...'
+                        : cType === 'telepatia' ? 'Ex: Tema: coisas que há numa cozinha. Digam uma palavra ao mesmo tempo.'
+                        : cType === 'perguntas' ? 'Escreve a pergunta de cultura, história, música, etc.'
+                        : cType === 'proibido' ? 'Escreve a palavra que a equipa tem de adivinhar.'
+                        : cType === 'desenho' ? 'Escreve o que tem de ser desenhado.'
+                        : cType === 'mimica' ? 'Escreve o que tem de ser representado por gestos.'
+                        : 'Escreve o desafio.'
                       }
                       rows={3} className={inp+' resize-none'}/>
                     {/* Preview */}
@@ -332,12 +363,33 @@ export default function CommunityCards() {
                 {showAnswerField && cText && (
                   <div>
                     <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
-                      4. Resposta (opcional)
+                      4. Resposta correta
                     </label>
                     <input value={cAnswer} onChange={e=>setCAnswer(e.target.value)}
-                      placeholder="Qual é a resposta correta? (deixa vazio se for subjetivo)"
+                      placeholder="Qual é a resposta correta?"
                       className={inp}/>
-                    <p className="text-slate-600 text-xs mt-1">Se for uma pergunta de cultura/música/etc, indica a resposta certa.</p>
+                    <p className="text-slate-600 text-xs mt-1">Obrigatório para perguntas, para aparecer no jogo e no admin.</p>
+                    <div className="mt-3 space-y-2">
+                      {cChoices.map((choice, idx)=>(
+                        <input key={idx} value={choice} onChange={e=>setCChoices(cs=>cs.map((c,i)=>i===idx?e.target.value:c))}
+                          placeholder={`Alínea ${String.fromCharCode(65+idx)} (opcional)`} className={inp}/>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {showForbiddenField && cText && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
+                      4. Palavras proibidas
+                    </label>
+                    <div className="space-y-2">
+                      {cForbiddenWords.map((word, idx)=>(
+                        <input key={idx} value={word} onChange={e=>setCForbiddenWords(ws=>ws.map((w,i)=>i===idx?e.target.value:w))}
+                          placeholder={`Palavra proibida ${idx+1}`} className={inp}/>
+                      ))}
+                    </div>
+                    <p className="text-slate-600 text-xs mt-1">No jogo, a equipa tem de adivinhar a palavra principal sem usar estas 5 pistas.</p>
                   </div>
                 )}
 
@@ -347,7 +399,7 @@ export default function CommunityCards() {
                 )}
 
                 <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={submitCard}
-                  disabled={!cMode||(!isCardsMode&&!cType)||!cText.trim()||submitting}
+                  disabled={!cMode||(!isCardsMode&&!cType)||!cText.trim()||(showAnswerField&&!cAnswer.trim())||(showForbiddenField&&cForbiddenWords.filter(w=>w.trim()).length!==5)||submitting}
                   className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2 disabled:opacity-40">
                   <Send className="w-4 h-4"/>{submitting?'A submeter...':'Submeter Carta'}
                 </motion.button>
@@ -357,10 +409,11 @@ export default function CommunityCards() {
                 <p className="text-amber-400 font-semibold text-sm mb-2">📋 Como funciona</p>
                 <ul className="text-slate-400 text-xs space-y-1">
                   <li>• <b className="text-white">Modo Cartas</b>: escolhe apenas branca ou preta</li>
-                  <li>• <b className="text-white">Outros modos</b>: escolhe o tipo de carta dentro do modo</li>
-                  <li>• Se for uma pergunta, podes incluir a resposta correta</li>
-                  <li>• 25+ votos → entra automaticamente no jogo</li>
-                  <li>• O admin pode aprovar manualmente a qualquer momento</li>
+                  <li>• <b className="text-white">Perguntas</b>: têm de ter resposta correta</li>
+                  <li>• <b className="text-white">Palavra Tabu</b>: tem de ter 5 palavras proibidas</li>
+                  <li>• <b className="text-white">Sincronia</b>: tema para duas pessoas dizerem a mesma palavra</li>
+                  <li>• Os votos ajudam o admin a escolher o melhor conteúdo</li>
+                  <li>• Só entra no jogo depois de aprovação no painel admin</li>
                 </ul>
               </div>
             </motion.div>

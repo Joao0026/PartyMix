@@ -1,0 +1,39 @@
+{
+  "name": "Casal - Base",
+  "mode": "couple",
+  "description": "Conteúdo base para Conexão, Picante, Confissão, Atitude, Cena e Quiz do casal.",
+  "categories": {
+    "romantico": [
+      {
+        "text": "Diz uma coisa pequena que o teu parceiro faz e que te deixa feliz."
+      }
+    ],
+    "picante": [
+      {
+        "text": "Sussurra uma vontade que gostavas de experimentar."
+      }
+    ],
+    "verdade": [
+      {
+        "text": "Qual foi o momento em que te sentiste mais próximo do teu parceiro?"
+      }
+    ],
+    "acao": [
+      {
+        "text": "Dá uma massagem nas mãos durante 1 minuto.",
+        "time_limit": 60
+      }
+    ],
+    "roleplay": [
+      {
+        "text": "Cena: dois desconhecidos encontram-se num bar."
+      }
+    ],
+    "quiz": [
+      {
+        "text": "Qual é o prato favorito do teu parceiro?",
+        "answer": "Resposta do parceiro"
+      }
+    ]
+  }
+}

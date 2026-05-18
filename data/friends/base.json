@@ -1,0 +1,104 @@
+{
+  "name": "Amigos - Base",
+  "mode": "friends",
+  "description": "Conteúdo de amigos com penalização/bebida no jogo.",
+  "categories": {
+    "telepatia": [
+      {
+        "text": "Tema: coisas de uma noite fora. Dois jogadores dizem uma palavra ao mesmo tempo."
+      }
+    ],
+    "perguntas": [
+      {
+        "text": "Que país ganhou o Euro 2016?",
+        "answer": "Portugal",
+        "choices": ["França", "Portugal", "Espanha", "Alemanha"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual destes artistas lançou a música Bohemian Rhapsody?",
+        "answer": "Queen",
+        "choices": ["The Beatles", "Queen", "ABBA", "Nirvana"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Em que cidade fica a Torre Eiffel?",
+        "answer": "Paris",
+        "choices": ["Roma", "Paris", "Londres", "Berlim"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual é a bebida base de uma caipirinha tradicional?",
+        "answer": "Cachaça",
+        "choices": ["Rum", "Vodka", "Cachaça", "Gin"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Que rede social ficou conhecida pelos vídeos curtos e trends virais?",
+        "answer": "TikTok",
+        "choices": ["LinkedIn", "TikTok", "Pinterest", "Reddit"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual destes filmes tem a personagem Jack Sparrow?",
+        "answer": "Piratas das Caraíbas",
+        "choices": ["Harry Potter", "Piratas das Caraíbas", "Avatar", "Matrix"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Quantos jogadores tem uma equipa de futebol em campo no início do jogo?",
+        "answer": "11",
+        "choices": ["9", "10", "11", "12"],
+        "difficulty": "facil"
+      },
+      {
+        "text": "Qual destes países não pertence à União Europeia?",
+        "answer": "Noruega",
+        "choices": ["Espanha", "França", "Noruega", "Itália"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Que cantor português é conhecido pela música Amar pelos Dois?",
+        "answer": "Salvador Sobral",
+        "choices": ["Diogo Piçarra", "Salvador Sobral", "Agir", "David Carreira"],
+        "difficulty": "medio"
+      },
+      {
+        "text": "Qual é a capital do Japão?",
+        "answer": "Tóquio",
+        "choices": ["Seul", "Pequim", "Tóquio", "Banguecoque"],
+        "difficulty": "facil"
+      }
+    ],
+    "desenho": [
+      {
+        "text": "Desenha alguém a tentar pedir comida às 3 da manhã."
+      }
+    ],
+    "mimica": [
+      {
+        "text": "Representa alguém a fingir que está sóbrio."
+      }
+    ],
+    "proibido": [
+      {
+        "text": "Palavra: Ressaca. Faz a equipa adivinhar sem dizer as palavras proibidas.",
+        "forbiddenWords": ["bebida", "dor", "cabeça", "água", "noite"]
+      }
+    ],
+    "caos": [
+      {
+        "text": "Regra temporária: durante 2 rondas, quem disser nomes próprios bebe 1 golo.",
+        "is_ongoing": true,
+        "ongoing_rounds": 2,
+        "ongoing_instruction": "Sem nomes próprios. Quem falhar bebe 1."
+      },
+      {
+        "text": "Regra temporária: até ao próximo turno desta equipa, todas as respostas têm de começar por 'honestamente'.",
+        "is_ongoing": true,
+        "ongoing_rounds": 1,
+        "ongoing_instruction": "Todas as respostas começam por 'honestamente'."
+      }
+    ]
+  }
+}

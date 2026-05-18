@@ -25,6 +25,36 @@ async function upsertMany(Model, docs) {
 
 // ── CHALLENGES ────────────────────────────────────────────────
 const challenges = [
+  // New shared Family/Friends categories
+  { text:'Tema: coisas que existem numa cozinha. Dois jogadores dizem uma palavra ao mesmo tempo. Se for igual, ganham.', category:'telepatia', mode_type:'family', difficulty:'facil', time_limit:10 },
+  { text:'Tema: animais. Dois jogadores contam até 3 e dizem uma palavra ao mesmo tempo.', category:'telepatia', mode_type:'family', difficulty:'facil', time_limit:10 },
+  { text:'Em que ano aconteceu o 25 de Abril?', answer:'1974', category:'perguntas', mode_type:'family', difficulty:'facil' },
+  { text:'Qual é o maior oceano do mundo?', answer:'Oceano Pacífico', category:'perguntas', mode_type:'family', difficulty:'facil' },
+  { text:'Desenha uma caravela sem escrever letras.', category:'desenho', mode_type:'family', difficulty:'facil', time_limit:60 },
+  { text:'Desenha uma ida ao supermercado em família.', category:'desenho', mode_type:'family', difficulty:'facil', time_limit:60 },
+  { text:'Representa alguém que perdeu as chaves de casa.', category:'mimica', mode_type:'family', difficulty:'facil', time_limit:45 },
+  { text:'Representa um turista perdido em Lisboa.', category:'mimica', mode_type:'family', difficulty:'facil', time_limit:45 },
+  { text:'Palavra: Cristiano Ronaldo. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', mode_type:'family', difficulty:'facil', forbiddenWords:['futebol','Portugal','golo','Madeira','Siu'] },
+  { text:'Palavra: 25 de Abril. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', mode_type:'family', difficulty:'medio', forbiddenWords:['revolução','cravos','ditadura','1974','militares'] },
+  { text:'Tema: marcas conhecidas. Dois jogadores dizem uma marca ao mesmo tempo. Se coincidir, escolhem quem bebe.', category:'telepatia', mode_type:'friends', difficulty:'facil', time_limit:10, sips_penalty:2 },
+  { text:'Tema: coisas de ressaca. Dois jogadores dizem uma palavra ao mesmo tempo.', category:'telepatia', mode_type:'friends', difficulty:'facil', time_limit:10, sips_penalty:2 },
+  { text:'Qual foi o país vencedor do Euro 2016?', answer:'Portugal', category:'perguntas', mode_type:'friends', difficulty:'facil', sips_penalty:2 },
+  { text:'Que banda lançou a música "Bohemian Rhapsody"?', answer:'Queen', category:'perguntas', mode_type:'friends', difficulty:'medio', sips_penalty:2 },
+  { text:'Desenha alguém a tentar chegar a casa depois de uma noite longa.', category:'desenho', mode_type:'friends', difficulty:'facil', time_limit:60, sips_penalty:2 },
+  { text:'Desenha uma desculpa esfarrapada para chegar atrasado.', category:'desenho', mode_type:'friends', difficulty:'facil', time_limit:60, sips_penalty:2 },
+  { text:'Representa alguém a fingir que não está bêbedo.', category:'mimica', mode_type:'friends', difficulty:'facil', time_limit:45, sips_penalty:2 },
+  { text:'Representa uma pessoa a tentar pedir comida às 3 da manhã.', category:'mimica', mode_type:'friends', difficulty:'facil', time_limit:45, sips_penalty:2 },
+  { text:'Palavra: Festival. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', mode_type:'friends', difficulty:'facil', forbiddenWords:['música','pulseira','campismo','palco','cerveja'], sips_penalty:2 },
+  { text:'Palavra: Ressaca. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', mode_type:'friends', difficulty:'facil', forbiddenWords:['bebida','dor','cabeça','água','noite'], sips_penalty:2 },
+  { text:'Regra temporária: durante 2 rondas, quem disser nomes próprios bebe 1 golo.', category:'caos', mode_type:'friends', difficulty:'facil', is_ongoing:true, ongoing_rounds:2, ongoing_instruction:'Sem nomes próprios. Quem falhar bebe 1.', sips_penalty:2 },
+  { text:'Regra temporária: até ao próximo turno desta equipa, todas as respostas têm de começar por "honestamente".', category:'caos', mode_type:'friends', difficulty:'medio', is_ongoing:true, ongoing_rounds:1, ongoing_instruction:'Começa respostas por "honestamente".', sips_penalty:2 },
+  // Couple refreshed categories
+  { text:'Diz uma memória pequena do vosso dia a dia que te faz gostar mais do teu parceiro.', category:'romantico', mode_type:'couple', difficulty:'facil' },
+  { text:'Escolhe uma música e dança agarrado ao teu parceiro durante 45 segundos.', category:'romantico', mode_type:'couple', difficulty:'facil', time_limit:45 },
+  { text:'Sussurra ao ouvido uma fantasia ou vontade que ainda não disseste claramente.', category:'picante', mode_type:'couple', difficulty:'medio' },
+  { text:'Faz uma massagem lenta nas mãos durante 1 minuto.', category:'picante', mode_type:'couple', difficulty:'facil', time_limit:60 },
+  { text:'Cena: reencontro inesperado num bar depois de anos sem se verem.', category:'roleplay', mode_type:'couple', difficulty:'facil' },
+  { text:'Qual foi o primeiro detalhe que reparaste no teu parceiro?', category:'casal_pergunta', mode_type:'couple', difficulty:'facil' },
   // Friends - Mímica
   { text:'Imita o Cristiano Ronaldo a celebrar em câmara lenta', category:'mimica', mode_type:'friends', difficulty:'facil', time_limit:45 },
   { text:'Imita alguém a montar um móvel IKEA sem instruções e a ficar frustrado', category:'mimica', mode_type:'friends', difficulty:'medio', time_limit:60 },

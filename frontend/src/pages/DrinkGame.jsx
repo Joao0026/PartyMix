@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, RotateCcw, Check, Sparkles, Lock, PartyPopper } from 'lucide-react'
@@ -66,6 +66,29 @@ const DECK_CATEGORIES = [
     ]
   },
   {
+    id: 'caos', label: '💥 Caos', desc: 'Regras temporárias e viragens de mesa', premium: false,
+    cards: [
+      {type:'caos',emoji:'💥',title:'Caos!',text:'Durante 3 rondas, quem disser nomes próprios bebe 1 golo.'},
+      {type:'caos',emoji:'💥',title:'Caos!',text:'Até sair outra carta Caos, todos têm de beber com a mão trocada.'},
+      {type:'caos',emoji:'💥',title:'Caos!',text:'Durante 5 minutos, quem fizer perguntas bebe. Responder com pergunta também conta.'},
+      {type:'caos',emoji:'💥',title:'Caos!',text:'O grupo cria uma palavra proibida. Quem a disser bebe 2.'},
+      {type:'caos',emoji:'💥',title:'Caos!',text:'Inverte a ordem dos turnos. Quem se enganar bebe 1.'},
+      {type:'caos',emoji:'💥',title:'Caos!',text:'Todos escolhem uma alcunha. Até ao fim da ronda, usar nomes reais faz beber.'},
+    ]
+  },
+  {
+    id: 'especiais', label: '🛡️ Especiais', desc: 'Agentes, alianças, espelhos e mini bosses', premium: false,
+    cards: [
+      {type:'alliance',emoji:'🤝',title:'Aliança!',text:'Escolhe o jogador à tua esquerda. Durante 2 rondas ficam ligados: se um beber, o outro bebe 1; se um falhar desafio, sofre junto.'},
+      {type:'alliance',emoji:'🤝',title:'Aliança Cruzada!',text:'Ficas ligado ao próximo jogador durante 2 rondas: quando um beber ou falhar, o outro sofre junto.'},
+      {type:'mirror',emoji:'🛡️',title:'Espelho!',text:'Ganhas um escudo. Ficas imune à próxima carta de beber e podes passar essa penalização para outro jogador.'},
+      {type:'mirror',emoji:'🪞',title:'Reflexo Rápido!',text:'Guarda esta proteção: a próxima penalização que te calhar pode ser refletida para outra pessoa.'},
+      {type:'miniboss',emoji:'👹',title:'Mini Boss!',text:'Todos têm 20 segundos para nomear 10 marcas portuguesas. Se conseguirem, todos distribuem 2. Se falharem, todos bebem 2.'},
+      {type:'miniboss',emoji:'👹',title:'Mini Boss!',text:'A mesa tem 30 segundos para cantar em conjunto um refrão inteiro sem parar. Vitória: todos distribuem 2. Falha: todos bebem 2.'},
+      {type:'miniboss',emoji:'👹',title:'Mini Boss!',text:'Sem repetir, digam 12 cidades portuguesas em 25 segundos. Vitória: todos distribuem 2. Falha: todos bebem 2.'},
+    ]
+  },
+  {
     id: 'desafios', label: '⚡ Desafios', desc: 'Mini-jogos relâmpago', premium: false,
     cards: [
       {type:'desafio',emoji:'⚡',title:'Categories',text:'Escolhe uma categoria. Cada um diz uma palavra. Quem repetir ou parar bebe 2.'},
@@ -118,6 +141,29 @@ const DECK_CATEGORIES = [
   {
     id: 'extreme', label: '💣 Extremo 🔒', desc: 'Só para os verdadeiramente corajosos', premium: false,
     cards: []
+  },
+]
+
+const SECRET_AGENT_CARDS = [
+  {
+    type:'agent', emoji:'🕵️', title:'Agente Secreto',
+    publicText:'Missão pública: faz uma pergunta inocente ao grupo e continua o jogo normalmente.',
+    secretMission:'Missão secreta: faz alguém dizer o nome de um cantor. Se conseguires antes do teu próximo turno, distribuis 3 golos.',
+  },
+  {
+    type:'agent', emoji:'🕵️', title:'Agente Secreto',
+    publicText:'Missão pública: elogia alguém da mesa.',
+    secretMission:'Missão secreta: faz outro jogador tocar no teu ombro. Se conseguires, escolhes alguém para beber 2.',
+  },
+  {
+    type:'agent', emoji:'🕵️', title:'Agente Secreto',
+    publicText:'Missão pública: escolhe uma pessoa para contar uma história rápida.',
+    secretMission:'Missão secreta: faz alguém dizer uma cor. Se conseguires, ficas imune à próxima carta.',
+  },
+  {
+    type:'agent', emoji:'🕵️', title:'Agente Secreto',
+    publicText:'Missão pública: todos brindam e alguém escolhe o próximo tema de conversa.',
+    secretMission:'Missão secreta: faz alguém perguntar “porquê?”. Se conseguires, essa pessoa bebe 2.',
   },
 ]
 
@@ -222,9 +268,13 @@ function Roulette({players,currentPlayerIdx}){
 }
 
 // ── CARD DECK ────────────────────────────────────────────────
-function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
+function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn, onAgentResult, onMiniBossResult }) {
   const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
   const [current, setCurrent] = useState(null)
+  const [agentOpen, setAgentOpen] = useState(false)
+  const [agentResult, setAgentResult] = useState(null)
+  const [bossResult, setBossResult] = useState(null)
+  const [recentTypes, setRecentTypes] = useState([])
   /** Índice do jogador que deve tirar a próxima carta (ou que acabou de tirar, conforme ecrã) */
   const [nextReaderIdx, setNextReaderIdx] = useState(0)
   /** Quem tirou a carta atualmente visível */
@@ -233,19 +283,34 @@ function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
   useEffect(() => {
     setDeck(shuffle([...activeDeck]))
     setCurrent(null)
+    setAgentOpen(false)
+    setAgentResult(null)
+    setBossResult(null)
     setNextReaderIdx(0)
     setLastReaderIdx(null)
+    setRecentTypes([])
   }, [deckSessionId, activeDeck])
 
   const draw = () => {
     if (!deck.length) return
-    const [card, ...rest] = deck
+    const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
+    const safeIdx = drinkSpam ? deck.findIndex(card => card.type !== 'beber') : -1
+    const injectAgent = recentTypes.length >= 2 && Math.random() < 0.12
+    const idx = safeIdx > 0 ? safeIdx : 0
+    const card = injectAgent
+      ? SECRET_AGENT_CARDS[Math.floor(Math.random()*SECRET_AGENT_CARDS.length)]
+      : deck[idx]
+    const rest = injectAgent ? deck : deck.filter((_, i) => i !== idx)
     const reader = nextReaderIdx % players.length
     setLastReaderIdx(reader)
     setCurrent(card)
+    setAgentOpen(false)
+    setAgentResult(null)
+    setBossResult(null)
     setDeck(rest)
+    setRecentTypes(types => [...types.slice(-2), card.type])
     setNextReaderIdx((reader + 1) % players.length)
-    onCardDrawn?.()
+    onCardDrawn?.(card, reader)
   }
 
   const n = players.length || 1
@@ -258,7 +323,36 @@ function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
     poder: 'from-amber-400 to-yellow-500',
     sorte: 'from-emerald-600 to-teal-700',
     azar: 'from-slate-600 to-slate-800',
+    caos: 'from-red-600 to-rose-700',
     ai: 'from-violet-700 to-purple-800',
+    agent: 'from-slate-800 to-zinc-950',
+    alliance: 'from-pink-600 to-rose-700',
+    mirror: 'from-sky-600 to-indigo-700',
+    miniboss: 'from-red-700 to-orange-700',
+  }
+  const TYPE_LABELS = {
+    beber: 'Golos',
+    regra: 'Regra da Mesa',
+    desafio: 'Missão',
+    poder: 'Poder',
+    sorte: 'Sorte',
+    azar: 'Azar',
+    caos: 'Caos',
+    ai: 'Surpresa IA',
+    agent: 'Agente Secreto',
+    alliance: 'Aliança',
+    mirror: 'Espelho',
+    miniboss: 'Mini Boss',
+  }
+
+  const resolveAgent = (outcome) => {
+    setAgentResult(outcome)
+    onAgentResult?.(outcome, lastReaderIdx ?? nextReaderIdx)
+  }
+
+  const resolveBoss = (outcome) => {
+    setBossResult(outcome)
+    onMiniBossResult?.(outcome)
   }
 
   return (
@@ -281,16 +375,82 @@ function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
       <AnimatePresence mode="wait">
         {current ? (
           <motion.div
-            key={current.title + current.text}
+            key={`${current.title}-${current.text || current.publicText || current.secretMission}`}
             initial={{ scale: 0.85, opacity: 0, y: -16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className={`w-full bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}
+            className={`relative w-full overflow-hidden bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}
           >
-            <p className="text-white/70 text-xs uppercase tracking-[0.2em] mb-2">Carta</p>
-            <p className="text-6xl mb-4">{current.emoji}</p>
+            <div className="absolute -right-8 -top-10 text-9xl opacity-15">{current.emoji}</div>
+            <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-black/15 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/75">
+              {TYPE_LABELS[current.type] || 'Carta'}
+            </div>
+            <div className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-3xl border border-white/20 bg-white/15 text-6xl shadow-inner">
+              {current.emoji}
+            </div>
             <h3 className="text-white font-black text-3xl mb-4">{current.title}</h3>
-            <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
+            {current.type === 'agent' ? (
+              <div className="space-y-3">
+                {!agentOpen ? (
+                  <>
+                    <p className="text-white/80 text-sm font-bold">Só {whoReads?.name} deve ver a missão secreta.</p>
+                    <button onClick={()=>setAgentOpen(true)} className="w-full rounded-2xl bg-white/15 border border-white/20 py-3 text-white font-black">
+                      Ver missão secreta
+                    </button>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+                      <p className="text-amber-200 text-xs font-black uppercase tracking-[0.18em] mb-1">Missão secreta</p>
+                      <p className="text-white font-bold leading-relaxed">{current.secretMission}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                      <p className="text-white/60 text-xs font-black uppercase tracking-[0.18em] mb-1">Lê isto em voz alta</p>
+                      <p className="text-white/90 font-medium leading-relaxed">{current.publicText}</p>
+                    </div>
+                    {!agentResult ? (
+                      <div className="grid grid-cols-1 gap-2 pt-1">
+                        <button type="button" onClick={() => resolveAgent('success')} className="rounded-2xl bg-emerald-500 text-black py-3 font-black">
+                          Consegui a missão · distribui 3
+                        </button>
+                        <button type="button" onClick={() => resolveAgent('fail')} className="rounded-2xl bg-white/[0.12] border border-white/15 text-white py-3 font-bold">
+                          Falhei · bebe 2
+                        </button>
+                        <button type="button" onClick={() => resolveAgent('caught')} className="rounded-2xl bg-red-500 text-white py-3 font-black">
+                          Fui apanhado · bebe 4
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-emerald-100 font-black">
+                        {agentResult === 'success' && 'Missão cumprida: distribui 3 golos.'}
+                        {agentResult === 'fail' && 'Missão falhada: bebe 2 golos.'}
+                        {agentResult === 'caught' && 'Foste apanhado: bebe 4 golos.'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : current.type === 'miniboss' ? (
+              <div className="space-y-4">
+                <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
+                {!bossResult ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => resolveBoss('success')} className="rounded-2xl bg-emerald-500 text-black py-3 font-black">
+                      Grupo ganhou
+                    </button>
+                    <button type="button" onClick={() => resolveBoss('fail')} className="rounded-2xl bg-red-500 text-white py-3 font-black">
+                      Grupo falhou
+                    </button>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-white/20 bg-white/15 p-3 text-white font-black">
+                    {bossResult === 'success' ? 'Vitória: todos distribuem 2 golos.' : 'Falha: todos bebem 2 golos.'}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
+            )}
           </motion.div>
         ) : (
           <motion.div
@@ -327,6 +487,7 @@ function CardDeck({ activeDeck, players, deckSessionId, onCardDrawn }) {
               setCurrent(null)
               setNextReaderIdx(0)
               setLastReaderIdx(null)
+              setRecentTypes([])
             }}
             className="w-full bg-white/[0.07] text-white rounded-2xl py-3 flex items-center justify-center gap-2 font-medium"
           >
@@ -344,9 +505,14 @@ export default function DrinkGame(){
   const [phase,setPhase]=useState('setup')
   const [playerNames,setPlayerNames]=useState(['','',''])
   const [playerDrinks,setPlayerDrinks]=useState(['','',''])
-  const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios'])
+  const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','especiais'])
   const [tab,setTab]=useState('deck')
   const [deckSessionId, setDeckSessionId] = useState(0)
+  const [drinkStats,setDrinkStats]=useState([])
+  const [activeRules,setActiveRules]=useState([])
+  const [activeAlliances,setActiveAlliances]=useState([])
+  const [mirrorShields,setMirrorShields]=useState([])
+  const [turnCount,setTurnCount]=useState(0)
   const [surpriseCue, setSurpriseCue] = useState(false)
   const [surpriseOpen,setSurpriseOpen]=useState(false)
   const [surpriseLoading,setSurpriseLoading]=useState(false)
@@ -374,6 +540,143 @@ export default function DrinkGame(){
 
   const cardsUntilSurpriseRef = useRef(3)
 
+  const freshStats = (count) => Array.from({ length: count }, () => ({
+    drinks: 0,
+    distributed: 0,
+    agentSuccess: 0,
+    rulesCreated: 0,
+    unlucky: 0,
+  }))
+
+  const startGame = () => {
+    setDrinkStats(freshStats(players.length))
+    setActiveRules([])
+    setActiveAlliances([])
+    setMirrorShields([])
+    setTurnCount(0)
+    setDeckSessionId((k) => k + 1)
+    setPhase('playing')
+  }
+
+  const updatePlayerStat = (playerIndex, patcher) => {
+    setDrinkStats((stats) => {
+      const base = stats.length === players.length ? stats : freshStats(players.length)
+      return base.map((stat, idx) => (idx === playerIndex ? patcher(stat) : stat))
+    })
+  }
+
+  const activeAllianceList = activeAlliances.filter((alliance) => alliance.expiresAt > turnCount)
+
+  const registerDrink = (playerIndex, amount = 1, options = {}) => {
+    if (playerIndex == null || playerIndex < 0) return
+    const linkedPlayers = activeAllianceList
+      .filter((alliance) => alliance.players.includes(playerIndex))
+      .flatMap((alliance) => alliance.players.filter((idx) => idx !== playerIndex))
+
+    setDrinkStats((stats) => {
+      const base = stats.length === players.length ? stats : freshStats(players.length)
+      return base.map((stat, idx) => {
+        if (idx === playerIndex) {
+          return {
+            ...stat,
+            drinks: stat.drinks + amount,
+            unlucky: stat.unlucky + (options.unlucky ?? 1),
+          }
+        }
+        if (linkedPlayers.includes(idx)) {
+          return {
+            ...stat,
+            drinks: stat.drinks + 1,
+            unlucky: stat.unlucky + 1,
+          }
+        }
+        return stat
+      })
+    })
+  }
+
+  const registerDistributed = (playerIndex, amount = 1) => {
+    if (playerIndex == null || playerIndex < 0) return
+    updatePlayerStat(playerIndex, (stat) => ({ ...stat, distributed: stat.distributed + amount }))
+  }
+
+  const registerGroupDrink = (amount = 2) => {
+    setDrinkStats((stats) => {
+      const base = stats.length === players.length ? stats : freshStats(players.length)
+      return base.map((stat) => ({ ...stat, drinks: stat.drinks + amount, unlucky: stat.unlucky + 1 }))
+    })
+  }
+
+  const registerGroupDistributed = (amount = 2) => {
+    setDrinkStats((stats) => {
+      const base = stats.length === players.length ? stats : freshStats(players.length)
+      return base.map((stat) => ({ ...stat, distributed: stat.distributed + amount }))
+    })
+  }
+
+  const onCardDrawn = (card, readerIndex) => {
+    const nextTurn = turnCount + 1
+    setTurnCount(nextTurn)
+
+    cardsUntilSurpriseRef.current -= 1
+    if (cardsUntilSurpriseRef.current <= 0) {
+      setSurpriseCue(true)
+      cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
+    }
+
+    if (card?.type === 'regra' || card?.type === 'caos') {
+      if (/regras canceladas/i.test(card.title || '') || /canceladas/i.test(card.text || '')) {
+        setActiveRules([])
+      } else {
+        setActiveRules((rules) => [
+          ...rules,
+          {
+            id: `${Date.now()}-${Math.random()}`,
+            text: card.text,
+            ownerIndex: readerIndex,
+            type: card.type,
+            expiresAt: card.type === 'caos' ? nextTurn + 3 : null,
+          },
+        ])
+        updatePlayerStat(readerIndex, (stat) => ({ ...stat, rulesCreated: stat.rulesCreated + 1 }))
+      }
+    }
+
+    if (card?.type === 'alliance' && players.length > 1) {
+      const targetIndex = (readerIndex + 1) % players.length
+      setActiveAlliances((alliances) => [
+        ...alliances.filter((alliance) => alliance.expiresAt > nextTurn),
+        {
+          id: `${Date.now()}-${Math.random()}`,
+          players: [readerIndex, targetIndex],
+          expiresAt: nextTurn + 2,
+        },
+      ])
+    }
+
+    if (card?.type === 'mirror') {
+      setMirrorShields((shields) => {
+        const next = [...shields]
+        next[readerIndex] = (next[readerIndex] || 0) + 1
+        return next
+      })
+    }
+  }
+
+  const handleAgentResult = (outcome, readerIndex) => {
+    if (outcome === 'success') {
+      registerDistributed(readerIndex, 3)
+      updatePlayerStat(readerIndex, (stat) => ({ ...stat, agentSuccess: stat.agentSuccess + 1 }))
+      return
+    }
+    registerDrink(readerIndex, outcome === 'caught' ? 4 : 2, { unlucky: outcome === 'caught' ? 2 : 1 })
+  }
+
+  const handleMiniBossResult = (outcome) => {
+    if (outcome === 'success') registerGroupDistributed(2)
+    else registerGroupDrink(2)
+  }
+
   const fetchSurpriseChallenge = async () => {
     const roster = players.map((p) => ({ name: p.name, drink: p.drink || '' }))
     if (roster.length < 1) return
@@ -399,19 +702,81 @@ export default function DrinkGame(){
     }
   }
 
-  const onCardDrawn = useCallback(() => {
-    cardsUntilSurpriseRef.current -= 1
-    if (cardsUntilSurpriseRef.current <= 0) {
-      setSurpriseCue(true)
-      cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
-    }
-  }, [])
-
   useEffect(() => {
     cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
     setSurpriseCue(false)
     setSurpriseOpen(false)
   }, [deckSessionId])
+
+  const topBy = (field) => {
+    if (!players.length) return null
+    return players
+      .map((player, idx) => ({ player, value: drinkStats[idx]?.[field] || 0 }))
+      .sort((a, b) => b.value - a.value)[0]
+  }
+
+  if(phase==='results'){
+    const mostDrinks = topBy('drinks')
+    const bestAgent = topBy('agentSuccess')
+    const ruleKing = topBy('rulesCreated')
+    const unluckiest = topBy('unlucky')
+    return(
+      <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
+        <div className="w-full max-w-lg">
+          <div className="flex items-center gap-3 mb-6">
+            <button onClick={()=>setPhase('playing')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
+            <div>
+              <h1 className="text-white font-black text-2xl">🏆 Estatísticas finais</h1>
+              <p className="text-slate-500 text-sm">Resumo desta sessão do Modo Beber</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            {[
+              ['🍺 Quem bebeu mais', mostDrinks, 'golos'],
+              ['🕵️ Maior agente secreto', bestAgent, 'missões'],
+              ['📜 Rei das regras', ruleKing, 'regras'],
+              ['💀 Maior azarado', unluckiest, 'azares'],
+            ].map(([label, entry, suffix])=>(
+              <div key={label} className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
+                <p className="text-slate-400 text-xs font-black uppercase tracking-[0.14em] mb-2">{label}</p>
+                <p className="text-white font-black text-xl leading-tight">{entry?.player?.name || '—'}</p>
+                <p className="text-amber-300 text-sm font-bold mt-1">{entry?.value || 0} {suffix}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] overflow-hidden mb-5">
+            {players.map((player, idx)=>{
+              const stat = drinkStats[idx] || freshStats(1)[0]
+              return(
+                <div key={player.name} className="flex items-center gap-3 p-4 border-b border-white/[0.06] last:border-b-0">
+                  <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${player.color} flex items-center justify-center text-white font-black`}>{player.name[0]}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-bold truncate">{player.name}</p>
+                    <p className="text-slate-500 text-xs">Distribuiu {stat.distributed} · Agente {stat.agentSuccess} · Regras {stat.rulesCreated}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-amber-300 font-black">{stat.drinks}</p>
+                    <p className="text-slate-500 text-xs">golos</p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={()=>setPhase('playing')} className="rounded-2xl bg-white/[0.08] border border-white/10 text-white py-3 font-bold">
+              Voltar ao jogo
+            </button>
+            <button type="button" onClick={startGame} className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-black py-3 font-black">
+              Nova sessão
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if(phase==='setup')return(
     <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
@@ -461,7 +826,7 @@ export default function DrinkGame(){
             })}
           </div>
         </div>
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={() => { setDeckSessionId((k) => k + 1); setPhase('playing') }}
+        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={startGame}
           disabled={players.length<2||selectedCats.length===0}
           className="w-full text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40"
           style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
@@ -477,9 +842,9 @@ export default function DrinkGame(){
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <button onClick={()=>setPhase('setup')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
           <h1 className="text-white font-bold">🍺 Modo Beber</h1>
-          <div className="flex gap-1">
-            {players.map((p,i)=><div key={i} className={`w-7 h-7 rounded-full bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-xs font-black`}>{p.name[0]}</div>)}
-          </div>
+          <button type="button" onClick={()=>setPhase('results')} className="text-amber-300 text-xs font-black rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2">
+            Fim
+          </button>
         </div>
       </div>
       {/* Tabs */}
@@ -492,6 +857,87 @@ export default function DrinkGame(){
         ))}
       </div>
       <div className="flex-1 flex flex-col items-center px-4 py-5 max-w-lg mx-auto w-full">
+        <div className="w-full mb-4 space-y-3">
+          {(activeRules.length > 0 || activeAllianceList.length > 0 || mirrorShields.some(Boolean)) && (
+            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-white font-black text-sm">Estado da mesa</p>
+                <p className="text-slate-500 text-xs">Turno {turnCount}</p>
+              </div>
+
+              {activeRules.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-violet-300 text-xs font-black uppercase tracking-[0.16em]">Regras ativas</p>
+                  {activeRules.map((rule)=>(
+                    <div key={rule.id} className="rounded-2xl border border-violet-400/20 bg-violet-400/10 p-3">
+                      <div className="flex gap-2">
+                        <p className="text-white text-sm leading-snug flex-1">{rule.text}</p>
+                        <button type="button" onClick={()=>setActiveRules((rules)=>rules.filter((item)=>item.id!==rule.id))} className="text-violet-200 text-xs font-black rounded-xl bg-white/10 px-2 h-8">
+                          remover
+                        </button>
+                      </div>
+                      <p className="text-violet-200/70 text-xs mt-1">
+                        Criada por {players[rule.ownerIndex]?.name || 'jogador'}
+                        {rule.expiresAt ? ` · ${Math.max(0, rule.expiresAt - turnCount)} rondas` : ''}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeAllianceList.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-pink-300 text-xs font-black uppercase tracking-[0.16em]">Alianças</p>
+                  {activeAllianceList.map((alliance)=>(
+                    <div key={alliance.id} className="rounded-2xl border border-pink-400/20 bg-pink-400/10 p-3 text-sm text-white">
+                      🤝 {players[alliance.players[0]]?.name} + {players[alliance.players[1]]?.name}
+                      <span className="text-pink-200/80"> · {Math.max(0, alliance.expiresAt - turnCount)} rondas</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {mirrorShields.some(Boolean) && (
+                <div className="space-y-2">
+                  <p className="text-sky-300 text-xs font-black uppercase tracking-[0.16em]">Espelhos</p>
+                  {mirrorShields.map((count, idx)=>count ? (
+                    <div key={players[idx]?.name || idx} className="rounded-2xl border border-sky-400/20 bg-sky-400/10 p-3 flex items-center justify-between gap-3">
+                      <p className="text-white text-sm">🛡️ {players[idx]?.name} pode refletir {count} penalização{count > 1 ? 'ões' : ''}</p>
+                      <button
+                        type="button"
+                        onClick={()=>setMirrorShields((shields)=>shields.map((value, shieldIdx)=>shieldIdx===idx ? Math.max(0, (value || 0) - 1) : value))}
+                        className="text-sky-100 text-xs font-black rounded-xl bg-white/10 px-3 py-2"
+                      >
+                        Usar
+                      </button>
+                    </div>
+                  ) : null)}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-3">
+            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.16em] mb-2">Contador rápido</p>
+            <div className="grid grid-cols-2 gap-2">
+              {players.map((player, idx)=>(
+                <div key={player.name} className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-2">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-white text-sm font-bold truncate">{player.name}</p>
+                    <p className="text-amber-300 text-xs font-black">{drinkStats[idx]?.drinks || 0}</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[1,2,3].map((amount)=>(
+                      <button key={amount} type="button" onClick={()=>registerDrink(idx, amount)} className="rounded-xl bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
+                        +{amount}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
         <AnimatePresence>
           {surpriseCue && (
             <motion.div
@@ -541,6 +987,8 @@ export default function DrinkGame(){
                 players={players}
                 deckSessionId={deckSessionId}
                 onCardDrawn={onCardDrawn}
+                onAgentResult={handleAgentResult}
+                onMiniBossResult={handleMiniBossResult}
               />
             )}
           </motion.div>
