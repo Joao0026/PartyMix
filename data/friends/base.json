@@ -6,7 +6,11 @@
     "telepatia": [
       {
         "text": "Tema: coisas de uma noite fora. Dois jogadores dizem uma palavra ao mesmo tempo."
-      }
+      },
+      { "text": "Tema: desculpas para faltar ao trabalho. Palavra ao mesmo tempo." },
+      { "text": "Tema: coisas que se dizem no Uber. Sincronia." },
+      { "text": "Tema: snacks de cinema. Dois jogadores ao mesmo tempo." },
+      { "text": "Tema: superstições portuguesas. Palavra simultânea." }
     ],
     "perguntas": [
       {
@@ -71,20 +75,27 @@
       }
     ],
     "desenho": [
-      {
-        "text": "Desenha alguém a tentar pedir comida às 3 da manhã."
-      }
+      { "text": "Desenha alguém a tentar pedir comida às 3 da manhã." },
+      { "text": "Desenha a cara de quem viu a conta do restaurante." },
+      { "text": "Desenha um gato a usar fato de gala." },
+      { "text": "Desenha o pior corte de cabelo possível." },
+      { "text": "Desenha alguém a procurar Wi-Fi numa festa." }
     ],
     "mimica": [
-      {
-        "text": "Representa alguém a fingir que está sóbrio."
-      }
+      { "text": "Representa alguém a fingir que está sóbrio." },
+      { "text": "Representa um DJ quando a música pára." },
+      { "text": "Representa alguém a abrir champanhe mal." },
+      { "text": "Representa um jogador a fazer falta dramática." },
+      { "text": "Representa alguém a ler mensagens em voz alta sem querer." }
     ],
     "proibido": [
       {
         "text": "Palavra: Ressaca. Faz a equipa adivinhar sem dizer as palavras proibidas.",
         "forbiddenWords": ["bebida", "dor", "cabeça", "água", "noite"]
-      }
+      },
+      { "text": "Palavra: Discoteca. Tabu.", "forbiddenWords": ["música", "dança", "DJ", "fila", "bar"] },
+      { "text": "Palavra: IRS. Sem proibidos.", "forbiddenWords": ["imposto", "abril", "finanças", "declaração", "receita"] },
+      { "text": "Palavra: Praia. Adivinha.", "forbiddenWords": ["areia", "mar", "sol", "toalha", "ondas"] }
     ],
     "caos": [
       {
@@ -99,6 +110,19 @@
         "ongoing_rounds": 1,
         "ongoing_instruction": "Todas as respostas começam por 'honestamente'."
       }
+    ],
+    "impostor": [
+      {
+        "correctQuestion": "Quem do grupo sobreviveria num apocalipse?",
+        "wrongQuestion": "Quem é o mais medricas?"
+      },
+      {
+        "correctQuestion": "Qual é o tamanho ideal de um brinquedo sexual?",
+        "wrongQuestion": "Dá nota ao teu beijo de 1 a 10."
+      },
+      { "correctQuestion": "Quem seria o melhor anfitrião de festa?", "wrongQuestion": "Quem chegaria 2 horas atrasado?" },
+      { "correctQuestion": "Quem tem o melhor gosto para memes?", "wrongQuestion": "Quem explica piadas demasiado tempo?" },
+      { "correctQuestion": "Quem sobreviveria num reality show?", "wrongQuestion": "Quem seria o primeiro expulso?" }
     ]
   }
 }

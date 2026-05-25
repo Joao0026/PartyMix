@@ -7,7 +7,8 @@
     "dev": "nodemon server.js",
     "seed": "node seeds/seed.js",
     "import:pack": "node seeds/importPack.js",
-    "check": "node --check server.js && node --check websocket.js && node --check lib/packImport.js && node --check routes/admin.js && node --check routes/ai.js && node --check routes/community.js && node --check routes/cardroom.js && node --check routes/cards.js && node --check routes/challenges.js && node --check routes/lobby.js",
+    "seed:packs": "node seeds/importAllPacks.js",
+    "check": "node --check server.js && node --check websocket.js && node --check lib/packImport.js && node --check routes/admin.js && node --check routes/ai.js && node --check routes/community.js && node --check routes/cardroom.js && node --check routes/cards.js && node --check routes/challenges.js && node --check routes/drink.js && node --check routes/lobby.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

@@ -1,8 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Globe, Users2 } from 'lucide-react'
+import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Users2 } from 'lucide-react'
 import { useLang } from '../contexts/LangContext'
-import { LANGS } from '../i18n/translations'
 
 const MODE_ICONS = { couple: Heart, friends: Users, family: HomeIcon, drink: Beer, cards: Layers, mister: Eye }
 const MODE_COLORS = {
@@ -15,20 +14,6 @@ const MODE_COLORS = {
 }
 const MODE_PATHS = { couple:'/GameSetup?mode=couple', friends:'/GameSetup?mode=friends', family:'/GameSetup?mode=family', drink:'/DrinkGame', cards:'/CardsLobby', mister:'/MisterWhiteGame' }
 const MODE_ORDER = ['couple','friends','family','drink','cards','mister']
-
-function LangSwitcher() {
-  const { lang, changeLang } = useLang()
-  return (
-    <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-2xl p-1">
-      {LANGS.map(l => (
-        <button key={l.code} onClick={() => changeLang(l.code)}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${lang === l.code ? 'bg-violet-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-          {l.flag} {l.label}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 export default function Home() {
   const navigate = useNavigate()
@@ -44,11 +29,6 @@ export default function Home() {
           style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }} />
         <div className="absolute top-[40%] left-[-5%] w-[250px] h-[250px] rounded-full opacity-10"
           style={{ background: 'radial-gradient(circle, #06b6d4 0%, transparent 70%)' }} />
-      </div>
-
-      {/* Lang switcher top */}
-      <div className="w-full max-w-lg flex justify-end mb-6 relative z-10">
-        <LangSwitcher />
       </div>
 
       {/* Logo */}

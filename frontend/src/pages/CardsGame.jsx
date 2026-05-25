@@ -6,6 +6,7 @@ import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 import { getSocketUrl } from '../utils/api'
+import festaPackJson from '../../../data/cards/festa.json'
 
 const API_URL = getSocketUrl()
 
@@ -31,13 +32,20 @@ const PACKS = {
     black:['O novo ministro da saúde vai resolver o problema com ___.','O Parlamento aprovou uma lei que proíbe ___.','Novo partido político: "Portugal ___".','O orçamento de estado contempla verba para ___.','Novo escândalo político: ___ apanhado a fazer ___.','O presidente da câmara inaugurou ___ pela 4ª vez.'],
     white:['Uma circular sobre uma circular','O relatório do relatório de 2019','Inaugurar uma ponte que já existia','Um comboio com 40 anos de vida útil','Uma privatização disfarçada','O coeficiente de valorização das rendas','Uma auditoria ao tribunal de contas','Abstenção histórica','Votos nulos filosóficos','Geringonça 3.0'],
   },
+  festa: {
+    id: 'festa',
+    name: '🎉 Festa Extra',
+    desc: festaPackJson.description || 'Pack grande para noites longas',
+    black: festaPackJson.black || [],
+    white: festaPackJson.white || [],
+  },
 }
 const ALL_PACKS = Object.values(PACKS)
 
 // ── SETUP SCREEN ─────────────────────────────────────────────
 function SetupScreen({ onCreateOnline, initialName }) {
   const navigate = useNavigate()
-  const [selPacks, setSelPacks] = useState(['base','dark'])
+  const [selPacks, setSelPacks] = useState(['base','festa','dark'])
   const [playerName, setPlayerName] = useState(initialName || '')
 
   // Preencher quando vier de CardsLobby

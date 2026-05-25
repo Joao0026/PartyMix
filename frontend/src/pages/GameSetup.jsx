@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Trash2, ChevronRight, ChevronLeft, Users, Map, Zap, Gamepad2, Target } from 'lucide-react'
 import { PLAYER_COLORS, TEAM_COLORS, saveGame } from '../utils/game'
+import { api } from '../utils/api'
 import { NumericDie } from '../components/game/EroticDie'
 
 const MODE_CONFIG = {
@@ -97,6 +98,15 @@ export default function GameSetup() {
   // Score mode for friends: '3_per_cat' (like Party & Co) or 'max_points'
   const [scoreMode,  setScoreMode]  = useState('max_points')
   const [maxPoints,  setMaxPoints]  = useState(5)
+  const [contentPack, setContentPack] = useState('base')
+  const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
+
+  useEffect(() => {
+    void api.getChallengePacks({ mode_type: mode }).then((rows) => {
+      if (!Array.isArray(rows) || !rows.length) return
+      setPackOptions(rows.map((pack) => ({ pack, name: pack })))
+    }).catch(() => {})
+  }, [mode])
 
   // Computed winning scores
   // Family: always 3 × categories (mandatory, like Party & Co)
@@ -123,6 +133,7 @@ export default function GameSetup() {
       mapRotation,
       mapStyle,
       winningScore,
+      contentPack,
     })
     if (mode==='couple')                 navigate('/CoupleGame')
     else if (friendsMode==='challenges') navigate('/ChallengesOnly')
@@ -160,6 +171,14 @@ export default function GameSetup() {
                   <Plus className="w-4 h-4"/>Adicionar jogador
                 </button>
               )}
+              {!cfg.hasTeams && (
+                <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3">
+                  <p className="text-white font-semibold text-sm mb-2">📦 Pack de conteúdo</p>
+                  <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
+                    {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
+                  </select>
+                </div>
+              )}
               <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={()=>cfg.hasTeams?setStep(1):startGame()}
                 className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 mt-4 flex items-center justify-center gap-2`}>
                 {cfg.hasTeams?'Continuar':'Começar Jogo'}<ChevronRight className="w-5 h-5"/>
@@ -173,6 +192,16 @@ export default function GameSetup() {
 
               {/* Die preview */}
               <DiePreview/>
+
+              <div>
+                <h3 className="text-white font-semibold mb-2">📦 Pack de conteúdo</h3>
+                <p className="text-slate-500 text-xs mb-2">Só saem desafios deste pack (importa com npm run seed:packs).</p>
+                <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
+                  {packOptions.map((p) => (
+                    <option key={p.pack} value={p.pack}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Friends mode */}
               {mode==='friends'&&(
@@ -356,7 +385,7 @@ export default function GameSetup() {
                 <div>
                   <h3 className="text-white font-semibold mb-2">Penalização</h3>
                   <div className="grid grid-cols-3 gap-2">
-                    {[{id:'sips',label:'🍺 Golos',desc:'Sempre 1-3 golos'},{id:'penalty',label:'⚽ Penáltis',desc:'Sempre penálti'},{id:'both',label:'🎲 Ambos',desc:'90% golos, 10% penálti'}].map(o=>(
+                    {[{id:'sips',label:'🍺 Goles',desc:'Sempre 1-3 goles'},{id:'penalty',label:'⚽ Penáltis',desc:'Sempre penálti'},{id:'both',label:'🎲 Ambos',desc:'90% goles, 10% penálti'}].map(o=>(
                       <button key={o.id} onClick={()=>setPenalty(o.id)}
                         className={`p-3 rounded-xl border text-left text-sm transition-all ${penalty===o.id?'bg-violet-600/15 border-violet-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
                         <p className="font-bold">{o.label}</p>

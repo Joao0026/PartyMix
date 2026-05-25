@@ -22,6 +22,7 @@ app.use('/api/admin', require('./routes/admin'))
 
 // Existing routes
 app.use('/api/challenges', require('./routes/challenges'))
+app.use('/api/drink', require('./routes/drink'))
 app.use('/api/cards',      require('./routes/cards'))
 app.use('/api/dice',       require('./routes/dice'))
 app.use('/api/lobby',      require('./routes/lobby'))

@@ -125,9 +125,15 @@ export const api = {
     return data
   },
   importPack:         (pack) => post('/admin/import-pack', { pack }),
+  listAdminPacks:     () => get('/admin/packs', { auth: true }),
+  exportAdminPack:    (pack) => get(`/admin/packs/${encodeURIComponent(pack)}/export`, { auth: true }),
   updateCommunityMeta:(id, d) => post(`/admin/community/${id}/meta`, d),
 
+  getDrinkPacks:      () => get('/drink/packs'),
+  getDrinkDecks:      (pack = 'base') => get(`/drink/decks?pack=${encodeURIComponent(pack)}`),
+
   // Challenges
+  getChallengePacks:  (p = {}) => get(`/challenges/packs?${new URLSearchParams(p)}`),
   getChallenges:      (p = {}) => get(`/challenges?${new URLSearchParams(p)}`),
   getRandomChallenge: (p = {}) => get(`/challenges/random?${new URLSearchParams(p)}`),
   createChallenge:    (d) => post('/challenges', d),

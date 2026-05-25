@@ -1,0 +1,95 @@
+{
+  "name": "Amigos - Festa",
+  "pack": "festa",
+  "mode": "friends",
+  "description": "Pack extra para noites longas — mais desafios por categoria.",
+  "categories": {
+    "telepatia": [
+      { "text": "Tema: apps no telemóvel. Dois jogadores dizem uma palavra ao mesmo tempo." },
+      { "text": "Tema: desculpas para chegar atrasado. Sincronia ou penalização." },
+      { "text": "Tema: comida de madrugada. Palavra ao mesmo tempo." },
+      { "text": "Tema: coisas que se perdem numa festa. Dois jogadores ao mesmo tempo." },
+      { "text": "Tema: músicas de karaoké. Palavra simultânea." },
+      { "text": "Tema: piores presentes de aniversário. Sincronia." },
+      { "text": "Tema: superpoderes inúteis. Ao mesmo tempo." },
+      { "text": "Tema: coisas que só compras quando estás bêbado." }
+    ],
+    "perguntas": [
+      { "text": "Em que ano Portugal ganhou o Euro?", "answer": "2016", "choices": ["2004", "2016", "2020", "2012"], "difficulty": "facil" },
+      { "text": "Qual é a capital da Austrália?", "answer": "Canberra", "choices": ["Sydney", "Melbourne", "Canberra", "Perth"], "difficulty": "medio" },
+      { "text": "Quantos continentes existem?", "answer": "7", "choices": ["5", "6", "7", "8"], "difficulty": "facil" },
+      { "text": "Quem pintou Guernica?", "answer": "Picasso", "choices": ["Dalí", "Picasso", "Miró", "Goya"], "difficulty": "medio" },
+      { "text": "Qual é o planeta mais próximo do Sol?", "answer": "Mercúrio", "choices": ["Vénus", "Terra", "Mercúrio", "Marte"], "difficulty": "facil" },
+      { "text": "Em que país nasceu o sushi tal como é famoso?", "answer": "Japão", "choices": ["China", "Coreia", "Japão", "Tailândia"], "difficulty": "facil" },
+      { "text": "Qual destes não é um oceano?", "answer": "Mediterrâneo", "choices": ["Atlântico", "Índico", "Mediterrâneo", "Pacífico"], "difficulty": "medio" },
+      { "text": "Quem compôs a 9.ª Sinfonia com Ode à Alegria?", "answer": "Beethoven", "choices": ["Mozart", "Bach", "Beethoven", "Chopin"], "difficulty": "medio" },
+      { "text": "Qual é a língua mais falada no mundo?", "answer": "Inglês", "choices": ["Mandarim", "Espanhol", "Inglês", "Hindi"], "difficulty": "medio" },
+      { "text": "Em que cidade se passa Friends?", "answer": "Nova Iorque", "choices": ["Los Angeles", "Chicago", "Nova Iorque", "Boston"], "difficulty": "facil" },
+      { "text": "Qual é o animal terrestre mais rápido?", "answer": "Guepardo", "choices": ["Leão", "Guepardo", "Antílope", "Cavalo"], "difficulty": "facil" },
+      { "text": "Que país inventou o papel-moeda moderno (história simplificada)?", "answer": "China", "choices": ["Egito", "China", "Grécia", "Roma"], "difficulty": "dificil" },
+      { "text": "Qual é a montanha mais alta do mundo?", "answer": "Everest", "choices": ["K2", "Everest", "Kilimanjaro", "Alpes"], "difficulty": "facil" },
+      { "text": "Quem escreveu Dom Quixote?", "answer": "Cervantes", "choices": ["Cervantes", "Shakespeare", "Homer", "Dante"], "difficulty": "medio" },
+      { "text": "Qual é a fórmula química do sal de cozinha?", "answer": "NaCl", "choices": ["H2O", "CO2", "NaCl", "O2"], "difficulty": "medio" }
+    ],
+    "desenho": [
+      { "text": "Desenha alguém a tentar pagar MB Way com 2% de bateria." },
+      { "text": "Desenha a fila da discoteca às 2h da manhã." },
+      { "text": "Desenha um gato a mandar mensagens no grupo da família." },
+      { "text": "Desenha o pior corte de cabelo da história." },
+      { "text": "Desenha alguém a procurar óculos que estão na cabeça." },
+      { "text": "Desenha uma prenda de casamento muito estranha." },
+      { "text": "Desenha o Wi-Fi a falhar no momento mais importante." },
+      { "text": "Desenha um autocarro cheio depois de um jogo de futebol." },
+      { "text": "Desenha alguém a fingir que percebe de vinhos." },
+      { "text": "Desenha a cara de quem viu a conta do jantar." },
+      { "text": "Desenha um unicórnio a fazer declaração de IRS." },
+      { "text": "Desenha o teu chefe como super-herói inútil." }
+    ],
+    "mimica": [
+      { "text": "Representa alguém a tentar tirar selfie com flash a acordar toda a gente." },
+      { "text": "Representa um DJ a perder a música no meio da festa." },
+      { "text": "Representa alguém a pedir \"só mais uma\" pela décima vez." },
+      { "text": "Representa um segurança a dizer que a discoteca está cheia." },
+      { "text": "Representa alguém a ler mensagens em voz alta sem querer." },
+      { "text": "Representa um jogador a celebrar golo como o Ronaldo." },
+      { "text": "Representa alguém a abrir refrigerante que explodiu na cara." },
+      { "text": "Representa uma pessoa a tentar entrar em calças apertadas depois de lavar." },
+      { "text": "Representa alguém a explicar um meme a um avô." },
+      { "text": "Representa um turista a pedir directions com sotaque inventado." },
+      { "text": "Representa alguém a apagar mensagem no WhatsApp com dedo tremido." },
+      { "text": "Representa um influencer a gravar \"um dia na minha vida\"." }
+    ],
+    "proibido": [
+      { "text": "Palavra: Festa. Adivinha sem dizer as palavras proibidas.", "forbiddenWords": ["música", "bebida", "dança", "amigos", "noite"] },
+      { "text": "Palavra: Avião. Sem palavras proibidas.", "forbiddenWords": ["voar", "aeroporto", "piloto", "asas", "viagem"] },
+      { "text": "Palavra: Praia. Tabu ativo.", "forbiddenWords": ["areia", "mar", "sol", "toalha", "ondas"] },
+      { "text": "Palavra: Ex. Sem proibidos.", "forbiddenWords": ["namoro", "mensagem", "saudade", "instagram", "block"] },
+      { "text": "Palavra: Ginásio. Equipa adivinha.", "forbiddenWords": ["peso", "treino", "músculo", "corrida", "fitness"] },
+      { "text": "Palavra: Uber. Sem proibidos.", "forbiddenWords": ["carro", "motorista", "app", "viagem", "estrelas"] },
+      { "text": "Palavra: Casamento. Tabu.", "forbiddenWords": ["noiva", "igreja", "aliança", "bouquet", "padrinho"] },
+      { "text": "Palavra: Pizza. Adivinha.", "forbiddenWords": ["massa", "queijo", "forno", "fatia", "italiano"] }
+    ],
+    "caos": [
+      { "text": "Regra: até à próxima carta Caos, só podes falar em perguntas.", "is_ongoing": true, "ongoing_rounds": 2, "ongoing_instruction": "Só perguntas!" },
+      { "text": "Regra: quem ri alto bebe 1 golo (3 rondas).", "is_ongoing": true, "ongoing_rounds": 3, "ongoing_instruction": "Risos altos = 1 golo." },
+      { "text": "Regra: proibido apontar com o dedo indicador (2 rondas).", "is_ongoing": true, "ongoing_rounds": 2, "ongoing_instruction": "Sem apontar!" },
+      { "text": "Regra: todos têm de brindar antes de beber (até sair outra Caos).", "is_ongoing": true, "ongoing_rounds": 99, "ongoing_instruction": "Brinde obrigatório." },
+      { "text": "Regra: quem tocar no telemóvel bebe 2 (2 rondas).", "is_ongoing": true, "ongoing_rounds": 2, "ongoing_instruction": "Telemóvel proibido." },
+      { "text": "Regra: falar em inglês faz beber 1 (3 rondas).", "is_ongoing": true, "ongoing_rounds": 3, "ongoing_instruction": "Só português!" }
+    ],
+    "impostor": [
+      { "correctQuestion": "Quem seria o melhor anfitrião de festa?", "wrongQuestion": "Quem vomitaria primeiro?" },
+      { "correctQuestion": "Quem tem melhor gosto musical?", "wrongQuestion": "Quem canta pior no karaoké?" },
+      { "correctQuestion": "Quem sobreviveria a uma ilha deserta?", "wrongQuestion": "Quem se perderia a ir buscar água?" },
+      { "correctQuestion": "Quem daria o melhor conselho amoroso?", "wrongQuestion": "Quem mandaria mensagem ao ex às 3h?" },
+      { "correctQuestion": "Quem ganharia num debate político?", "wrongQuestion": "Quem acredita em teorias da conspiração?" },
+      { "correctQuestion": "Quem é o mais organizado?", "wrongQuestion": "Quem tem o quarto mais caótico?" },
+      { "correctQuestion": "Quem seria o melhor cozinheiro de emergência?", "wrongQuestion": "Quem queimaria água?" },
+      { "correctQuestion": "Quem é o mais confiável com segredos?", "wrongQuestion": "Quem espalharia um rumor em 5 minutos?" },
+      { "correctQuestion": "Quem teria o melhor outfit para uma gala?", "wrongQuestion": "Quem usaria chinelos a um casamento?" },
+      { "correctQuestion": "Quem seria o melhor líder de equipa?", "wrongQuestion": "Quem desistia ao primeiro obstáculo?" },
+      { "correctQuestion": "Quem tem o melhor sentido de humor?", "wrongQuestion": "Quem explica piadas demasiado tempo?" },
+      { "correctQuestion": "Quem seria o mais calmo numa discussão?", "wrongQuestion": "Quem dramatiza tudo?" }
+    ]
+  }
+}

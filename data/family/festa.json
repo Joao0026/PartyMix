@@ -1,0 +1,73 @@
+{
+  "name": "Família - Festa",
+  "pack": "festa",
+  "mode": "family",
+  "description": "Mais desafios leves para jogar em família ou grupo misto.",
+  "categories": {
+    "telepatia": [
+      { "text": "Tema: frutas. Dois jogadores dizem uma palavra ao mesmo tempo." },
+      { "text": "Tema: profissões. Sincronia ou penalização leve." },
+      { "text": "Tema: coisas que se encontram numa mala de viagem." },
+      { "text": "Tema: programas de televisão portugueses." },
+      { "text": "Tema: animais da quinta." },
+      { "text": "Tema: doces portugueses." },
+      { "text": "Tema: super-heróis." },
+      { "text": "Tema: instrumentos musicais." }
+    ],
+    "perguntas": [
+      { "text": "Quantos dias tem um ano bissexto?", "answer": "366", "choices": ["365", "366", "364", "367"], "difficulty": "facil" },
+      { "text": "Qual é a capital de Espanha?", "answer": "Madrid", "choices": ["Barcelona", "Madrid", "Valência", "Sevilha"], "difficulty": "facil" },
+      { "text": "Em que ano o homem pisou a Lua pela primeira vez?", "answer": "1969", "choices": ["1965", "1969", "1972", "1980"], "difficulty": "medio" },
+      { "text": "Qual destes animais põe ovos?", "answer": "Galinha", "choices": ["Galinha", "Vaca", "Cão", "Gato"], "difficulty": "facil" },
+      { "text": "Quantos lados tem um hexágono?", "answer": "6", "choices": ["5", "6", "7", "8"], "difficulty": "facil" },
+      { "text": "Qual é o maior mamífero do mundo?", "answer": "Baleia-azul", "choices": ["Elefante", "Baleia-azul", "Girafa", "Hipopótamo"], "difficulty": "medio" },
+      { "text": "Quem escreveu Harry Potter?", "answer": "J.K. Rowling", "choices": ["Tolkien", "J.K. Rowling", "C.S. Lewis", "Riordan"], "difficulty": "facil" },
+      { "text": "Qual é a cor obtida misturando azul e amarelo?", "answer": "Verde", "choices": ["Roxo", "Verde", "Laranja", "Castanho"], "difficulty": "facil" },
+      { "text": "Em Portugal, qual é a moeda oficial?", "answer": "Euro", "choices": ["Escudo", "Euro", "Libra", "Dólar"], "difficulty": "facil" },
+      { "text": "Quantos jogadores tem uma equipa de basquetebol em campo?", "answer": "5", "choices": ["5", "6", "7", "11"], "difficulty": "medio" },
+      { "text": "Qual planeta é conhecido pelos anéis?", "answer": "Saturno", "choices": ["Marte", "Júpiter", "Saturno", "Vénus"], "difficulty": "facil" },
+      { "text": "O que mede um barómetro?", "answer": "Pressão atmosférica", "choices": ["Temperatura", "Pressão atmosférica", "Humidade", "Velocidade"], "difficulty": "medio" },
+      { "text": "Qual é o rio mais longo de Portugal continental?", "answer": "Tejo", "choices": ["Douro", "Tejo", "Guadiana", "Mondego"], "difficulty": "medio" },
+      { "text": "Quantos minutos tem uma hora?", "answer": "60", "choices": ["30", "45", "60", "100"], "difficulty": "facil" },
+      { "text": "Qual destes é um gás que respiramos?", "answer": "Oxigénio", "choices": ["Hélio", "Oxigénio", "Hidrogénio", "Neão"], "difficulty": "medio" }
+    ],
+    "desenho": [
+      { "text": "Desenha um piquenique em família com formigas gigantes." },
+      { "text": "Desenha o Natal em casa com demasiadas luzes." },
+      { "text": "Desenha um cão a conduzir um carro (desenho engraçado)." },
+      { "text": "Desenha a tua escola ideal com escorrega até à sala." },
+      { "text": "Desenha alguém a tentar montar um móvel IKEA." },
+      { "text": "Desenha um robot a lavar a loiça." },
+      { "text": "Desenha um castelo feito de almofadas." },
+      { "text": "Desenha o sol com óculos de sol." },
+      { "text": "Desenha uma árvore que dá pizza." },
+      { "text": "Desenha a tua família como super-heróis." },
+      { "text": "Desenha um comboio cheio de animais." },
+      { "text": "Desenha alguém a perder óculos no sofá." }
+    ],
+    "mimica": [
+      { "text": "Representa um surfista a cair na onda." },
+      { "text": "Representa alguém a abrir um presente surpresa." },
+      { "text": "Representa um chef a provar sopa muito quente." },
+      { "text": "Representa um bebé a aprender a andar." },
+      { "text": "Representa alguém a tirar foto com flash." },
+      { "text": "Representa um jogador de ténis a celebrar ponto." },
+      { "text": "Representa alguém a varrer a casa em modo rápido." },
+      { "text": "Representa um mágico cujo truque falhou." },
+      { "text": "Representa alguém a tentar apanhar um autocarro." },
+      { "text": "Representa um cantor de ópera exagerado." },
+      { "text": "Representa alguém a comer spaghetti embaraçoso." },
+      { "text": "Representa um professor entusiasmado." }
+    ],
+    "proibido": [
+      { "text": "Palavra: Futebol. Sem palavras proibidas.", "forbiddenWords": ["bola", "golo", "árbitro", "estádio", "Benfica"] },
+      { "text": "Palavra: Computador. Tabu.", "forbiddenWords": ["ecrã", "rato", "teclado", "internet", "Windows"] },
+      { "text": "Palavra: Hospital. Adivinha.", "forbiddenWords": ["médico", "doente", "ambulância", "enfermeiro", "cirurgia"] },
+      { "text": "Palavra: Páscoa. Sem proibidos.", "forbiddenWords": ["ovo", "coelho", "chocolate", "domingo", "família"] },
+      { "text": "Palavra: Biblioteca. Tabu.", "forbiddenWords": ["livro", "silêncio", "ler", "estante", "bibliotecário"] },
+      { "text": "Palavra: Neve. Adivinha.", "forbiddenWords": ["frio", "inverno", "esqui", "boneco", "gelo"] },
+      { "text": "Palavra: Piscina. Sem proibidos.", "forbiddenWords": ["água", "nadar", "fato", "mergulho", "calor"] },
+      { "text": "Palavra: Avião. Tabu.", "forbiddenWords": ["voar", "piloto", "aeroporto", "asas", "viagem"] }
+    ]
+  }
+}

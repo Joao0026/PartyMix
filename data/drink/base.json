@@ -36,6 +36,16 @@
       {
         "text": "Estás salvo nesta ronda. Passa o castigo a outro jogador."
       }
+    ],
+    "impostor": [
+      {
+        "correctQuestion": "Quem do grupo sobreviveria num apocalipse?",
+        "wrongQuestion": "Quem é o mais medricas?"
+      },
+      {
+        "correctQuestion": "Qual é o tamanho ideal de um brinquedo sexual?",
+        "wrongQuestion": "Dá nota ao teu beijo de 1 a 10."
+      }
     ]
   }
 }

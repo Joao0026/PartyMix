@@ -4,7 +4,8 @@ const requireAdmin = require('../middleware/requireAdmin')
 const CommunitySubmission = require('../models/CommunitySubmission')
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
-const { importPackObject } = require('../lib/packImport')
+const DrinkPack = require('../models/DrinkPack')
+const { importPackObject, listPackNames, exportPackObject } = require('../lib/packImport')
 const { asyncRoute, cleanString, mongoId, oneOf } = require('../lib/validate')
 
 router.post('/login', (req, res) => {
@@ -25,6 +26,26 @@ router.post('/login', (req, res) => {
   const token = jwt.sign({ role: 'admin' }, secret, { expiresIn: '12h' })
   res.json({ token })
 })
+
+router.get('/packs', requireAdmin, asyncRoute(async (req, res) => {
+  const names = await listPackNames()
+  const drinkRows = await DrinkPack.find({}, { pack: 1, name: 1 }).lean()
+  const drinkMap = Object.fromEntries(drinkRows.map((r) => [r.pack, r.name]))
+  res.json(names.map((pack) => ({
+    pack,
+    name: drinkMap[pack] || pack,
+    hasDrinkDecks: !!drinkMap[pack],
+  })))
+}))
+
+router.get('/packs/:pack/export', requireAdmin, asyncRoute(async (req, res) => {
+  const pack = cleanString(req.params.pack, { field: 'pack', max: 60, required: true })
+  const doc = await exportPackObject(pack)
+  if (!doc.categories && !doc.decks && !doc.white && !doc.black) {
+    return res.status(404).json({ error: 'Pack vazio ou inexistente' })
+  }
+  res.json(doc)
+}))
 
 router.post('/import-pack', requireAdmin, asyncRoute(async (req, res) => {
   const pack = req.body?.pack || req.body

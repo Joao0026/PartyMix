@@ -1,0 +1,325 @@
+================================================================================
+PARTYMIX — O QUE CADA TIPO DE CARTA / DESAFIO FAZ (POR MODO)
+================================================================================
+Documento para ti e para gerar conteúdo original em PT-PT.
+Ficheiros de conteúdo: pasta data/  →  importar: npm run seed:packs
+Deploy do código NÃO mete cartas na base de dados sozinho — tens de correr seed:packs
+na MongoDB de produção depois de cada lote novo.
+
+================================================================================
+1. MODO AMIGOS (mapa + desafios — 1 telemóvel, passa-se o telemão)
+================================================================================
+Conteúdo vem da API (MongoDB), pack escolhido no setup (ex.: base, festa).
+Categorias no JSON (data/friends/*.json → categories):
+
+--- NORMAIS (desafios da base de dados) ---
+
+telepatia
+  O que é: tema dado; dois jogadores dizem uma palavra ao mesmo tempo.
+  Objetivo: sincronia — se coincidir, ganham / escolhem penalização.
+  JSON: { "text": "Tema: ... Dois jogadores dizem uma palavra ao mesmo tempo." }
+  Inspiração web: jogos de “say the same word”, telepathy party games.
+
+perguntas  (Sabichão)
+  O que é: quiz com 4 escolhas clicáveis.
+  Objetivo: responder certo; errar = penalização (goles se configurado).
+  JSON: text, answer, choices[], difficulty (facil|medio|dificil)
+  Inspiração: trivia, pub quiz.
+
+desenho  (Rabiscos)
+  O que é: desenhar algo sem falar (tempo no desafio).
+  Objetivo: equipa adivinha o desenho.
+  JSON: { "text": "Desenha ..." }
+  Inspiração: Pictionary, quick draw games.
+
+mimica  (Gestos)
+  O que é: representar sem falar.
+  Objetivo: equipa adivinha em X segundos.
+  JSON: { "text": "Representa / Imita ..." }
+  Inspiração: Charades.
+
+proibido  (Palavra Tabu)
+  O que é: uma palavra secreta; não podes dizer as palavras proibidas.
+  Objetivo: equipa adivinha a palavra.
+  JSON: text + forbiddenWords[] (5 palavras)
+  Inspiração: Taboo board game, ESL taboo cards.
+
+caos
+  O que é: regra temporária para a mesa (várias rondas).
+  Objetivo: quem quebrar a regra bebe ou falha desafio.
+  JSON: text, is_ongoing: true, ongoing_rounds, ongoing_instruction
+  Inspiração: house rules, Kings Cup “make a rule”, party rule cards.
+
+--- ESPECIAL (categoria + casa do mapa) ---
+
+impostor  ★ ESPECIAL
+  O que é: carta de dedução social no mapa (casa roxa 🎭).
+  Fluxo: passa o telemóvel a todos; 1 jogador vê pergunta ERRADA; grupo discute;
+         tenta descobrir quem tinha a pergunta diferente.
+  Penalização: se acertam quem era → impostor bebe; se falham → impostor distribui.
+  JSON (em friends/drink packs):
+    "correctQuestion": "pergunta para quase todos"
+    "wrongQuestion": "pergunta diferente/embarrassing para o impostor"
+  Inspiração: social deduction, “two questions” party games, Undercover vibe.
+
+--- CASAS ESPECIAIS NO MAPA (não são JSON — lógica do MapGame) ---
+Só aparecem se ativares “Casas especiais” no setup.
+
+  duelo / team_duel — duelo entre jogadores ou equipas
+  shot — shot / duelo de bebida
+  regra — ativa regra na mesa
+  roubo (steal) — roubar pontos / carta
+  proteção (shield) — escudo contra penalização
+  bónus (bonus) — ganha pontos ou vantagem
+  risco (risk) — desafio com risco de perder pontos
+  todos (all_play) — toda a gente joga algo
+  impostor — como categoria impostor acima
+
+--- MINI-JOGOS (casas 🎮, não são cartas JSON) ---
+  maior_menor, grupo, espio, 10_segundos, batalha, sync, password
+  (lógica em MiniGameModal — listas no código)
+
+================================================================================
+2. MODO FAMÍLIA (igual Amigos, tom mais leve)
+================================================================================
+Categorias no setup: telepatia, perguntas, desenho, mimica, proibido
+(família NÃO usa caos no setup padrão; pode ter casas especiais: duelo, bónus, risco, todos)
+
+Mesmo significado que em Amigos para cada categoria.
+Conteúdo: data/family/*.json — sem álcool explícito recomendado.
+
+impostor: pode existir no JSON mas o mapa família foca cultura/desporto/música/cinema
+via desafios perguntas — ver também fallbacks no código para cultura, desporto, etc.
+
+================================================================================
+3. MODO CASAL (2 jogadores — 1 telemóvel)
+================================================================================
+A) Desafios na BASE DE DADOS (data/couple/*.json):
+  romantico   — conexão, carinho, elogios
+  picante     — mais sensual (com consentimento)
+  verdade     — perguntas honestas / vulneráveis
+  acao        — fazer algo (massagem, beijo, etc.) — pode ter time_limit
+  roleplay    — cena / personagem (“Cena: ...”)
+  casal_pergunta / quiz — pergunta sobre o parceiro; answer = “Resposta do parceiro”
+
+B) Atividades no ECRÃ (CoupleGame — muito conteúdo no código, não só JSON):
+  map           — tabuleiro Snakes & Ladders íntimo (1x por sessão)
+  dice          — dados eróticos (ação × parte do corpo)
+  challenges    — lista UNIQUE_CHALLENGES (sensorial, fisico, romantico, emocional, playful, bold)
+  quiz          — perguntas sobre o parceiro
+  roleplay      — cenários com timer
+  scratch       — raspadinha / posição do dia (/daily)
+  kinky 🔒      — premium bloqueado (em breve)
+
+================================================================================
+4. MODO BEBER (baralhos — 1 telemóvel na mesa)
+================================================================================
+Conteúdo: data/drink/decks.json (pack base, etc.) → API /api/drink/decks
+Escolhes baralhos no ecrã (Waterfall, Eu Nunca, Especiais, …).
+Texto com “bebe X” ou “distribui X” → contador de GOLES automático.
+
+--- CARTAS NORMAIS (type no JSON) ---
+
+beber
+  O que faz: indica quem bebe quantos goles (regras no texto).
+  Ex.: “O mais alto bebe 2 goles”, “Último a pôr dedo no nariz bebe 3”.
+  Inspiração: Kings Cup, ring of fire, drinking roulette.
+
+desafio
+  O que faz: desafio, pergunta, Eu Nunca, jogos de grupo.
+  Pode incluir beber no texto ou não.
+  Inspiração: Never Have I Ever, Truth or Drink.
+
+regra
+  O que faz: nova regra na mesa (painel “regras ativas”) até ser cancelada.
+  Ex.: “Quem disser nome próprio bebe 1”.
+  Inspiração: Kings Cup Jack = make a rule.
+
+poder
+  O que faz: vantagem — distribuir goles, imunidade, escolher quem bebe, missão secreta simples.
+  Inspiração: power cards, “give drinks” cards.
+
+sorte
+  O que faz: imunidade ou anular penalização / devolver carta.
+  Inspiração: “get out of jail” style.
+
+azar
+  O que faz: penalização extra — beber o dobro, grupo decide, etc.
+  Inspiração: penalty cards.
+
+caos
+  O que faz: regra caótica temporária para todos (como caos no mapa).
+  Inspiração: house rules, mess-up rounds.
+
+--- CARTAS ESPECIAIS ★ (baralho “Especiais” — type no JSON) ---
+
+agent  ★ AGENTE SECRETO
+  O que faz: UM jogador vê missão secreta no telemóvel; lê em voz alta só a parte pública.
+  Campos JSON obrigatórios:
+    publicText  — o que diz à mesa
+    secretMission — objetivo escondido (ex.: faz alguém dizer “comboio”)
+  Botões no fim:
+    Consegui → distribui 3 goles
+    Falhei → bebe 2 goles
+    Fui apanhado → bebe 4 goles
+  Inspiração: secret missions, social deduction tasks (NÃO copiar jogos comerciais).
+
+alliance  ★ ALIANÇA
+  O que faz: ligas-te a outro jogador (ex.: à esquerda) por 2 rondas.
+  Se um beber ou falhar, o outro sofre junto (mecânica de “mate” / linked drinks).
+  JSON: type + text (explicação).
+  Inspiração: Kings Cup “mate”, partner penalties.
+
+mirror  ★ ESPELHO
+  O que faz: ganhas escudo — imune à próxima carta de beber ou refletes a penalização para outro.
+  JSON: type + text.
+  Inspiração: shield / reverse card mechanics.
+
+miniboss  ★ MINI BOSS
+  O que faz: desafio para A MESA INTEIRA com tempo (ex.: nomear 10 cidades em 20s).
+  Botões:
+    Grupo ganhou → todos distribuem 2 goles
+    Grupo falhou → todos bebem 2 goles
+  JSON: type + text (desafio claro e verificável).
+  Inspiração: group challenges, “everyone vs the card”.
+
+impostor  ★ IMPOSTOR (modo Beber)
+  O que faz: igual ao mapa — passa telemóvel; 1 jogador vê wrongQuestion; resto vê correctQuestion.
+  Resultado:
+    Mesa descobre o impostor → impostor bebe 3
+    Mesa falha → impostor distribui 3
+  JSON: correctQuestion + wrongQuestion (sem text obrigatório).
+  Inspiração: par de perguntas diferentes, party interrogation.
+
+--- ROleta (não é carta JSON — segmentos fixos no código) ---
+  Bebe 1/2/3, Distribui 3, Desafio!, Sorte!, Regra!, Waterfall
+
+--- IA surpresa (opcional) ---
+  Gera desafio extra via Groq se GROQ_API_KEY configurada.
+
+================================================================================
+5. MODO CARTAS (vários telemóveis — lobby + código de sala)
+================================================================================
+Não usa categories — usa listas white / black.
+
+white  (carta branca)
+  O que é: resposta curta e engraçada.
+  Uso: jogadores jogam a resposta que completa a pergunta preta.
+  JSON: array "white": ["...", ...]
+  No jogo online: também em PACKS no código (CardsGame.jsx) + data/cards/*.json
+  Inspiração: Cards Against Humanity white cards.
+
+black  (carta preta)
+  O que é: pergunta ou frase com buraco ___.
+  Uso: um jogador (czar) lê; outros respondem com brancas; vota-se a mais engraçada.
+  JSON: array "black": ["... ___", ...]
+  Inspiração: CAH black cards, “fill in the blank”.
+
+================================================================================
+6. MISTER WHITE (dedução — 1 telemóvel, passa-se)
+================================================================================
+Não é carta JSON — pares de palavras no código (WORD_PAIRS / WORD_PACKS).
+
+civil / palavra normal
+  Maioria dos jogadores recebe a mesma palavra (ex.: Pizza).
+
+undercover / infiltrado
+  Um jogador recebe palavra parecida (ex.: Focaccia).
+
+Mr. White
+  Um jogador NÃO recebe palavra — tem de fingir e deduzir.
+
+Fluxo: descrever palavra sem a dizer → discussão → votação eliminar.
+Inspiração: Undercover, Insider, Spyfall (mecânicas, não listas).
+
+================================================================================
+7. COMUNIDADE (cartas submetidas por jogadores)
+================================================================================
+Jogadores submetem texto → admin aprova → entra no jogo como cartas/desafios.
+Não é um “type” fixo — passa a carta ou desafio normal após aprovação.
+
+================================================================================
+8. RESUMO — ONDE ESCREVER CADA TIPO (JSON)
+================================================================================
+  Amigos/Família/Casal desafios  →  data/{friends|family|couple}/[pack].json
+  Beber baralhos                 →  data/drink/decks.json (campo "decks")
+  Cartas CAH                     →  data/cards/[pack].json
+  Impostor (mapa ou beber)       →  categories.impostor OU type impostor no deck especiais
+  Agente / Aliança / Espelho / Mini Boss  →  só Modo Beber, deck especiais, types acima
+
+================================================================================
+9. PROMPT PARA CLAUDE (pesquisar sites + ideias — NÃO copiar texto)
+================================================================================
+Copia tudo abaixo para o Claude (com pesquisa na web se disponível):
+
+--- INÍCIO DO PROMPT ---
+
+I am building PartyMix, a Portuguese party game app (PT-PT). I need INSPIRATION ONLY —
+I will write 100% original content in Portuguese. Do not paste copyrighted card text.
+
+PART 1 — SEARCH THE WEB
+Find reputable sites and resources for:
+
+A) Cards Against Humanity style (black cards with ___, white answer cards)
+   - family-friendly AND adult party packs
+B) Drinking games: Never Have I Ever, Kings Cup rules, waterfall, categories
+C) Party challenges: charades, drawing prompts, taboo (word + forbidden words)
+D) Social deduction: two different questions for hidden role (impostor style)
+E) Couple / date night question cards
+F) SPECIAL mechanics (describe sites that explain these mechanics, not text to copy):
+   - Secret agent missions at parties (public task + hidden mission)
+   - Alliance / linked players drinking together
+   - Shield / reflect penalty
+   - Whole-table timed group challenge (mini-boss)
+   - Impostor question pairs (correct vs wrong question)
+
+Return a table:
+| Site name | URL | Content type | Free/paid | Language | PartyMix mode | Copyright / inspiration only note |
+
+Prefer: official CAH CC resources, Creative Commons lists, community wikis.
+Avoid: pirated PDFs, leaked paid decks, full card text quotes.
+
+PART 2 — PARTY MIX CARD TYPES (generate ORIGINAL ideas, not copies)
+
+For each block below give 10-15 ORIGINAL bullet ideas in Portuguese (PT-PT),
+suitable for my JSON formats. No full JSON unless I ask.
+
+AMIGOS / FAMÍLIA categories:
+- telepatia (sync word themes)
+- perguntas (quiz + 4 choices + answer)
+- desenho (draw prompts)
+- mimica (charades)
+- proibido (target word + 5 forbidden words)
+- caos (ongoing table rules, 2-3 rounds) [friends mainly]
+- impostor (correctQuestion + wrongQuestion pairs) ★ SPECIAL
+
+CASAL categories:
+- romantico, picante, verdade, acao (with seconds), roleplay (Cena:), casal_pergunta
+
+BEBER — normal types:
+- beber (bebe X goles), desafio, regra, poder, sorte, azar, caos
+
+BEBER — SPECIAL types (explain mechanic + give examples):
+- agent: publicText + secretMission ★
+- alliance ★
+- mirror ★
+- miniboss ★
+- impostor: correctQuestion + wrongQuestion ★
+
+CARDS mode:
+- 10 black card sentence patterns with ___
+- 20 white short answers (Portuguese culture: football, IRS, MB Way, family WhatsApp, etc.)
+
+MISTER WHITE:
+- 10 word pairs (civil / similar undercover word) — Portuguese
+
+PART 3 — SEARCH QUERIES
+Give 10 Google search queries in English and 10 in Portuguese to find more inspiration.
+
+Remember: PartyMix uses "goles" not "shots". Content is for Portugal, not Brazil.
+
+--- FIM DO PROMPT ---
+
+================================================================================
+Fim do documento — PartyMix
+================================================================================

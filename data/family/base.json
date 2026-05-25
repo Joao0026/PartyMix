@@ -4,9 +4,10 @@
   "description": "Conteúdo familiar por tipos: Sincronia, Sabichão, Rabiscos, Gestos e Palavra Tabu.",
   "categories": {
     "telepatia": [
-      {
-        "text": "Tema: animais de estimação. Dois jogadores dizem uma palavra ao mesmo tempo."
-      }
+      { "text": "Tema: animais de estimação. Dois jogadores dizem uma palavra ao mesmo tempo." },
+      { "text": "Tema: frutas de verão. Sincronia." },
+      { "text": "Tema: filmes da Disney. Palavra ao mesmo tempo." },
+      { "text": "Tema: profissões. Dois jogadores simultâneos." }
     ],
     "perguntas": [
       {
@@ -71,14 +72,16 @@
       }
     ],
     "desenho": [
-      {
-        "text": "Desenha uma ida à praia em família."
-      }
+      { "text": "Desenha uma ida à praia em família." },
+      { "text": "Desenha um piquenique com formigas gigantes." },
+      { "text": "Desenha o Natal com demasiadas luzes." },
+      { "text": "Desenha um robot a lavar a loiça." }
     ],
     "mimica": [
-      {
-        "text": "Representa alguém a procurar o comando da televisão."
-      }
+      { "text": "Representa alguém a procurar o comando da televisão." },
+      { "text": "Representa um surfista a cair." },
+      { "text": "Representa um chef a provar sopa quente." },
+      { "text": "Representa alguém a abrir presente surpresa." }
     ],
     "proibido": [
       {

@@ -1,0 +1,40 @@
+{
+  "_comentario": "EXEMPLO — baralhos do Modo Beber. Ver também drink/decks.json (pack base completo)",
+  "name": "Beber - Pack Exemplo",
+  "pack": "exemplo-beber",
+  "mode": "drink",
+  "decks": {
+    "waterfall": {
+      "label": "🌊 Waterfall & Beber",
+      "desc": "Quem bebe, bebe muito",
+      "premium": false,
+      "cards": [
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bebe 2!",
+          "text": "Quem tem óculos bebe 2 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "👑",
+          "title": "Distribui!",
+          "text": "O mais alto distribui 3 goles."
+        }
+      ]
+    },
+    "eununca": {
+      "label": "🙅 Eu Nunca",
+      "desc": "Confissões",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA viajei de avião. Quem já fez bebe 1!"
+        }
+      ]
+    }
+  }
+}

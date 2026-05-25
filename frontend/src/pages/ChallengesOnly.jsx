@@ -66,7 +66,7 @@ export default function ChallengesOnly() {
     setLoading(true); setResult(null); setChallenge(null)
     const cat = cats[Math.floor(Math.random() * cats.length)]
     try {
-      const c = await api.getRandomChallenge({ category: cat, mode_type: game?.mode || 'friends' })
+      const c = await api.getRandomChallenge({ category: cat, mode_type: game?.mode || 'friends', ...(game?.contentPack ? { pack: game.contentPack } : {}) })
       if (c && !c.error) { setChallenge(c); setLoading(false); return }
     } catch {}
     // Fallback

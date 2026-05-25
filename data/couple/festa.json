@@ -1,0 +1,68 @@
+{
+  "name": "Casal - Festa",
+  "pack": "festa",
+  "mode": "couple",
+  "description": "Mais desafios e perguntas para o modo casal.",
+  "categories": {
+    "romantico": [
+      { "text": "Escreve num papel três coisas que admiras no teu parceiro e lê em voz alta." },
+      { "text": "Recria o vosso primeiro encontro em 60 segundos de teatro." },
+      { "text": "Planeia um date ideal em 30 segundos — depois o parceiro adivinha o sítio." },
+      { "text": "Diz uma memória de viagem juntos (ou sonha uma se ainda não houve)." },
+      { "text": "Faz um brinde só para vocês dois com uma frase original." },
+      { "text": "Desenha o coração com as iniciais de vocês e mostra." },
+      { "text": "Escolhe uma música e abraça durante o refrão." },
+      { "text": "Diz o que mudaste em ti desde que estão juntos." }
+    ],
+    "picante": [
+      { "text": "Sussurra onde gostarias de ser beijado agora." },
+      { "text": "Descreve a tua fantasia favorita em uma frase — sem filtros." },
+      { "text": "Tira uma foto sensual (só para o parceiro ver) ou bebe 2 goles de água/sumo." },
+      { "text": "Massagem nas costas durante 90 segundos." },
+      { "text": "Beija o pescoço do parceiro durante 15 segundos." },
+      { "text": "Diz uma palavra que te excita e explica porquê em 20 segundos." },
+      { "text": "Escolhe uma peça de roupa do parceiro para tirar com os olhos fechados." },
+      { "text": "Conta o momento mais ousado que já tiveram juntos." }
+    ],
+    "verdade": [
+      { "text": "O que te fez perceber que querias algo a sério?" },
+      { "text": "Qual foi a maior surpresa boa que o teu parceiro te deu?" },
+      { "text": "Há algo que gostarias que o teu parceiro fizesse mais vezes?" },
+      { "text": "Qual é o teu maior medo na relação?" },
+      { "text": "Que hábito do parceiro te irrita mas toleras?" },
+      { "text": "Qual foi a discussão mais idiota que já tiveram?" },
+      { "text": "O que te deixa mais inseguro no amor?" },
+      { "text": "Se pudesses mudar uma coisa no passado da relação, qual seria?" }
+    ],
+    "acao": [
+      { "text": "Dá 5 beijos em sítios diferentes (com consentimento).", "time_limit": 60 },
+      { "text": "Faz uma declaração dramática como num filme romântico.", "time_limit": 45 },
+      { "text": "Cozinha imaginária: descreve o jantar perfeito que farias ao parceiro.", "time_limit": 60 },
+      { "text": "Dança lenta 1 minuto sem música ou com música do telemóvel.", "time_limit": 60 },
+      { "text": "Envia agora uma mensagem carinhosa ao parceiro (se estiver na mesma sala, lê em voz alta).", "time_limit": 30 },
+      { "text": "Faz um elogio físico específico e genuíno.", "time_limit": 30 },
+      { "text": "Inventa um apelido carinhoso novo e usa durante 3 rondas.", "time_limit": 0 },
+      { "text": "Segura as mãos e olha nos olhos 45 segundos sem rir.", "time_limit": 45 }
+    ],
+    "roleplay": [
+      { "text": "Cena: primeiro encontro num café — um é tímido, outro é confiante." },
+      { "text": "Cena: vizinhos a discutir volume da música — reconciliação romântica." },
+      { "text": "Cena: entrevista de emprego onde o recrutador é o teu crush." },
+      { "text": "Cena: filme de ação — um salva o outro no último segundo." },
+      { "text": "Cena: cozinheiros rivais que se respeitam secretamente." },
+      { "text": "Cena: mensagem de texto mal interpretada — resolve em 1 minuto." },
+      { "text": "Cena: viagem de comboio — lugares apertados, conversa íntima." },
+      { "text": "Cena: karaoke — um canta mal, outro aplaude na mesa." }
+    ],
+    "casal_pergunta": [
+      { "text": "Qual é a comida de conforto do teu parceiro?", "answer": "Resposta do parceiro" },
+      { "text": "Qual é a série que o teu parceiro recomendaria a um alienígena?", "answer": "Resposta do parceiro" },
+      { "text": "O que faz o teu parceiro rir às gargalhadas?", "answer": "Resposta do parceiro" },
+      { "text": "Qual é o superpoder que o teu parceiro escolheria?", "answer": "Resposta do parceiro" },
+      { "text": "Onde gostaria o teu parceiro de viver se dinheiro não importasse?", "answer": "Resposta do parceiro" },
+      { "text": "Qual é a música que define o teu parceiro?", "answer": "Resposta do parceiro" },
+      { "text": "O que irrita mais o teu parceiro no trânsito?", "answer": "Resposta do parceiro" },
+      { "text": "Qual é o presente ideal para o teu parceiro?", "answer": "Resposta do parceiro" }
+    ]
+  }
+}

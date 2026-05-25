@@ -1,0 +1,42 @@
+{
+  "_comentario": "EXEMPLO — copia para data/amigos/meu-pack.json e muda pack/mode/textos",
+  "name": "Amigos - Exemplo",
+  "pack": "exemplo-amigos",
+  "mode": "friends",
+  "description": "Pack de demonstração para o modo Amigos (mapa + desafios).",
+  "categories": {
+    "perguntas": [
+      {
+        "text": "Qual é a capital de Portugal?",
+        "answer": "Lisboa",
+        "choices": ["Porto", "Lisboa", "Coimbra", "Faro"],
+        "difficulty": "facil"
+      }
+    ],
+    "mimica": [
+      {
+        "text": "Representa alguém a tentar abrir uma garrafa sem abridor."
+      }
+    ],
+    "proibido": [
+      {
+        "text": "Palavra: Praia. A equipa adivinha sem dizer as palavras proibidas.",
+        "forbiddenWords": ["areia", "mar", "sol", "biquíni"]
+      }
+    ],
+    "caos": [
+      {
+        "text": "Durante 2 rondas, quem disser nomes próprios bebe 1 gole.",
+        "is_ongoing": true,
+        "ongoing_rounds": 2,
+        "ongoing_instruction": "Sem nomes próprios."
+      }
+    ],
+    "impostor": [
+      {
+        "correctQuestion": "Quem do grupo sobreviveria num apocalipse?",
+        "wrongQuestion": "Quem é o mais medricas?"
+      }
+    ]
+  }
+}

@@ -4,9 +4,10 @@
   "description": "Conteúdo base para Conexão, Picante, Confissão, Atitude, Cena e Quiz do casal.",
   "categories": {
     "romantico": [
-      {
-        "text": "Diz uma coisa pequena que o teu parceiro faz e que te deixa feliz."
-      }
+      { "text": "Diz uma coisa pequena que o teu parceiro faz e que te deixa feliz." },
+      { "text": "Escreve três coisas que admiras e lê em voz alta." },
+      { "text": "Abraço de 45 segundos em silêncio." },
+      { "text": "Recria o vosso primeiro encontro em 60 segundos." }
     ],
     "picante": [
       {

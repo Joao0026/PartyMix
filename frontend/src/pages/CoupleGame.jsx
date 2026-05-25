@@ -124,6 +124,14 @@ const UNIQUE_CHALLENGES=[
   {text:'Tira a foto mais sensual que consegues do teu parceiro agora.',type:'bold'},
   {text:'Mostra ao teu parceiro exatamente como gostas de ser beijado.',type:'bold'},
   {text:'Escolhe uma parte do teu parceiro e dá-lhe atenção exclusiva durante 1 minuto.',type:'bold'},
+  {text:'Troca de camisolas ou casacos durante 2 minutos — sente o cheiro um do outro.',type:'sensorial'},
+  {text:'Faz um vídeo de 10 segundos a dizer o que amas no parceiro (só para verem vocês).',type:'emocional'},
+  {text:'Inventa um cocktail imaginário e descreve o sabor ao parceiro.',type:'playful'},
+  {text:'Conta um segredo leve que nunca disseste (nada que destrua a relação).',type:'emocional'},
+  {text:'Beija durante 20 segundos como se fosse a primeira vez.',type:'romantico'},
+  {text:'O parceiro escolhe uma música — dança como se ninguém estivesse a ver.',type:'playful'},
+  {text:'Diz três coisas que farias numa viagem só com o parceiro.',type:'romantico'},
+  {text:'Faz uma promessa divertida para esta semana e cumpre.',type:'playful'},
 ]
 
 function ChallengesSection({players,turn,onNext,intensity}){

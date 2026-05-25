@@ -1,0 +1,153 @@
+================================================================================
+SITES COM DECKS / LISTAS — INSPIRAÇÃO PARA PARTY MIX
+================================================================================
+Pesquisa web (maio 2026). Usa só como IDEIA — escreve conteúdo original em PT-PT.
+Não copies texto para app comercial / Play Store sem licença.
+
+Legenda PartyMix:
+  cards   = Modo Cartas (preta ___ + branca)
+  drink   = Modo Beber
+  friends = Amigos (mapa)
+  family  = Família
+  couple  = Casal
+  mister  = Mister White
+  spec    = cartas especiais Beber (agent, alliance, mirror, miniboss, impostor)
+
+================================================================================
+CARTAS ESTILO CAH (pretas + brancas)
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Cards Against Humanity (oficial) | https://www.cardsagainsthumanity.com/ | PDF jogo base, regras | Sim (CC BY-NC-SA) | EN | cards | Não comercial; inspira estrutura |
+| CAH Archives | https://archives.cardsagainsthumanity.com/ | Arquivo oficial | Sim | EN | cards | Idem |
+| JSON Against Humanity | https://github.com/crhallberg/json-against-humanity | ~31k cartas JSON (oficial + fãs) | Sim (GitHub) | EN | cards | Ver licença por pack; não copiar para loja |
+| REST Against Humanity API | https://restagainsthumanity.com/ | API cartas oficiais | Sim | EN | cards | Só inspiração de formato |
+| CAH API (GitHub) | https://github.com/spglancy/CAH-API | API comunitária | Sim | EN | cards | Descontinuado? testar URL |
+| Cartas Contra Humanidade (PT) | https://cards-against-humanity-alpha.vercel.app/ | Jogo online PT | Grátis jogar | PT | cards | Fã; ver termos; ideias de tom PT |
+| CAHO online PT | https://caho.vercel.app/ | CAH online open source | Grátis | PT | cards | GitHub SilvanoGPM — estrutura |
+| BoardGameGeek — print & play | https://boardgamegeek.com/filepage/80505/cards-against-humanity-first-expansion-print-and-p | PDF expansões PnP | Grátis pessoal | EN | cards | Ficheiros fã; uso pessoal |
+| Crabs Adjust Humidity (BGG) | https://boardgamegeek.com/boardgame/145418/crabs-adjust-humidity-volume-one-fan-expansion-for | Expansão fã CAH | Info BGG | EN | cards | Tom fã; não copiar |
+| mdsc.info CAH prints | http://mdsc.info/dropbox/cah/ | PDFs tamanho oficial | Grátis PnP | EN | cards | Compatível com deck físico |
+
+================================================================================
+BEBER / EU NUNCA / REGRAS DE CARTAS
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Never Have I Ever | https://neverhaveever.com/ | 300+ perguntas Eu Nunca | Sim | EN | drink, friends | Converter para PT |
+| Never Have I Ever Online | https://neverhaveiever.online/ | 1000+ perguntas | Sim | EN | drink | Categorias |
+| I Never Party | https://www.ineverparty.com/ | 3000+ perguntas, packs | Sim / app | EN | drink | Temas casal, girls night |
+| nnnever.com | https://nnnever.com/ | Jogo online Eu Nunca | Sim | EN | drink | |
+| NeverHaveIEver.app | https://neverhaveiever.app/ | 700+ perguntas | Sim | EN | drink | App + web |
+| Kings Cup Rules | https://onlinedrinkinggames.com/kings-cup/rules/ | Regra por carta (A,K,Q…) | Sim | EN | drink, spec | Inspira beber/regra/poder/mate=alliance |
+| Play Party Game — Kings Cup | https://playpartygame.com/drinking-games/kings-cup/ | Regras + variações | Sim | EN | drink | |
+| The Chuggernauts | https://thechuggernauts.com/kings-cup/ | Regras oficiais | Sim | EN | drink | |
+| Wikipedia — Kings (card game) | https://en.wikipedia.org/wiki/Kings_(card_game) | Regras resumidas | Sim | EN | drink | Referência rápida |
+
+================================================================================
+MÍMICA / DESENHO / TABU (mapa Amigos & Família)
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Charades Generator | https://charades-generator.com/ | 1000+ palavras, categorias | Sim | EN | friends, family | → mimica |
+| Best Party Games Charades | https://www.bestpartygames.net/games/charades/charades.html | Gerador + categorias | Sim | EN | friends, family | |
+| RandomlyFun Charades | https://randomlyfun.app/tools/charades-generator | 180+ ideias, timer | Sim | EN | friends, family | |
+| Charades Clues | https://charadesclues.com/ | Listas imprimíveis | Sim | EN | friends, family | |
+| Growing Play — Taboo | https://www.growingplay.com/2023/08/taboo-cards-printable/ | 100 cartas tabu PDF | Sim | EN | friends, family | → proibido (palavra + proibidas) |
+| ESL Vault Taboo | https://eslvault.com/taboo-esl-game/ | 60 cartas tabu | Sim | EN | family, friends | |
+| Healthy Happy Impactful Taboo | https://healthyhappyimpactful.com/taboo-game/ | 96 cartas family | Sim | EN | family | |
+| In The Playroom — Camping Taboo | https://intheplayroom.co.uk/free-printable-camping-taboo-game/ | 80 cartas tema | Sim | EN | family | Formato tabu |
+
+================================================================================
+VERDADE OU CONSEQUÊNCIA / DESAFIOS
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| HobbyLark Truth or Dare | https://hobbylark.com/party-games/truth-or-dare-questions | 400+ truth/dare | Sim | EN | friends, drink, couple | → verdade, acao, desafio |
+| Homemade Gifts — Truth or Dare | https://www.homemade-gifts-made-easy.com/truth-or-dare-questions.html | 170+ + printable | Sim | EN | friends | |
+| Glamour UK | https://www.glamourmagazine.co.uk/article/best-truth-or-dare-questions | 300 perguntas | Sim | EN | friends, couple | |
+| Today.com | https://www.today.com/life/inspiration/truth-or-dare-questions-rcna130237 | 315 perguntas | Sim | EN | friends | |
+
+================================================================================
+CASAL
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Suite Bliss — 62 cards | https://www.suiteblissprintables.com/conversation/couple-conversation-cards/ | 62 perguntas casal PDF | Sim | EN | couple | → romantico, casal_pergunta |
+| Bold & Bubbly | https://boldbubbly.com/date-night-conversation-cards/ | 56 cartas date night | Sim | EN | couple | |
+| OpenMity Romance | https://openmityromance.com/blogs/romantic-ideas/free-conversation-starters-for-couples-pdf-cards | 40 starters (4 temas) | Sim | EN | couple | Inclui spicy |
+| My Party Design | https://www.mypartydesign.com/blog/free-conversation-starters-couples/ | 42 perguntas editáveis | Sim | EN | couple | |
+
+================================================================================
+MISTER WHITE / UNDERCOVER (pares de palavras)
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Undercover — regras | https://www.yanstarstudio.com/undercover-how-to-play | Mecânica civil/infiltrado/Mr White | Info app | Multi | mister, spec | Inspira mecânica, não lista |
+| Best Party Games Undercover | https://www.bestpartygames.net/games/undercover/undercover | Jogo online palavras | Grátis web | Vários | mister | |
+| BGG — Deep Undercover word list | https://boardgamegeek.com/filepage/136293/deep-undercover-word-list | Lista palavras Codenames DU | Grátis BGG | EN | mister | Pares de palavras |
+| Ultraboardgames — Deep Undercover | https://www.ultraboardgames.com/codenames/deep-undercover.php | Regras + conceito palavras | Sim | EN | mister | Adulto |
+
+================================================================================
+CARTAS ESPECIAIS (mecânicas — onde aprender o “tipo”)
+================================================================================
+
+| Mecânica PartyMix | Onde ver ideias semelhantes |
+|-------------------|----------------------------|
+| agent (missão secreta) | Social deduction party games; secret mission games; Kings Cup “quizmaster” |
+| alliance (parceiro bebe junto) | Kings Cup “mate” / buddy — onlinedrinkinggames.com, wikipedia Kings |
+| mirror (escudo) | Drinking games “immunity” / reverse penalty — house rules blogs |
+| miniboss (desafio mesa) | Group challenges, “everyone vs clock” party lists |
+| impostor (2 perguntas) | Social deduction; não confundir com palavras Undercover — perguntas diferentes mesmo tema |
+
+Não há site único “deck agente secreto beber” — combina inspiração de Kings Cup + mission games.
+
+================================================================================
+JOGOS / IDEIAS GERAIS DE FESTA
+================================================================================
+
+| Site | URL | Conteúdo | Grátis | Idioma | Modos | Notas |
+|------|-----|----------|--------|--------|-------|-------|
+| Party Game Ideas | https://partygameideas.com/printable-games/charades-games/ | Printables festa | Sim | EN | vários | |
+| Play Party Plan | https://www.playpartyplan.com/ | Jogos festa + date | Sim | EN | vários | |
+| Fun Attic | https://funattic.com/never-have-i-ever-questions/ | Listas festa | Sim | EN | drink, friends | |
+
+================================================================================
+PESQUISAS GOOGLE ÚTEIS
+================================================================================
+
+EN:
+  cards against humanity creative commons base game pdf
+  json against humanity github full.json structure
+  kings cup drinking game card meaning list
+  taboo game printable cards forbidden words
+  charades word list categories generator
+  undercover mr white word pairs party game
+  truth or dare questions list party
+  never have i ever questions spicy clean categories
+
+PT:
+  cartas contra a humanidade online português
+  eu nunca perguntas festa jogo beber
+  jogo tabu palavras imprimir português
+  mímica palavras jogo festa
+  perguntas casal jogo cartas noite
+  verdade ou consequência perguntas amigos
+  jogo undercover palavras parecidas
+  regras king's cup português cartas
+
+================================================================================
+AVISO LEGAL (importante para PartyMix na loja)
+================================================================================
+- CAH oficial: CC BY-NC-SA = não usar texto comercialmente na tua app.
+- JSON Against Humanity: milhares de cartas de fãs — licenças mistas.
+- Sites de perguntas (Eu Nunca, Truth or Dare): copyright do site; reescreve em PT.
+- O teu diferencial: conteúdo 100% original PT-PT (IRS, MB Way, Benfica, etc.).
+
+================================================================================

@@ -1,0 +1,717 @@
+{
+  "name": "Beber - Baralhos",
+  "mode": "drink",
+  "pack": "base",
+  "description": "Baralhos do Modo Beber",
+  "decks": {
+    "waterfall": {
+      "label": "🌊 Waterfall & Beber",
+      "desc": "Quem bebe, bebe muito",
+      "premium": false,
+      "cards": [
+        {
+          "type": "beber",
+          "emoji": "🌊",
+          "title": "Waterfall!",
+          "text": "O da esquerda começa a beber. Só podes parar quando a pessoa à tua esquerda parar!"
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bebe 2!",
+          "text": "O jogador com o cabelo mais comprido bebe 2 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Último a reagir!",
+          "text": "O último a pôr o dedo no nariz bebe 3 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Redes Sociais!",
+          "text": "Toda a gente com redes sociais instaladas bebe 1 gole."
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Mais velho / Mais novo!",
+          "text": "O mais novo bebe 2. O mais velho distribui 2."
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bateria!",
+          "text": "Quem tem o telemóvel com menos de 30% bebe 2 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Notificações!",
+          "text": "O jogador com mais notificações não lidas bebe 3 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "💪",
+          "title": "Ginásio!",
+          "text": "Quem foi ao ginásio esta semana não bebe. Os outros bebem 2."
+        },
+        {
+          "type": "beber",
+          "emoji": "🏁",
+          "title": "Corrida!",
+          "text": "Vira o copo — quem acabar primeiro distribui 3. O último bebe mais 2."
+        },
+        {
+          "type": "beber",
+          "emoji": "💬",
+          "title": "WhatsApp!",
+          "text": "Quem tiver mais de 100 contactos no WhatsApp bebe 1."
+        },
+        {
+          "type": "beber",
+          "emoji": "🎨",
+          "title": "Tatuagens!",
+          "text": "Quem tiver tatuagens bebe 1 por cada tatuagem (máx. 3)."
+        },
+        {
+          "type": "beber",
+          "emoji": "👟",
+          "title": "Sapatos!",
+          "text": "Quem está de sapatilhas distribui 2. Quem está descalço bebe 2."
+        },
+        {
+          "type": "beber",
+          "emoji": "😴",
+          "title": "Dorminhoco!",
+          "text": "Quem acordou depois das 10h hoje bebe 2 goles."
+        },
+        {
+          "type": "beber",
+          "emoji": "🎵",
+          "title": "Música!",
+          "text": "O último a nomear uma música portuguesa bebe 2."
+        },
+        {
+          "type": "beber",
+          "emoji": "📱",
+          "title": "Ecrã partido!",
+          "text": "Quem tem o ecrã do telemóvel partido bebe 1."
+        }
+      ]
+    },
+    "eununca": {
+      "label": "🙅 Eu Nunca",
+      "desc": "Confissões garantidas",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA — Diz algo que nunca fizeste. Quem já fez bebe 1!"
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA bebi até adormecer numa festa."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz algo ilegal e não fui apanhado."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fingi estar doente para não ir trabalhar."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA li as mensagens de outra pessoa sem ela saber."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui a uma consulta médica de ressaca."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA enviei uma mensagem ao ex que me arrependi."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA menti numa entrevista de emprego."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA chorei com um filme de animação."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA passei uma noite inteira sem dormir."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA bloqueei alguém sem dar explicação."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA comprei algo que nunca usei."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA roubei algo (mesmo que pequeno)."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz xixi numa piscina."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA dei um beijo em alguém do grupo."
+        }
+      ]
+    },
+    "regras": {
+      "label": "📜 Regras",
+      "desc": "Cria caos",
+      "premium": false,
+      "cards": [
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Quem disser \"sim\" ou \"não\" bebe 1 gole até ao fim do jogo!"
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Toda a gente fala com sotaque britânico até à próxima regra."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Não podes apontar com o dedo. Usa o cotovelo. Quem apontar bebe."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Tens de dizer \"com licença\" antes de falar. Quem se esquecer bebe."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "O teu nome agora é \"Rei/Rainha [apelido]\". Quem não usar o título bebe."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Só podes beber com a mão não dominante."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Quem rir bebe 1 gole. Sorrisos também contam."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Termina cada frase com \"...e foi assim que perdi o emprego\"."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Fala em voz de pato durante as próximas 3 rondas."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Só podes falar se nomeares alguém antes: \"João, eu acho que...\""
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Beber só após contar até 3 em voz alta. Quem se esquecer bebe extra."
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Ninguém pode dizer o nome de ninguém. Só alcunhas. Quem errar bebe."
+        },
+        {
+          "type": "regra",
+          "emoji": "💥",
+          "title": "REGRAS CANCELADAS!",
+          "text": "Todas as regras ativas ficam canceladas. Alívio geral! Brindem!"
+        }
+      ]
+    },
+    "caos": {
+      "label": "💥 Caos",
+      "desc": "Regras temporárias e viragens de mesa",
+      "premium": false,
+      "cards": [
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, quem disser nomes próprios bebe 1 gole."
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Até sair outra carta Caos, todos têm de beber com a mão trocada."
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, quem fizer perguntas bebe. Responder com pergunta também conta."
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "O grupo cria uma palavra proibida. Quem a disser bebe 2."
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Inverte a ordem dos turnos. Quem se enganar bebe 1."
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Todos escolhem uma alcunha. Até ao fim da ronda, usar nomes reais faz beber."
+        }
+      ]
+    },
+    "especiais": {
+      "label": "🛡️ Especiais",
+      "desc": "Agentes, alianças, espelhos e mini bosses",
+      "premium": false,
+      "cards": [
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Escolhe o jogador à tua esquerda. Durante 2 rondas ficam ligados: se um beber, o outro bebe 1; se um falhar desafio, sofre junto."
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança Cruzada!",
+          "text": "Ficas ligado ao próximo jogador durante 2 rondas: quando um beber ou falhar, o outro sofre junto."
+        },
+        {
+          "type": "mirror",
+          "emoji": "🛡️",
+          "title": "Espelho!",
+          "text": "Ganhas um escudo. Ficas imune à próxima carta de beber e podes passar essa penalização para outro jogador."
+        },
+        {
+          "type": "mirror",
+          "emoji": "🪞",
+          "title": "Reflexo Rápido!",
+          "text": "Guarda esta proteção: a próxima penalização que te calhar pode ser refletida para outra pessoa."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Todos têm 20 segundos para nomear 10 marcas portuguesas. Se conseguirem, todos distribuem 2. Se falharem, todos bebem 2."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "A mesa tem 30 segundos para cantar em conjunto um refrão inteiro sem parar. Vitória: todos distribuem 2. Falha: todos bebem 2."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Sem repetir, digam 12 cidades portuguesas em 25 segundos. Vitória: todos distribuem 2. Falha: todos bebem 2."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: pede ao grupo para contar uma história embaraçosa de infância.",
+          "secretMission": "Missão secreta: faz alguém dizer a palavra 'comboio'. Se conseguires, distribuis 3 goles."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: todos dizem o que comeram hoje ao pequeno-almoço.",
+          "secretMission": "Missão secreta: faz alguém bater palmas. Se conseguires, escolhes quem bebe 2."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: elogia a roupa de alguém da mesa.",
+          "secretMission": "Missão secreta: faz alguém dizer um número acima de 10. Se conseguires, ficas imune à próxima carta."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: propõe um brinde e todos bebem um gole simbólico.",
+          "secretMission": "Missão secreta: faz alguém perguntar 'onde estás?'. Se conseguires, essa pessoa bebe 2."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: escolhe um tema de conversa para os próximos 2 minutos.",
+          "secretMission": "Missão secreta: faz alguém mencionar futebol. Se conseguires, distribuis 2 goles."
+        },
+        {
+          "type": "agent",
+          "emoji": "🕵️",
+          "title": "Agente Secreto",
+          "publicText": "Missão pública: todos imitam o animal favorito de alguém escolhido.",
+          "secretMission": "Missão secreta: faz alguém tocar no copo. Se conseguires, o grupo distribui 2."
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem seria o melhor DJ da festa?",
+          "wrongQuestion": "Quem tem o pior timing para piadas?"
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem aguenta mais tempo sem dormir?",
+          "wrongQuestion": "Quem adormece no sofá em 5 minutos?"
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem daria o melhor conselho de vida?",
+          "wrongQuestion": "Quem compraria algo inútil online bêbado?"
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem é o mais competitivo?",
+          "wrongQuestion": "Quem desiste logo nos jogos?"
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Pacto de Mesa!",
+          "text": "Escolhe um aliado. Se um de vocês beber, o outro pode escolher beber metade ou passar a penalização a um terceiro."
+        },
+        {
+          "type": "mirror",
+          "emoji": "🪞",
+          "title": "Espelho Duplo!",
+          "text": "Ganhas 2 escudos. Podes refletir as próximas 2 penalizações de beber para outros jogadores."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, nomeiem 8 países da UE. Vitória: distribuem 2 cada. Falha: todos bebem 2."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "A mesa tem 15 segundos para fazer 10 flexões coletivas (somam). Vitória: distribuem 3. Falha: todos bebem 2."
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Sem repetir, digam 10 marcas de cerveja ou sumo. Vitória: todos distribuem 2. Falha: todos bebem 2."
+        }
+      ]
+    },
+    "desafios": {
+      "label": "⚡ Desafios",
+      "desc": "Mini-jogos relâmpago",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Categories",
+          "text": "Escolhe uma categoria. Cada um diz uma palavra. Quem repetir ou parar bebe 2."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Rima!",
+          "text": "Diz uma palavra. Cada um diz uma rima. Quem falhar bebe 2."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "2 Verdades 1 Mentira",
+          "text": "2 verdades e 1 mentira. Quem não adivinhar a mentira bebe."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Thumbmaster",
+          "text": "Quando quiseres pões o polegar na mesa. O último bebe."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Contagem 21",
+          "text": "Contam até 21, cada um diz 1, 2 ou 3 números. Quem diz 21 bebe e cria regra."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Telefone Estragado",
+          "text": "Sussurra frase ao ouvido. O último diz em voz alta. Quem errou mais bebe 2."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Duelo!",
+          "text": "Escolhe adversário. Pedra-papel-tesoura melhor de 3. Perdedor bebe 3."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Mímica Rápida",
+          "text": "30s para imitar o que o jogador à esquerda escreve em papel."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Confissão Anónima",
+          "text": "Todos escrevem uma confissão. Lê em voz alta. Grupo vota em quem é."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Nomes Famosos",
+          "text": "Diz nome famoso. Seguinte diz outro começando pela última letra. Quem parar bebe."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Verdade ou Bebida",
+          "text": "O grupo faz uma pergunta comprometedora. Respondes ou bebes 3."
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Copos!",
+          "text": "Bate a mesa 3 vezes. Toda a gente bebe. Quem bater 4 vezes distribui mais 2."
+        }
+      ]
+    },
+    "poder": {
+      "label": "👑 Poder & Sorte",
+      "desc": "Distribui e recebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Distribui 4 goles como quiseres pelo grupo."
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Escolhe quem é imune à próxima carta."
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Crias uma nova regra por 5 minutos. O que quiseres."
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Podes trocar o teu copo com qualquer jogador."
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Escolhe 2 jogadores para pedra-papel-tesoura. Perdedor bebe 3."
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Dá uma missão secreta a um jogador. Eles têm de a cumprir até ao fim."
+        },
+        {
+          "type": "sorte",
+          "emoji": "🍀",
+          "title": "Sorte!",
+          "text": "Não bebes durante 2 rondas. Imune a tudo!"
+        },
+        {
+          "type": "sorte",
+          "emoji": "🍀",
+          "title": "Sorte!",
+          "text": "Devolves a próxima carta que te calhar a quem a tirou."
+        },
+        {
+          "type": "sorte",
+          "emoji": "🍀",
+          "title": "Sorte!",
+          "text": "Escolhes o que o jogador à tua esquerda bebe."
+        },
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "Bebes o dobro de tudo até ao fim desta ronda."
+        },
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "O grupo decide o que bebes a seguir. Tens de aceitar."
+        },
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "Bebe 2 agora + o grupo vota se bebes mais 1 ou não."
+        }
+      ]
+    },
+    "picante": {
+      "label": "🔥 Picante",
+      "desc": "Para adultos",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Conta algo que nunca disseste a ninguém aqui — vida amorosa. Ou bebe 3."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Com quem da sala ficarias se fosse o fim do mundo?"
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Descreve o teu maior fantasma em 30 segundos. Quem não o fizer bebe 3."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Troca uma item de roupa com o jogador à tua esquerda durante 5 minutos."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Manda uma mensagem ao teu ex: \"Estava a pensar em ti.\" Mostra a resposta."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Revela o crush secreto mais embaraçoso da tua vida."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Liga para alguém fora desta sala e diz \"precisamos de falar\". Mostra a reação."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Mostra o histórico de pesquisa do teu telemóvel ao grupo. Ou bebe 4."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Diz o nome da pessoa da sala que mais te atrai. Ou bebe 3."
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Lê a última mensagem enviada no WhatsApp em voz alta. Ou bebe 2."
+        }
+      ]
+    },
+    "extreme": {
+      "label": "💣 Extremo 🔒",
+      "desc": "Só para os verdadeiramente corajosos",
+      "premium": false,
+      "cards": [
+        { "type": "beber", "emoji": "💣", "title": "Shot ou verdade", "text": "Bebe 3 goles ou responde à pergunta mais incómoda que o grupo inventar." },
+        { "type": "desafio", "emoji": "💣", "title": "História real", "text": "Conta a história mais vergonhosa que te lembrares. Ou bebe 4." },
+        { "type": "desafio", "emoji": "💣", "title": "Telemóvel aberto", "text": "Mostra as 5 últimas fotos da galeria. Ou bebe 3." },
+        { "type": "beber", "emoji": "💣", "title": "Waterfall hard", "text": "Waterfall completo — não podes parar até a pessoa à tua esquerda." },
+        { "type": "desafio", "emoji": "💣", "title": "Liga aleatória", "text": "Liga para o 3.º contacto da lista (não familiar). Diz 'preciso de falar contigo'. Ou bebe 5." },
+        { "type": "beber", "emoji": "💣", "title": "Copo no ar", "text": "Último a levantar o copo bebe 4 goles." }
+      ]
+    }
+  }
+}

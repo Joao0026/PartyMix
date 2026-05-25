@@ -1,0 +1,14 @@
+{
+  "_comentario": "EXEMPLO — modo Cartas (brancas + pretas). Copia para data/cards/meu-pack.json",
+  "name": "Cartas - Exemplo",
+  "pack": "exemplo-cartas",
+  "mode": "cards",
+  "white": [
+    "A pior desculpa para chegar atrasado",
+    "O que o grupo nunca deve saber"
+  ],
+  "black": [
+    "A festa acabou quando ___ apareceu.",
+    "O segredo para ___ é ___."
+  ]
+}

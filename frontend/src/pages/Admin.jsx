@@ -293,6 +293,64 @@ function CardsTab(){
   )
 }
 
+function PacksTab() {
+  const [packs, setPacks] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [exportPack, setExportPack] = useState('')
+  const [exported, setExported] = useState('')
+  const [err, setErr] = useState('')
+
+  const load = () => {
+    setLoading(true)
+    api.listAdminPacks().then((rows) => setPacks(Array.isArray(rows) ? rows : [])).catch((e) => setErr(e.message)).finally(() => setLoading(false))
+  }
+  useEffect(() => { load() }, [])
+
+  const doExport = async (pack) => {
+    setErr('')
+    setExported('')
+    try {
+      const doc = await api.exportAdminPack(pack)
+      setExported(JSON.stringify(doc, null, 2))
+      setExportPack(pack)
+    } catch (e) {
+      setErr(e?.message || 'Erro ao exportar')
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className={card}>
+        <h3 className="text-white font-semibold mb-2">Packs na base de dados</h3>
+        <p className="text-slate-400 text-sm mb-3">Importa tudo de uma vez: <code className="text-amber-300">npm run seed:packs</code></p>
+        {loading ? <p className="text-slate-400">A carregar…</p> : (
+          <div className="space-y-2">
+            {packs.map((p) => (
+              <div key={p.pack} className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] p-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold truncate">{p.name || p.pack}</p>
+                  <p className="text-slate-500 text-xs">{p.pack}{p.hasDrinkDecks ? ' · baralhos beber' : ''}</p>
+                </div>
+                <button type="button" onClick={() => doExport(p.pack)} className="text-xs font-bold rounded-xl bg-violet-600 text-white px-3 py-2">
+                  Exportar JSON
+                </button>
+              </div>
+            ))}
+            {!packs.length && <p className="text-slate-500 text-sm">Nenhum pack. Corre seed:packs.</p>}
+          </div>
+        )}
+      </div>
+      {err && <p className="text-red-300 text-sm">{err}</p>}
+      {exported && (
+        <div className={card + ' space-y-2'}>
+          <p className="text-green-300 font-bold">Export: {exportPack}</p>
+          <textarea readOnly value={exported} className={inp + ' h-64 font-mono text-xs resize-none'} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ImportPackTab(){
   const [text,setText]=useState('{\n  "name": "Pack exemplo",\n  "mode": "family",\n  "categories": {\n    "perguntas": [\n      {\n        "text": "Qual é a capital da Austrália?",\n        "answer": "Camberra",\n        "choices": ["Sydney", "Melbourne", "Camberra", "Perth"],\n        "difficulty": "medio"\n      }\n    ]\n  }\n}')
   const [result,setResult]=useState(null)
@@ -323,6 +381,7 @@ function ImportPackTab(){
           <p className="text-green-300 font-bold">Pack importado: {result.pack}</p>
           <p className="text-slate-300 text-sm">Cartas: {result.cards.inserted} novas, {result.cards.skipped} repetidas, {result.cards.invalid} inválidas.</p>
           <p className="text-slate-300 text-sm">Desafios: {result.challenges.inserted} novos, {result.challenges.skipped} repetidos, {result.challenges.invalid} inválidos.</p>
+          {result.drinkPack && <p className="text-slate-300 text-sm">Baralho Beber: atualizado na BD.</p>}
         </div>
       )}
     </div>
@@ -361,7 +420,7 @@ function DiceTab(){
   )
 }
 
-const TABS=[{id:'stats',label:'📊 Stats'},{id:'community',label:'🌍 Comunidade'},{id:'import',label:'📦 Importar'},{id:'challenges',label:'📋 Desafios'},{id:'cards',label:'🃏 Cartas'},{id:'dice',label:'🎲 Dados'}]
+const TABS=[{id:'stats',label:'📊 Stats'},{id:'community',label:'🌍 Comunidade'},{id:'packs',label:'📦 Packs'},{id:'import',label:'⬆️ Importar'},{id:'challenges',label:'📋 Desafios'},{id:'cards',label:'🃏 Cartas'},{id:'dice',label:'🎲 Dados'}]
 
 export default function Admin(){
   const navigate=useNavigate()
@@ -369,7 +428,7 @@ export default function Admin(){
   const [tab,setTab]=useState('stats')
   const logout=()=>{clearAdminToken();setUnlocked(false)}
   if(!unlocked)return<PasswordGate onUnlock={()=>setUnlocked(true)}/>
-  const ActiveTab={stats:StatsTab,community:CommunityTab,import:ImportPackTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
+  const ActiveTab={stats:StatsTab,community:CommunityTab,packs:PacksTab,import:ImportPackTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
   return(
     <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-lg">

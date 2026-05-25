@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { loadGame } from '../utils/game'
 import { api } from '../utils/api'
 import ChallengeCard from '../components/game/ChallengeCard'
+import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 import MiniGameModal from '../components/game/MiniGameModal'
 import { BoardDie } from '../components/game/EroticDie'
 import { Trophy, ChevronLeft } from 'lucide-react'
@@ -31,6 +32,7 @@ const FRIENDS_SPECIALS = [
   { type:'special', special:'rule', emoji:'📜', color:'#9333ea', label:'Regra ativa' },
   { type:'special', special:'steal', emoji:'🕵️', color:'#0891b2', label:'Roubo' },
   { type:'special', special:'shield', emoji:'🛡️', color:'#059669', label:'Proteção' },
+  { type:'special', special:'impostor', emoji:'🎭', color:'#c026d3', label:'Impostor' },
   { type:'challenge', category:'caos', emoji:'💥', color:'#dc2626', label:'Caos' },
 ]
 
@@ -213,7 +215,24 @@ export default function MapGame() {
   const [specialPicker, setSpecialPicker] = useState(null)
   const [finalBossFor,  setFinalBossFor]  = useState(null)
   const [round,         setRound]         = useState(1)
+  const [impostorRound, setImpostorRound] = useState(null)
+  const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
   const usesCategoryProgress = (game?.mode === 'family' || game?.mode === 'friends') && cats.length > 0
+
+  const playerColors = [
+    'from-pink-400 to-rose-500',
+    'from-cyan-400 to-blue-500',
+    'from-emerald-400 to-teal-500',
+    'from-amber-400 to-orange-500',
+    'from-violet-400 to-purple-500',
+    'from-fuchsia-400 to-pink-500',
+    'from-rose-400 to-red-500',
+    'from-sky-400 to-blue-500',
+  ]
+  const rosterForImpostor = players.map((p, i) => ({
+    name: p.name,
+    color: playerColors[i % playerColors.length],
+  }))
 
   const competitiveOptions = () => {
     if (!challenge) return []
@@ -233,6 +252,16 @@ export default function MapGame() {
 
   useEffect(() => { if (!game) navigate('/') }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    const pack = game?.contentPack || 'base'
+    void api.getChallenges({ category: 'impostor', mode_type: 'friends', pack }).then((rows) => {
+      if (cancelled || !Array.isArray(rows)) return
+      setImpostorPairs(mergeImpostorPairs(IMPOSTOR_PAIRS, rows))
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [game?.contentPack])
+
   const handleRoll = async val => {
     if (rolled||moving) return
     setRolled(true); setMoving(true)
@@ -251,7 +280,7 @@ export default function MapGame() {
       if(tile.type==='challenge'||tile.type==='start'){
         const category = tile.category || cats[0]
         try{
-          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends'})
+          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends',...(game?.contentPack?{pack:game.contentPack}:{})})
           if(c&&!c.error){setChallenge(c);setShowChallenge(true);return}
         }catch{}
         setChallenge(fallbackChallenge(category, game?.mode || 'friends'))
@@ -282,7 +311,7 @@ export default function MapGame() {
         ? 'Risco, se falhar perde 1 ponto: '
         : 'Duelo: '
       try{
-        const params = {category:effectiveCategory,mode_type:game?.mode||'friends'}
+        const params = {category:effectiveCategory,mode_type:game?.mode||'friends',...(game?.contentPack?{pack:game.contentPack}:{})}
         if (tile.special === 'bonus') params.difficulty = 'dificil'
         const c=await api.getRandomChallenge(params)
         const base = (c&&!c.error) ? c : fallbackChallenge(effectiveCategory, game?.mode || 'friends')
@@ -323,7 +352,34 @@ export default function MapGame() {
     if (tile.special === 'shield') {
       setShields(s=>s.map((v,idx)=>idx===currentPlayer?v+1:v))
       setSpecialNotice({emoji:'🛡️',title:'Proteção!',text:'Imune à próxima penalização.'})
+      return
     }
+    if (tile.special === 'impostor') {
+      if (players.length < 3) {
+        setSpecialNotice({emoji:'🎭',title:'Impostor',text:'Precisas de pelo menos 3 jogadores para esta carta.'})
+        return
+      }
+      const pair = impostorPairs[Math.floor(Math.random() * impostorPairs.length)]
+      setImpostorRound({
+        correctQuestion: pair.correctQuestion,
+        wrongQuestion: pair.wrongQuestion,
+        impostorIndex: Math.floor(Math.random() * players.length),
+      })
+    }
+  }
+
+  const finishImpostorRound = ({ guessedCorrect, impostorIndex }) => {
+    const impostorName = players[impostorIndex]?.name
+    setImpostorRound(null)
+    if (guessedCorrect) {
+      triggerPenalty(impostorName, null, impostorIndex)
+      setFails((f) => f.map((v, i) => (i === impostorIndex ? v + 1 : v)))
+    } else {
+      playPenaltySound('sips')
+      setPenaltyAnim({ name: impostorName, type: 'distribute', sips: 3 })
+      setTimeout(() => setPenaltyAnim(null), 2800)
+    }
+    setTimeout(nextPlayer, 3200)
   }
 
   const triggerPenalty = (playerName, failedChallenge, playerIdx = currentPlayer) => {
@@ -591,6 +647,30 @@ export default function MapGame() {
                   </button>
                 ))}
               </div>
+            </div>
+          </motion.div>
+        )}
+        {impostorRound && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[55] bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+          >
+            <div className="w-full max-w-lg rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-950 to-slate-950 p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="text-center mb-4">
+                <div className="text-5xl mb-2">🎭</div>
+                <h3 className="text-white font-black text-2xl">Carta Impostor</h3>
+                <p className="text-slate-400 text-sm mt-1">Passa o telemóvel — 1 jogador viu outra pergunta.</p>
+              </div>
+              <ImpostorCard
+                players={rosterForImpostor}
+                correctQuestion={impostorRound.correctQuestion}
+                wrongQuestion={impostorRound.wrongQuestion}
+                impostorIndex={impostorRound.impostorIndex}
+                mode="friends"
+                onComplete={finishImpostorRound}
+              />
             </div>
           </motion.div>
         )}
