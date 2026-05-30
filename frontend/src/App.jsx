@@ -8,7 +8,10 @@ import CoupleGame from './pages/CoupleGame'
 import DrinkGame from './pages/DrinkGame'
 import CardsLobby from './pages/CardsLobby'
 import CardsGame from './pages/CardsGame'
+import MisterWhiteHub from './pages/MisterWhiteHub'
 import MisterWhiteGame from './pages/MisterWhiteGame'
+import MisterWhiteLobby from './pages/MisterWhiteLobby'
+import MisterWhiteOnline from './pages/MisterWhiteOnline'
 import VictoryScreen from './pages/VictoryScreen'
 import CommunityCards from './pages/CommunityCards'
 import DailyScratch from './pages/DailyScratch'
@@ -30,7 +33,10 @@ export default function App() {
         <Route path="/DrinkGame"       element={<DrinkGame />} />
         <Route path="/CardsLobby"      element={<CardsLobby />} />
         <Route path="/CardsGame"       element={<CardsGame />} />
-        <Route path="/MisterWhiteGame" element={<MisterWhiteGame />} />
+        <Route path="/MisterWhite"       element={<MisterWhiteHub />} />
+        <Route path="/MisterWhiteGame"   element={<MisterWhiteGame />} />
+        <Route path="/MisterWhiteLobby"  element={<MisterWhiteLobby />} />
+        <Route path="/MisterWhiteOnline" element={<MisterWhiteOnline />} />
         <Route path="/VictoryScreen"   element={<VictoryScreen />} />
         <Route path="/community"       element={<CommunityCards />} />
         <Route path="/daily"           element={<DailyScratch standalone />} />

@@ -12,7 +12,7 @@ const MODE_COLORS = {
   cards:   { gradient: 'from-yellow-400 to-amber-500', glow: 'rgba(234,179,8,0.15)',  ring: '#eab308' },
   mister:  { gradient: 'from-slate-500 to-slate-700',  glow: 'rgba(148,163,184,0.15)',ring: '#94a3b8' },
 }
-const MODE_PATHS = { couple:'/GameSetup?mode=couple', friends:'/GameSetup?mode=friends', family:'/GameSetup?mode=family', drink:'/DrinkGame', cards:'/CardsLobby', mister:'/MisterWhiteGame' }
+const MODE_PATHS = { couple:'/GameSetup?mode=couple', friends:'/GameSetup?mode=friends', family:'/GameSetup?mode=family', drink:'/DrinkGame', cards:'/CardsLobby', mister:'/MisterWhite' }
 const MODE_ORDER = ['couple','friends','family','drink','cards','mister']
 
 export default function Home() {

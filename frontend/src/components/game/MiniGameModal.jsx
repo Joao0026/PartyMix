@@ -3,19 +3,26 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { shuffle } from '../../utils/game'
 
 // ─── MAIOR OU MENOR ──────────────────────────────────────────
-const SUITS=['♠','♥','♦','♣'],VALS=['2','3','4','5','6','7','8','9','10','J','Q','K','A']
-const ORDER={'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14}
-const isRed=s=>s==='♥'||s==='♦'
-function buildDeck(){const d=[];for(const s of SUITS)for(const v of VALS)d.push({s,v});return shuffle(d)}
+// Baralho PT: do mais alto ao mais baixo — Ás, Rei, Valete, Dama, 10…2
+const SUITS = ['♠', '♥', '♦', '♣']
+const VALS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+const ORDER = {
+  A: 13, K: 12, J: 11, Q: 10,
+  10: 9, 9: 8, 8: 7, 7: 6, 6: 5, 5: 4, 4: 3, 3: 2, 2: 1,
+}
+const CARD_LABEL = { A: 'Ás', K: 'Rei', J: 'Valete', Q: 'Dama' }
+const isRed = (s) => s === '♥' || s === '♦'
+function cardLabel(v) { return CARD_LABEL[v] || v }
+function buildDeck() { const d = []; for (const s of SUITS) for (const v of VALS) d.push({ s, v }); return shuffle(d) }
 
 function CardFace({card,hidden}){
   if(hidden)return<div className="w-16 h-24 rounded-xl bg-gradient-to-br from-violet-800 to-purple-900 border-2 border-white/20 flex items-center justify-center shadow-xl"><span className="text-white/20 text-2xl">?</span></div>
   return(
     <motion.div initial={{rotateY:90,opacity:0}} animate={{rotateY:0,opacity:1}} transition={{type:'spring',damping:12}}
       className="w-16 h-24 rounded-xl bg-white flex flex-col justify-between p-1.5 shadow-xl">
-      <span className={`text-sm font-black ${isRed(card.s)?'text-red-500':'text-slate-900'}`}>{card.v}</span>
+      <span className={`text-sm font-black ${isRed(card.s)?'text-red-500':'text-slate-900'}`}>{cardLabel(card.v)}</span>
       <span className={`text-xl text-center ${isRed(card.s)?'text-red-500':'text-slate-900'}`}>{card.s}</span>
-      <span className={`text-sm font-black self-end rotate-180 ${isRed(card.s)?'text-red-500':'text-slate-900'}`}>{card.v}</span>
+      <span className={`text-sm font-black self-end rotate-180 ${isRed(card.s)?'text-red-500':'text-slate-900'}`}>{cardLabel(card.v)}</span>
     </motion.div>
   )
 }

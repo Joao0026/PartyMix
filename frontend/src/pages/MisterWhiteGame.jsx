@@ -210,7 +210,7 @@ export default function MisterWhiteGame() {
     <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-lg">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => step === 'setup' ? navigate('/') : setStep('setup')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <button onClick={() => step === 'setup' ? navigate('/MisterWhite') : setStep('setup')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
           <div>
             <h1 className="text-white font-bold text-xl">👁️ Mister White</h1>
             {step !== 'setup' && <p className="text-slate-500 text-xs">Ronda {roundNum} · {remainingActive.length} jogadores activos</p>}

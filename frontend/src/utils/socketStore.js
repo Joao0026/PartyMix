@@ -77,3 +77,22 @@ export function peekCardsLobbyHandoff() {
 export function clearCardsLobbyHandoff() {
   cardsLobbyHandoff = null
 }
+
+/** MisterWhiteLobby → MisterWhiteOnline */
+let mwLobbyHandoff = null
+
+export function setMwLobbyHandoff(payload) {
+  mwLobbyHandoff = payload
+}
+
+export function peekMwLobbyHandoff() {
+  return mwLobbyHandoff
+}
+
+export function clearMwLobbyHandoff() {
+  mwLobbyHandoff = null
+}
+
+export function patchMwLobbyHandoff(patch) {
+  if (mwLobbyHandoff) mwLobbyHandoff = { ...mwLobbyHandoff, ...patch }
+}
