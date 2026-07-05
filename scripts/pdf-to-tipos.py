@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Extrai PDF para secção de reformulação em TIPOS-DE-CARTAS-E-PROMPT-CLAUDE.txt"""
+"""Extrai PDF para secção de reformulação em COMO-ESCREVER-CARTAS.txt"""
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PDF_TXT = ROOT / "data" / "_pdf_extract.txt"
-TIPOS = ROOT / "data" / "TIPOS-DE-CARTAS-E-PROMPT-CLAUDE.txt"
+MODELOS = ROOT / "data" / "MODELOS-ESCREVER-CARTAS.json"
 FORMAT_END_MARKER = "================================================================================\n11. PROMPT PARA CLAUDE"
 
 FORMAT_HINTS = {

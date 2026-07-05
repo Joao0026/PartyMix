@@ -6,6 +6,7 @@ const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
 const DrinkPack = require('../models/DrinkPack')
 const { importPackObject, listPackNames, exportPackObject } = require('../lib/packImport')
+const { auditContent, auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, cleanString, mongoId, oneOf } = require('../lib/validate')
 
 router.post('/login', (req, res) => {
@@ -55,6 +56,26 @@ router.post('/import-pack', requireAdmin, asyncRoute(async (req, res) => {
 
   const result = await importPackObject(pack)
   res.json(result)
+}))
+
+router.get('/content-audit', requireAdmin, asyncRoute(async (req, res) => {
+  const includeDb = req.query.db === 'true' || req.query.db === '1' || req.query.source === 'both'
+  const semantic = req.query.semantic === 'true' || req.query.semantic === '1'
+  const includeFiles = req.query.files !== 'false'
+
+  res.json(await auditContent({
+    includeFiles,
+    includeDb: includeDb || semantic,
+    semantic,
+  }))
+}))
+
+router.get('/community/:id/warnings', requireAdmin, asyncRoute(async (req, res) => {
+  const sub = await CommunitySubmission.findById(mongoId(req.params.id))
+  if (!sub) return res.status(404).json({ error: 'Not found' })
+  if (sub.submissionType !== 'card') return res.json({ warnings: [] })
+  const warnings = await auditSubmissionWarnings(sub, { semantic: true })
+  res.json({ warnings })
 }))
 
 router.post('/community/:id/meta', requireAdmin, asyncRoute(async (req, res) => {

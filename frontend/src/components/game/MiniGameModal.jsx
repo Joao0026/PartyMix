@@ -102,8 +102,8 @@ function HigherLowerGame({players,currentPlayer,onFinish}){
       {turnResult&&(
         <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} className="w-full text-center space-y-3">
           {turnResult==='win'
-            ?<><p className="text-green-400 font-black text-2xl">🏆 Chegou ao streak {TARGET}!</p><p className="text-amber-400 font-bold">🍺 Os outros bebem 3 golos!</p></>
-            :<><p className="text-red-400 font-black text-2xl">❌ Falhou no streak {streak}!</p><p className="text-amber-400 font-bold">🍺 {thisPlayer?.name} bebe {Math.max(1,TARGET-streak)} golo{TARGET-streak!==1?'s':''}!</p></>
+            ?<><p className="text-green-400 font-black text-2xl">🏆 Chegou ao streak {TARGET}!</p><p className="text-amber-400 font-bold">🍺 Os outros bebem 3 goles!</p></>
+            :<><p className="text-red-400 font-black text-2xl">❌ Falhou no streak {streak}!</p><p className="text-amber-400 font-bold">🍺 {thisPlayer?.name} bebe {Math.max(1,TARGET-streak)} gole{TARGET-streak!==1?'s':''}!</p></>
           }
           <button onClick={advanceTurn} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">
             {activeIdx+1<ordered.length?`Próximo: ${ordered[activeIdx+1]?.name} →`:'Ver Resultados →'}
@@ -125,7 +125,7 @@ const GROUP_TASKS=[
   {text:'Faz uma pose de yoga e mantém 10 segundos.',type:'physical'},
   {text:'O grupo escolhe o que o jogador tem de fazer:',type:'vote',options:['Imitar o jogador à esquerda 🎭','Dizer um segredo 🤫','Fazer beatbox 20 seg 🎤','Escrever o alfabeto ao contrário ✏️']},
   {text:'Diz uma frase de 10 palavras sem usar a letra "a".',type:'wordgame'},
-  {text:'O grupo escolhe:',type:'vote',options:['Beber 2 golos 🍺','Fazer 5 agachamentos 🏋️','Mensagem ao ex 📱','Postar story embaraçoso 📸']},
+  {text:'O grupo escolhe:',type:'vote',options:['Beber 2 goles 🍺','Fazer 5 agachamentos 🏋️','Mensagem ao ex 📱','Postar story embaraçoso 📸']},
 ]
 
 function GroupChallengeGame({players,currentPlayer,onFinish}){
@@ -167,8 +167,8 @@ function GroupChallengeGame({players,currentPlayer,onFinish}){
       {result&&(
         <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} className="text-center space-y-3">
           {result==='win'
-            ?<><p className="text-green-400 font-black text-xl">🏆 Conseguiu!</p><p className="text-amber-400 font-bold">🍺 Os outros bebem {sips} golo{sips>1?'s':''}!</p></>
-            :<><p className="text-red-400 font-black text-xl">💀 Falhou!</p><p className="text-amber-400 font-bold">🍺 {player?.name} bebe {sips} golo{sips>1?'s':''}!</p></>
+            ?<><p className="text-green-400 font-black text-xl">🏆 Conseguiu!</p><p className="text-amber-400 font-bold">🍺 Os outros bebem {sips} gole{sips>1?'s':''}!</p></>
+            :<><p className="text-red-400 font-black text-xl">💀 Falhou!</p><p className="text-amber-400 font-bold">🍺 {player?.name} bebe {sips} gole{sips>1?'s':''}!</p></>
           }
           <button onClick={onFinish} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">Fechar</button>
         </motion.div>
@@ -246,8 +246,8 @@ function SpyGame({players,onFinish}){
             <p className="text-slate-400">Espião: <span className="text-red-400 font-bold">{players[spyIdx]?.name}</span></p>
           </div>
           {result==='caught'
-            ?<p className="text-amber-400 font-bold">🍺 {players[spyIdx]?.name} bebe {sips} golos!</p>
-            :<p className="text-amber-400 font-bold">🍺 Todos os outros bebem {sips} golos!</p>
+            ?<p className="text-amber-400 font-bold">🍺 {players[spyIdx]?.name} bebe {sips} goles!</p>
+            :<p className="text-amber-400 font-bold">🍺 Todos os outros bebem {sips} goles!</p>
           }
           <button onClick={onFinish} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">Fechar</button>
         </motion.div>
@@ -321,7 +321,7 @@ function TenSecondsGame({players,currentPlayer,onFinish}){
         <motion.div initial={{scale:0.8}} animate={{scale:1}} className="text-center space-y-3 w-full">
           <p className={`font-black text-2xl ${ok?'text-green-400':'text-red-400'}`}>{ok?'🏆 Conseguiu!':'😅 Não conseguiu!'}</p>
           <p className="text-amber-400 font-bold text-lg">
-            🍺 {ok?`Os outros bebem ${sips} golo${sips>1?'s':''}!`:`${player?.name} bebe ${sips} golo${sips>1?'s':''}!`}
+            🍺 {ok?`Os outros bebem ${sips} gole${sips>1?'s':''}!`:`${player?.name} bebe ${sips} gole${sips>1?'s':''}!`}
           </p>
           <button onClick={onFinish} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">Fechar</button>
         </motion.div>
@@ -440,7 +440,7 @@ function BattleGame({players,currentPlayer,onFinish}){
         <motion.div initial={{scale:0.8}} animate={{scale:1}} className="text-center space-y-4">
           <div className="text-6xl">🏆</div>
           <p className="text-white font-black text-2xl">{players[winner]?.name} venceu!</p>
-          <p className="text-amber-400 font-bold text-lg">🍺 {players[winner===p1?p2:p1]?.name} bebe {sips} golos!</p>
+          <p className="text-amber-400 font-bold text-lg">🍺 {players[winner===p1?p2:p1]?.name} bebe {sips} goles!</p>
           <button onClick={onFinish} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">Fechar</button>
         </motion.div>
       )}
@@ -504,8 +504,8 @@ function SyncGame({players,currentPlayer,onFinish}){
       {result&&(
         <motion.div initial={{scale:0.8}} animate={{scale:1}} className="text-center space-y-3">
           {result==='win'
-            ?<><p className="text-green-400 font-black text-2xl">🎊 SYNC!</p><p className="text-amber-400 font-bold text-lg">🍺 Os outros bebem {sips} golo{sips>1?'s':''}!</p></>
-            :<><p className="text-red-400 font-black text-2xl">😅 Sem sync!</p><p className="text-amber-400 font-bold text-lg">🍺 {syncNames} bebe{syncPlayers.length>1?'m':''} {sips} golo{sips>1?'s':''}!</p></>
+            ?<><p className="text-green-400 font-black text-2xl">🎊 SYNC!</p><p className="text-amber-400 font-bold text-lg">🍺 Os outros bebem {sips} gole{sips>1?'s':''}!</p></>
+            :<><p className="text-red-400 font-black text-2xl">😅 Sem sync!</p><p className="text-amber-400 font-bold text-lg">🍺 {syncNames} bebe{syncPlayers.length>1?'m':''} {sips} gole{sips>1?'s':''}!</p></>
           }
           <button onClick={onFinish} className="w-full bg-slate-600 text-white font-bold rounded-2xl py-3">Fechar</button>
         </motion.div>

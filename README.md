@@ -1,75 +1,81 @@
 # PartyMix
 
-**Jogos de festa numa só app** — para telemóvel, em grupo, com o telemão na mesa.
+**Jogos de festa numa só app** — para telemóvel, em grupo, com o telemóvel na mesa.
 
-PartyMix junta desafios, perguntas, baralhos de beber, cartas e dedução numa experiência única. Serve para animar festas, jantares e encontros sem andares a saltar entre várias apps.
+PartyMix junta desafios, baralhos, cartas, dedução social e modos online numa experiência em **português (PT-PT)**, pensada para festas, jantares e encontros.
 
-> **Produto proprietário** — código, textos e marca reservados. Não é open source nem está disponível para cópia, instalação local ou redistribuição. Ver [LICENSE](LICENSE) · [PROPRIEDADE.md](PROPRIEDADE.md)
-
-> **Conteúdo:** alguns modos referem álcool ou temas adultos (ex. modo Beber, Casal). Destinado a **maiores de 18 anos**. Bebe com moderação; não é obrigatório beber para jogar — podes adaptar as regras ao grupo.
-
----
-
-## O que faz
-
-Abres a app no **telemóvel** (versão web, em português), escolhes o modo e jogas. Um telemão na mesa chega na maior parte dos modos; no **Modo Cartas** cada pessoa pode entrar na sala com o seu telemóvel e um código.
-
-O conteúdo (desafios, cartas, baralhos) vem do servidor — não precisas de configurar nada, só de ter internet.
-
----
-
-## Ecrã principal
-
-![Menu principal PartyMix — modos de jogo](docs/ecra-principal.png)
+> **Conteúdo:** alguns modos referem álcool ou temas adultos. Destinado a **maiores de 18 anos**. Bebe com moderação; podes adaptar as regras ao grupo.
 
 ---
 
 ## Modos de jogo
 
-| Modo | O que inclui |
-|------|----------------|
-| **Casal** | Dados, desafios, quiz, roleplay e mapa a dois |
-| **Amigos** | Mapa, mini-jogos, penalizações e carta Impostor |
-| **Família** | Cultura, desporto, música e cinema — tom mais leve |
-| **Beber** | Baralho de regras, roleta e contagem de goles |
-| **Cartas** | Estilo Cartas Contra Tugas, com sala online |
-| **Mister White** | Dedução social — quem é o infiltrado? |
-| **Comunidade** | Submetes cartas; as mais votadas entram no jogo |
+![Menu principal PartyMix](docs/ecra-principal.png)
 
-**Extras:** packs de conteúdo (`base`, temas de festa…), Sabichão, cartas especiais no modo Beber (Agente Secreto, Aliança, Espelho, Mini Boss), IA opcional, **Raspadinha / posição do dia** (modo Casal).
+### Modo Casal
 
----
+Para **dois jogadores**. Escolhes a intensidade (Pacífico, Picante ou Hardcore) e depois o que queres fazer:
 
-## Tecnologias
+- **Mapa do Casal** — tabuleiro estilo cobras e escadas, com desafios românticos
+- **Dados eróticos** — combina parte do corpo + ação
+- **Desafios** — cartas físicas, sensoriais e emocionais
+- **Quiz do Casal** — quanto conheces o teu par?
+- **Roleplay** — cenários com temporizador
+- **Posição do Dia** — raspadinha diária
 
-Visão geral de como a app está construída e onde corre online.
+### Modo Amigos
 
-| Camada | O que usamos |
-|--------|----------------|
-| **Interface** | React, Vite, Tailwind CSS, Framer Motion |
-| **Experiência móvel** | App web (PWA) — usas no browser do telemóvel |
-| **API** | Node.js, Express |
-| **Base de dados** | MongoDB ([Atlas](https://www.mongodb.com/cloud/atlas)) |
-| **Tempo real** | Socket.IO (salas de cartas e lobby) |
-| **Frontend online** | [Netlify](https://www.netlify.com/) |
-| **Backend online** | [Render](https://render.com/) |
-| **IA (opcional)** | Groq API — desafios e apoio no admin |
-| **Qualidade** | GitHub Actions (verificação e testes automáticos) |
+Jogo de tabuleiro para **2 a 20 jogadores**. Três formas de jogar:
 
-**Em desenvolvimento:** versão para Google Play, contas na cloud e ranking global.
+- **Mapa + Categorias** — dado, casas com desafios (Sincronia, Sabichão, Rabiscos, Gestos, Palavra Tabu, Caos) e mini-jogos
+- **Só Mini-jogos** — cada casa é um mini-jogo aleatório
+- **Só Desafios** — sem mapa, desafios contínuos
 
----
+Equipas opcionais, penalizações (goles ou penáltis) e carta **Impostor** no baralho Beber.
 
-## Como o conteúdo chega ao jogo
+![Mapa Modo Amigos](docs/mapa-amigos.png)
 
-![JSON → base de dados → API → app no telemóvel](docs/fluxo-conteudo.png)
+![Mini-jogo Maior ou Menor](docs/mini-jogo-maior-menor.png)
 
-O conteúdo (frases, cartas, baralhos) está organizado em packs e é servido pela API — assim a app pode receber novos temas de festa sem mudar tudo de uma vez.
+### Modo Família
+
+Igual ao Amigos em estrutura (mapa, categorias, equipas), mas com tom **mais leve** — sem Caos nem mini-jogos de festa. Ideal para jantares em família ou grupos mistos.
+
+Categorias: Sincronia, Sabichão, Rabiscos, Gestos e Palavra Tabu. Objetivo fixo: **3 pontos por categoria**.
+
+### Modo Beber
+
+Baralho de **137+ cartas** com goles, regras de mesa, missões, duelos e Mini Boss. Inclui baralho **🔗 Cadeia** (nomeia em turno — géneros musicais, bandas, clubes, etc.), **roleta**, contador de goles por jogador e carta Impostor escondida no baralho.
+
+![Modo Beber — carta Mini Boss](docs/modo-beber.png)
+
+### Modo Cartas
+
+Estilo **Cards Against Humanity** (PT). Cria ou entra numa **sala online com código**; cada jogador no seu telemóvel. Um juiz por ronda escolhe a carta preta, os restantes respondem com brancas — ganha a combinação mais engraçada.
+
+### Mister White
+
+Dedução social: há um **infiltrado** que não sabe a palavra secreta. Dois modos:
+
+- **Um telemóvel** — passa o telemóvel à volta da mesa para ver os papéis
+- **Online** — cada um no seu telemóvel, sala com código
+
+### MemeMix
+
+**Online**, até **15 jogadores**. Cada um envia fotos do telemóvel; em cada ronda o juiz escolhe um meme, todos escrevem legendas e o grupo vota. O host define pontos para ganhar, quem pode enviar fotos e se entram memes oficiais.
+
+### AldeiaMix
+
+**Lobos à solta** online, até **15 jogadores**. O narrador não joga — gere noite, dia, discussão e **votação digital**. Reconexão com o mesmo nome. Mínimo 4 na sala (1 narrador + 3 jogadores).
+
+### Comunidade
+
+Submete as tuas cartas (Amigos, Família, Casal ou Beber). A comunidade vota; as mais populares entram nos packs oficiais do jogo.
 
 ---
 
 ## Licença
 
-Copyright © 2026 João Magalhães. Todos os direitos reservados.
+Copyright © 2026 João Magalhães. Ver [LICENSE](LICENSE).
 
 Desenvolvido por João.

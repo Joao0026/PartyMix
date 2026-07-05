@@ -5,6 +5,7 @@ import { Plus, Trash2, ChevronRight, ChevronLeft, Users, Map, Zap, Gamepad2, Tar
 import { PLAYER_COLORS, TEAM_COLORS, saveGame } from '../utils/game'
 import { api } from '../utils/api'
 import { NumericDie } from '../components/game/EroticDie'
+import { challengePackParams } from '../utils/packParams'
 
 const MODE_CONFIG = {
   couple:  { label:'Modo Casal',   color:'from-rose-500 to-pink-600',  min:2, max:2,  cats:['romantico','picante','verdade','acao','roleplay','casal_pergunta'], hasTeams:false, hasMini:false },
@@ -99,6 +100,7 @@ export default function GameSetup() {
   const [scoreMode,  setScoreMode]  = useState('max_points')
   const [maxPoints,  setMaxPoints]  = useState(5)
   const [contentPack, setContentPack] = useState('base')
+  const [includeCommunity, setIncludeCommunity] = useState(true)
   const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
 
   useEffect(() => {
@@ -134,6 +136,7 @@ export default function GameSetup() {
       mapStyle,
       winningScore,
       contentPack,
+      includeCommunity,
     })
     if (mode==='couple')                 navigate('/CoupleGame')
     else if (friendsMode==='challenges') navigate('/ChallengesOnly')
@@ -142,6 +145,21 @@ export default function GameSetup() {
 
   const totalSteps = cfg.hasTeams ? 2 : 1
   const inp = 'bg-slate-800 border border-slate-600 rounded-xl px-3 py-2.5 text-white outline-none focus:border-violet-500/60 text-sm w-full'
+
+  const packToggle = (
+    <div className="space-y-2">
+      <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
+        {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
+      </select>
+      <label className="flex items-center gap-3 cursor-pointer">
+        <button type="button" onClick={() => setIncludeCommunity((v) => !v)}
+          className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-violet-500' : 'bg-white/[0.12]'}`}>
+          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
+        </button>
+        <span className="text-slate-300 text-sm">Incluir cartas da comunidade</span>
+      </label>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-[#080b14] px-4 py-8 flex flex-col items-center">
@@ -174,9 +192,7 @@ export default function GameSetup() {
               {!cfg.hasTeams && (
                 <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3">
                   <p className="text-white font-semibold text-sm mb-2">📦 Pack de conteúdo</p>
-                  <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
-                    {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
-                  </select>
+                  {packToggle}
                 </div>
               )}
               <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={()=>cfg.hasTeams?setStep(1):startGame()}
@@ -196,11 +212,7 @@ export default function GameSetup() {
               <div>
                 <h3 className="text-white font-semibold mb-2">📦 Pack de conteúdo</h3>
                 <p className="text-slate-500 text-xs mb-2">Só saem desafios deste pack (importa com npm run seed:packs).</p>
-                <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
-                  {packOptions.map((p) => (
-                    <option key={p.pack} value={p.pack}>{p.name}</option>
-                  ))}
-                </select>
+                {packToggle}
               </div>
 
               {/* Friends mode */}

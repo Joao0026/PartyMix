@@ -1,0 +1,562 @@
+{
+  "_meta": {
+    "titulo": "PartyMix — modelos JSON para escrever cartas",
+    "idioma": "PT-PT",
+    "como_colocar_na_app": {
+      "metodo_1_ficheiros": [
+        "1. Edita o JSON em data/ (ex.: data/friends/base.json ou data/drink/decks.json)",
+        "2. Na raiz do projecto: npm run seed:packs",
+        "3. Abre a app — o conteúdo vem da base de dados"
+      ],
+      "metodo_2_admin_importar": [
+        "1. App → Admin → Importar",
+        "2. Escolhe um modelo ou cola o teu pack",
+        "3. Importar para a base de dados",
+        "Nota Modo Beber: importar decks.json SUBSTITUI todos os baralhos desse pack. Exporta antes se quiseres fundir."
+      ],
+      "metodo_3_admin_uma_carta": [
+        "Admin → Desafios (mapa/amigos) ou Cartas (CAH) → formulário",
+        "Útil para 1 carta; packs grandes → usa ficheiros JSON + seed"
+      ]
+    },
+    "ficheiros_por_modo": {
+      "amigos": "data/friends/base.json · data/friends/festa.json",
+      "familia": "data/family/base.json · data/family/festa.json",
+      "casal": "data/couple/base.json · data/couple/festa.json",
+      "beber": "data/drink/decks.json · communitydrink.json",
+      "cartas": "data/cards/festa.json · festacommunity.json",
+      "mememix": "legendas-pack.json · memes-pack.json · legendascommunity-pack.json · memescommunity-pack.json · public/memes/"
+    }
+  },
+
+  "pack_amigos_exemplo": {
+    "name": "Amigos - Exemplo (copia e adapta)",
+    "mode": "friends",
+    "pack": "base",
+    "description": "Um exemplo de cada categoria — substitui textos e adiciona mais cartas ao array.",
+    "categories": {
+      "telepatia": [
+        {
+          "text": "Tema: desculpas para faltar ao trabalho. Palavra ao mesmo tempo."
+        }
+      ],
+      "perguntas": [
+        {
+          "text": "Que país ganhou o Euro 2016?",
+          "answer": "Portugal",
+          "choices": ["França", "Portugal", "Espanha", "Alemanha"],
+          "difficulty": "facil"
+        }
+      ],
+      "desenho": [
+        {
+          "text": "Desenha alguém a tentar pedir comida às 3 da manhã."
+        }
+      ],
+      "mimica": [
+        {
+          "text": "Representa alguém a fingir que está sóbrio."
+        }
+      ],
+      "proibido": [
+        {
+          "text": "Palavra: Discoteca. Faz a equipa adivinhar sem dizer as palavras proibidas.",
+          "forbiddenWords": ["música", "dança", "DJ", "fila", "bar"]
+        }
+      ],
+      "caos": [
+        {
+          "text": "Regra temporária: durante 2 rondas, quem disser nomes próprios bebe 1 golo.",
+          "is_ongoing": true,
+          "ongoing_rounds": 2,
+          "ongoing_instruction": "Sem nomes próprios. Quem falhar bebe 1."
+        }
+      ],
+      "impostor": [
+        {
+          "correctQuestion": "Quem seria o melhor anfitrião de festa?",
+          "wrongQuestion": "Quem chegaria 2 horas atrasado?"
+        }
+      ]
+    }
+  },
+
+  "pack_familia_exemplo": {
+    "name": "Família - Exemplo",
+    "mode": "family",
+    "pack": "base",
+    "description": "Igual a Amigos mas SEM caos e tom familiar (sem álcool/adulto).",
+    "categories": {
+      "telepatia": [
+        {
+          "text": "Tema: animais de estimação. Dois jogadores dizem uma palavra ao mesmo tempo."
+        }
+      ],
+      "perguntas": [
+        {
+          "text": "Qual é a capital de Portugal?",
+          "answer": "Lisboa",
+          "choices": ["Porto", "Lisboa", "Coimbra", "Braga"],
+          "difficulty": "facil"
+        }
+      ],
+      "desenho": [
+        {
+          "text": "Desenha uma ida à praia em família."
+        }
+      ],
+      "mimica": [
+        {
+          "text": "Representa um gato a perseguir um ponteiro laser."
+        }
+      ],
+      "proibido": [
+        {
+          "text": "Palavra: Escola. Adivinha sem palavras proibidas.",
+          "forbiddenWords": ["professor", "teste", "sala", "livro", "recreio"]
+        }
+      ]
+    }
+  },
+
+  "pack_casal_exemplo": {
+    "name": "Casal - Exemplo",
+    "mode": "couple",
+    "pack": "base",
+    "description": "Chaves: romantico, picante, verdade, acao, roleplay, quiz.",
+    "categories": {
+      "romantico": [
+        {
+          "text": "Diz uma coisa pequena que o teu parceiro faz e que te deixa feliz."
+        }
+      ],
+      "picante": [
+        {
+          "text": "Sussurra uma vontade que gostavas de experimentar."
+        }
+      ],
+      "verdade": [
+        {
+          "text": "Qual foi o momento em que te sentiste mais próximo do teu parceiro?"
+        }
+      ],
+      "acao": [
+        {
+          "text": "Dá uma massagem nas mãos durante 1 minuto.",
+          "time_limit": 60
+        }
+      ],
+      "roleplay": [
+        {
+          "text": "Cena: dois desconhecidos encontram-se num bar."
+        }
+      ],
+      "quiz": [
+        {
+          "text": "Qual é o prato favorito do teu parceiro?",
+          "answer": "Resposta do parceiro"
+        }
+      ]
+    }
+  },
+
+  "pack_cartas_exemplo": {
+    "name": "Modo Cartas - Exemplo",
+    "pack": "base",
+    "mode": "cards",
+    "description": "Brancas = respostas. Pretas = frases com ___",
+    "white": [
+      "Uma desculpa que ninguém acreditou",
+      "O amigo que desaparece quando chega a conta"
+    ],
+    "black": [
+      "A festa acabou quando alguém trouxe ___.",
+      "O Benfica perdeu porque ___."
+    ]
+  },
+
+  "pack_beber_exemplo": {
+    "name": "Beber - Exemplo mínimo",
+    "mode": "drink",
+    "pack": "base",
+    "description": "Estrutura real em data/drink/decks.json. Importar substitui o pack inteiro na BD.",
+    "decks": {
+      "waterfall": {
+        "label": "🌊 Waterfall & Beber",
+        "desc": "Quem bebe, bebe muito",
+        "premium": false,
+        "cards": [
+          {
+            "type": "beber",
+            "emoji": "🍺",
+            "title": "Bebe 2!",
+            "text": "O jogador com o cabelo mais comprido bebe 2 goles."
+          }
+        ]
+      },
+      "eununca": {
+        "label": "🙅 Eu Nunca",
+        "desc": "Confissões garantidas",
+        "premium": false,
+        "cards": [
+          {
+            "type": "desafio",
+            "emoji": "🙅",
+            "title": "Eu Nunca",
+            "text": "EU NUNCA enviei mensagem ao ex bêbado. Quem já fez bebe 1!"
+          }
+        ]
+      },
+      "provavel": {
+        "label": "👉 Quem é mais provável?",
+        "desc": "Apontem dedos",
+        "premium": false,
+        "cards": [
+          {
+            "type": "desafio",
+            "emoji": "👉",
+            "title": "Quem é mais provável?",
+            "text": "Quem é mais provável de adormecer primeiro? Contagem 1-2-3 — apontem! Quem receber mais dedos bebe 2."
+          }
+        ]
+      },
+      "preferias": {
+        "label": "🤔 Preferias?",
+        "desc": "Would you rather",
+        "premium": false,
+        "cards": [
+          {
+            "type": "preferencia",
+            "emoji": "🤔",
+            "title": "Preferias?",
+            "text": "Minoritários bebem 2. Empate = todos bebem 1.",
+            "choices": [
+              "Ter 10 dedos das mãos nos pés",
+              "Ter 10 dedos dos pés nas mãos"
+            ]
+          }
+        ]
+      },
+      "especiais": {
+        "label": "🛡️ Especiais",
+        "desc": "Agente, aliança, mini boss, impostor",
+        "premium": false,
+        "cards": [
+          {
+            "type": "agent",
+            "emoji": "🕵️",
+            "title": "Agente Secreto",
+            "secretMission": "Faz alguém dizer «comboio». Se conseguires, distribuis 3 goles."
+          },
+          {
+            "type": "alliance",
+            "emoji": "🤝",
+            "title": "Aliança!",
+            "text": "Dupla com o da esquerda. 2 rondas: se um beber, o outro bebe 1."
+          },
+          {
+            "type": "miniboss",
+            "emoji": "👹",
+            "title": "Mini Boss!",
+            "text": "Boss: todos em pé. Último a sentar distribui 3. Tens 30 segundos."
+          },
+          {
+            "type": "impostor",
+            "emoji": "🎭",
+            "title": "Impostor!",
+            "correctQuestion": "Quem usaria melhor uma máquina do tempo?",
+            "wrongQuestion": "Quem acabaria preso no passado por fazer asneira?"
+          }
+        ]
+      }
+    }
+  },
+
+  "snippet_adicionar_carta_beber": {
+    "_onde": "data/drink/decks.json → decks.{baralho_id}.cards → acrescenta ao array",
+    "baralhos_disponiveis": [
+      "waterfall",
+      "eununca",
+      "regras",
+      "caos",
+      "especiais",
+      "desafios",
+      "poder",
+      "picante",
+      "preferias",
+      "provavel",
+      "bluff",
+      "maldicao",
+      "historia",
+      "extreme"
+    ],
+    "por_type": {
+      "_image_opcional": "image: /cards/ficheiro.webp (public/) ou https://... — omitir = só emoji",
+      "beber": {
+        "type": "beber",
+        "emoji": "🍺",
+        "title": "Bebe 2!",
+        "text": "Quem tem óculos bebe 2 goles.",
+        "image": "/cards/exemplo-beber.webp"
+      },
+      "desafio": {
+        "type": "desafio",
+        "emoji": "⚡",
+        "title": "Desafio!",
+        "text": "Escolhe uma categoria. Quem falhar bebe 2."
+      },
+      "regra": {
+        "type": "regra",
+        "emoji": "📜",
+        "title": "Nova Regra!",
+        "text": "Quem apontar com o dedo bebe 1 golo até sair outra regra."
+      },
+      "caos": {
+        "type": "caos",
+        "emoji": "💥",
+        "title": "Caos!",
+        "text": "Durante 5 minutos, quem rir primeiro bebe 1."
+      },
+      "sorte": {
+        "type": "sorte",
+        "emoji": "🍀",
+        "title": "Sorte!",
+        "text": "Passas a próxima carta a outro jogador à tua escolha."
+      },
+      "azar": {
+        "type": "azar",
+        "emoji": "💀",
+        "title": "Azar!",
+        "text": "Bebes 2 goles agora. O grupo escolhe quem te serve o próximo."
+      },
+      "poder": {
+        "type": "poder",
+        "emoji": "👑",
+        "title": "Poder!",
+        "text": "Distribui 3 goles como quiseres. Podes dividir ou dar tudo a uma pessoa."
+      },
+      "preferencia": {
+        "type": "preferencia",
+        "emoji": "🤔",
+        "title": "Preferias?",
+        "choices": [
+          "Nunca mais viajar",
+          "Nunca mais usar redes sociais"
+        ],
+        "text": "A opção com menos votos bebe 2. Empate = todos bebem 1."
+      },
+      "historia_cadeia": {
+        "type": "desafio",
+        "emoji": "🎬",
+        "title": "História",
+        "text": "Começa: «Na festa que correu mal…» Sentido horário, cada um diz UMA palavra. Quem travar, repetir ou rir até perder o fio bebe 2."
+      },
+      "bluff_opiniao": {
+        "type": "desafio",
+        "emoji": "🎭",
+        "title": "Bluff!",
+        "text": "Defende durante 30 segundos: «Ananás na pizza é obrigatório.» A mesa vota se acreditou. Convences → distribuis 2. Não convences → bebes 2."
+      },
+      "bluff_historia": {
+        "type": "desafio",
+        "emoji": "🎭",
+        "title": "Bluff!",
+        "text": "Conta uma história — verdade ou mentira. O grupo vota. Enganas todos → distribuis 3. Descobrem-te → bebes 3."
+      },
+      "maldicao": {
+        "type": "desafio",
+        "emoji": "🔮",
+        "title": "Maldição!",
+        "text": "Estás amaldiçoado: só podes falar frases de 3 palavras. Passa a maldição a quem te fizer rir."
+      },
+      "picante": {
+        "type": "desafio",
+        "emoji": "🔥",
+        "title": "Picante!",
+        "text": "Diz o nome da pessoa da sala que mais te atrai. Ou bebe 3."
+      },
+      "provavel": {
+        "type": "desafio",
+        "emoji": "👉",
+        "title": "Quem é mais provável?",
+        "text": "Quem é mais provável de adormecer primeiro? Contagem 1-2-3 — apontem! Quem receber mais dedos bebe 2."
+      },
+      "agent": {
+        "type": "agent",
+        "emoji": "🕵️",
+        "title": "Agente Secreto",
+        "secretMission": "Faz alguém dizer uma cor. Se conseguires, distribuis 2 goles."
+      },
+      "alliance": {
+        "type": "alliance",
+        "emoji": "🤝",
+        "title": "Aliança!",
+        "text": "Dupla 2 rondas: penalizações partilhadas."
+      },
+      "miniboss": {
+        "type": "miniboss",
+        "emoji": "👹",
+        "title": "Mini Boss!",
+        "text": "Desafio de grupo — botões Vitória/Falha no ecrã."
+      },
+      "impostor": {
+        "type": "impostor",
+        "emoji": "🎭",
+        "title": "Impostor!",
+        "correctQuestion": "Pergunta para a maioria",
+        "wrongQuestion": "Pergunta diferente para o impostor"
+      }
+    }
+  },
+
+  "modo_beber_na_app": {
+    "_descricao": "Como cada type aparece no Modo Beber (DrinkGame.jsx)",
+    "poder_sorte_azar": {
+      "baralho_id": "poder",
+      "nota": "Mesmo baralho na configuração; cada carta muda cor consoante o type.",
+      "types": {
+        "poder": { "etiqueta": "Poder", "cor": "amarelo/dourado" },
+        "sorte": { "etiqueta": "Sorte", "cor": "verde" },
+        "azar": { "etiqueta": "Azar", "cor": "cinza escuro" }
+      }
+    },
+    "preferencia": {
+      "baralho_id": "preferias",
+      "type_carta": "preferencia",
+      "ecra": "choices[0] = caixa A em cima, choices[1] = caixa B em baixo; text = regra de votação"
+    },
+    "historia_bluff_picante": {
+      "type_carta": "desafio",
+      "ecra": "Texto simples — sem layout especial. Usa «Começa:» nas histórias em cadeia."
+    },
+    "especiais": {
+      "agent": "Botão missão secreta + texto público de outro baralho",
+      "miniboss": "Botões Grupo ganhou / Grupo falhou",
+      "impostor": "Fluxo passar telemóvel",
+      "alliance": "Texto normal"
+    }
+  },
+
+  "baralhos_beber_exemplos": {
+    "_onde": "data/drink/decks.json → decks.{id}.cards[]",
+    "historia": {
+      "label": "🎬 História",
+      "carta_exemplo": {
+        "type": "desafio",
+        "emoji": "🎬",
+        "title": "História",
+        "text": "Começa: «Na festa que correu mal…» Sentido horário, cada um diz UMA palavra. Quem travar, repetir ou rir até perder o fio bebe 2."
+      }
+    },
+    "preferias": {
+      "label": "🤔 Preferias?",
+      "carta_exemplo": {
+        "type": "preferencia",
+        "emoji": "🤔",
+        "title": "Preferias?",
+        "choices": ["Nunca mais viajar", "Nunca mais usar redes sociais"],
+        "text": "A opção com menos votos bebe 2. Empate = todos bebem 1."
+      }
+    },
+    "bluff": {
+      "label": "🎭 Bluff",
+      "carta_exemplo_opiniao": {
+        "type": "desafio",
+        "emoji": "🎭",
+        "title": "Bluff!",
+        "text": "Defende durante 30 segundos: «Dormir de meias é melhor.» A mesa vota se acreditou. Convences → distribuis 2. Não convences → bebes 2."
+      }
+    },
+    "poder": {
+      "label": "👑 Poder & Sorte",
+      "nota": "Mistura types poder, sorte e azar no mesmo baralho",
+      "carta_sorte": {
+        "type": "sorte",
+        "emoji": "🍀",
+        "title": "Sorte!",
+        "text": "Não bebes durante 2 rondas. Imune a tudo!"
+      }
+    }
+  },
+
+  "snippet_adicionar_carta_mapa": {
+    "_onde": "data/friends/base.json (ou family/couple) → categories.{categoria} → acrescenta ao array",
+    "telepatia": {
+      "text": "Tema: snacks de cinema. Palavra ao mesmo tempo."
+    },
+    "perguntas": {
+      "text": "Qual é a capital da França?",
+      "answer": "Paris",
+      "choices": ["Lyon", "Paris", "Marselha", "Nice"],
+      "difficulty": "facil"
+    },
+    "desenho": {
+      "text": "Desenha um robot a lavar a loiça."
+    },
+    "mimica": {
+      "text": "Representa alguém a abrir champanhe mal."
+    },
+    "proibido": {
+      "text": "Palavra: Praia. Adivinha.",
+      "forbiddenWords": ["areia", "mar", "sol", "toalha", "ondas"]
+    },
+    "caos": {
+      "text": "Regra temporária: 2 rondas sem nomes próprios.",
+      "is_ongoing": true,
+      "ongoing_rounds": 2,
+      "ongoing_instruction": "Sem nomes próprios."
+    },
+    "impostor": {
+      "correctQuestion": "Quem tem o melhor gosto para memes?",
+      "wrongQuestion": "Quem explica piadas demasiado tempo?"
+    }
+  },
+
+  "pack_mememix_legendas_exemplo": {
+    "name": "MemeMix — Legendas",
+    "mode": "mememix",
+    "pack": "festa",
+    "description": "Usa legendas-pack.json (base) ou festa.json — não uses base.json.",
+    "legendas": [
+      "Quando disseste «só mais um copo»",
+      "EU quando o Uber cancela à terceira tentativa"
+    ]
+  },
+
+  "pack_mememix_memes_exemplo": {
+    "name": "MemeMix — Memes",
+    "mode": "mememix",
+    "pack": "base",
+    "description": "Imagens em frontend/public/memes/",
+    "memes": [
+      { "image": "/memes/festa-01.webp", "caption": "opcional" }
+    ]
+  },
+
+  "pack_mememix_exemplo": {
+    "name": "MemeMix — Legendas",
+    "mode": "mememix",
+    "pack": "base",
+    "description": "Legendas curtas para combinar com memes (fotos). Host define pontos máximos (1–7).",
+    "legendas": [
+      "Quando disseste «só mais um copo»",
+      "EU quando o Uber cancela à terceira tentativa",
+      "A cara de quem viu a conta do jantar",
+      "POV: és o DJ e ninguém pediu esta música"
+    ]
+  },
+
+  "erros_comuns": [
+    "preferencia: escrever type \"preferias\" — o type é \"preferencia\"; \"preferias\" é só o id do baralho",
+    "preferencia: pôr as duas opções no text — têm de ir em choices: [\"A\", \"B\"]",
+    "historia / bluff / picante: escrever type \"historia\" — usar type \"desafio\"",
+    "perguntas: answer que não está em choices",
+    "impostor: falta correctQuestion ou wrongQuestion",
+    "agent: usar text em vez de secretMission",
+    "preferencia: choices tem de ter exactamente 2 opções",
+    "cartas pretas: falta ___ no texto",
+    "família: conteúdo adulto ou álcool",
+    "esquecer npm run seed:packs depois de editar ficheiros",
+    "importar pack beber parcial e apagar baralhos que tinhas na BD"
+  ]
+}

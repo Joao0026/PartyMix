@@ -1,0 +1,14 @@
+{
+  "name": "Casal - Comunidade",
+  "mode": "couple",
+  "pack": "community",
+  "description": "Desafios aprovados da comunidade (Modo Casal).",
+  "categories": {
+    "romantico": [],
+    "picante": [],
+    "verdade": [],
+    "acao": [],
+    "roleplay": [],
+    "quiz": []
+  }
+}

@@ -1,0 +1,281 @@
+================================================================================
+PARTYMIX — COMO ESCREVER CARTAS
+================================================================================
+
+Guia curto. Os modelos JSON completos estão em:
+
+  →  data/MODELOS-ESCREVER-CARTAS.json
+
+Abre esse ficheiro no editor — cada bloco é JSON válido para copiar.
+
+================================================================================
+COMO COLOCAR CARTAS NA APP (3 formas)
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FORMA 1 — Ficheiros + seed (recomendado para muitas cartas)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. Edita o JSON em data/                                                   │
+│  2. npm run seed:packs                                                      │
+│  3. Testa na app                                                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FORMA 2 — Admin → Importar (pack inteiro)                                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  1. App → Admin → Importar                                                  │
+│  2. Escolhe modelo ou cola JSON                                             │
+│  3. Importar para a base de dados                                           │
+│  ⚠ Modo Beber: substitui TODOS os baralhos desse pack. Exporta antes.       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FORMA 3 — Admin → Desafios / Cartas (1 carta de cada vez)                   │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  Útil para testes rápidos. Packs grandes → usa Forma 1.                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+================================================================================
+ONDE EDITAR (ficheiro → modo na app)
+================================================================================
+
+  data/friends/base.json      →  Modo Amigos (mapa + categorias)
+  data/friends/festa.json     →  Expansão Amigos
+  data/family/base.json       →  Modo Família
+  data/couple/base.json       →  Modo Casal
+  data/drink/decks.json       →  Modo Beber (baralhos oficiais)
+  data/drink/communitydrink.json → Beber comunidade (baralho comunidade)
+  data/cards/festa.json       →  Modo Cartas CAH (pack principal)
+  data/cards/festacommunity.json → Cartas comunidade
+  data/mememix/legendas-pack.json       → MemeMix legendas
+  data/mememix/memes-pack.json          → MemeMix memes (imagens)
+  data/mememix/legendascommunity-pack.json → Legendas comunidade
+  data/mememix/memescommunity-pack.json    → Memes comunidade
+
+================================================================================
+ESTRUTURA RÁPIDA (ver MODELOS-ESCREVER-CARTAS.json para exemplos)
+================================================================================
+
+AMIGOS / FAMÍLIA / CASAL
+────────────────────────
+{
+  "name": "...",
+  "mode": "friends",
+  "categories": {
+    "telepatia":  [ { "text": "..." } ],
+    "perguntas":  [ { "text": "...", "answer": "...", "choices": [...] } ],
+    "desenho":    [ { "text": "..." } ],
+    "mimica":     [ { "text": "..." } ],
+    "proibido":   [ { "text": "...", "forbiddenWords": [...] } ],
+    "caos":       [ { "text": "...", "is_ongoing": true, "ongoing_rounds": 2 } ],
+    "impostor":   [ { "correctQuestion": "...", "wrongQuestion": "..." } ]
+  }
+}
+
+CASAL — chaves: romantico, picante, verdade, acao, roleplay, quiz
+
+MODO BEBER — adicionar carta a um baralho
+──────────────────────────────────────────
+Ficheiro: data/drink/decks.json
+Caminho:  decks.{baralho_id}.cards[]
+
+Baralhos: waterfall, eununca, regras, caos, especiais, desafios, cadeia, poder,
+          picante, preferias, provavel, bluff, maldicao, historia, extreme
+
+Carta mínima (desafio / bluff / picante / provável / maldição / história):
+{
+  "type": "desafio",
+  "emoji": "👉",
+  "title": "Quem é mais provável?",
+  "text": "..."
+}
+
+Placeholders no text/title (Modo Beber, na app):
+  player1, player2, … player15  → nome do 1.º, 2.º, … jogador no setup
+  reader                          → quem tirou a carta nesta ronda (rota a cada carta)
+  {player1}, {reader}             → igual, com chavetas (opcional)
+
+  Com género (♂/♀ obrigatório no setup do jogo):
+  reader_a, player1_a   → ao João · à Maria · a Ana (sem género definido)
+  reader_de, player2_de → do João · da Maria · de Ana
+  reader_com            → com o João · com a Maria · com Ana
+  reader_pelo           → pelo João · pela Maria · por Ana
+  reader_no             → no João · na Maria · em Ana
+  reader_o              → o João · a Maria · Maria
+
+Exemplo (regra com concordância):
+  "text": "Quem se levantar sem pedir permissão reader_a bebe 1 gole até sair outra regra."
+  → Maria (♀): "... sem pedir permissão à Maria bebe ..."
+  → João (♂):  "... sem pedir permissão ao João bebe ..."
+
+Alternativa simples (sem género): «pedir permissão a reader» → «... a Maria» (aceitável em PT).
+
+⚠ O id do baralho pode ser "preferias" ou "historia", mas o type da CARTA
+  é sempre outro — ver abaixo.
+
+──────────────────────────────────────────
+PODER / SORTE / AZAR (baralho "poder")
+──────────────────────────────────────────
+Três types no MESMO baralho. Na app cada carta muda cor e etiqueta:
+
+  type "poder"  → etiqueta Poder  · cartão amarelo/dourado
+  type "sorte"  → etiqueta Sorte  · cartão verde
+  type "azar"   → etiqueta Azar   · cartão cinza
+
+Layout igual (emoji + título + texto). «bebe X» / «distribui X» → contador.
+
+Exemplo sorte:
+{
+  "type": "sorte",
+  "emoji": "🍀",
+  "title": "Sorte!",
+  "text": "Passas a próxima carta a outro jogador à tua escolha."
+}
+
+──────────────────────────────────────────
+PREFERIAS? (baralho "preferias")
+──────────────────────────────────────────
+type "preferencia" (NÃO escrevas "preferias" no type!)
+Opções em choices — A em cima, B em baixo no ecrã.
+O text é só a REGRA (quem bebe), não as opções.
+
+{
+  "type": "preferencia",
+  "emoji": "🤔",
+  "title": "Preferias?",
+  "choices": ["Nunca mais viajar", "Nunca mais usar redes sociais"],
+  "text": "A opção com menos votos bebe 2. Empate = todos bebem 1."
+}
+
+──────────────────────────────────────────
+HISTÓRIA (baralho "historia")
+──────────────────────────────────────────
+type "desafio" (NÃO escrevas "historia" no type!)
+Usa «Começa: …» para ficar claro quem arranca.
+
+{
+  "type": "desafio",
+  "emoji": "🎬",
+  "title": "História",
+  "text": "Começa: «Na festa que correu mal…» Sentido horário, cada um diz UMA palavra. Quem travar, repetir ou rir até perder o fio bebe 2."
+}
+
+Variante 1 frase por jogador: troca «UMA palavra» por «UMA frase».
+
+──────────────────────────────────────────
+CADEIA / NOMEIA! (baralho "cadeia")
+──────────────────────────────────────────
+type "desafio". Tema fixo na carta — sentido horário, quem repetir/travar bebe.
+
+{
+  "type": "desafio",
+  "emoji": "🔗",
+  "title": "Cadeia!",
+  "text": "Tema: géneros musicais. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2."
+}
+
+──────────────────────────────────────────
+BLUFF / PICANTE / PROVÁVEL / MALDIÇÃO / EXTREMO
+──────────────────────────────────────────
+Todos usam type "desafio", excepto extreme que pode misturar "beber".
+
+Bluff (mentira vs verdade ou opinião absurda):
+{
+  "type": "desafio",
+  "emoji": "🎭",
+  "title": "Bluff!",
+  "text": "Defende durante 30 segundos: «Ananás na pizza é obrigatório.» A mesa vota se acreditou. Convences → distribuis 2. Não convences → bebes 2."
+}
+
+Agente     → type "agent" + "secretMission" (sem publicText)
+Aliança    → type "alliance" + "text"
+Mini Boss  → type "miniboss" + "text" (botões Vitória/Falha no ecrã)
+Impostor   → type "impostor" + "correctQuestion" + "wrongQuestion"
+
+──────────────────────────────────────────
+IMAGEM OPCIONAL (qualquer carta Beber)
+──────────────────────────────────────────
+Campo opcional "image" — se faltar, carta igual a hoje (emoji + cor).
+
+Ficheiros locais (recomendado):
+  frontend/public/cards/minha-carta.webp
+  no JSON:  "image": "/cards/minha-carta.webp"
+
+Também funciona URL externa:
+  "image": "https://exemplo.com/arte.png"
+
+Depois: npm run seed:packs (copia o campo image para a BD).
+Online: ficheiros em public/ vão no deploy — paths /cards/... funcionam.
+
+MODO CARTAS
+───────────
+{
+  "mode": "cards",
+  "white": [ "resposta curta", "..." ],
+  "black": [ "Frase com ___ no sítio certo.", "..." ]
+}
+
+MEMEMIX
+───────
+  legendas-pack.json / memes-pack.json           → conteúdo oficial (pack "base")
+  legendascommunity-pack.json / memescommunity-pack.json → comunidade (pack "community")
+  frontend/public/memes/                         → ficheiros de imagem
+
+Modo Beber: decks.json + communitydrink.json (fundem no seed).
+Modo Cartas: festa.json + festacommunity.json.
+
+O campo "pack": "community" mantém-se — a app usa include_community na API.
+O nome do ficheiro é só organização; o pack na BD é o que importa.
+
+Legendas (só texto):
+{
+  "mode": "mememix",
+  "pack": "base",
+  "legendas": [ "Quando disseste «só mais um copo»" ]
+}
+
+Memes oficiais (imagem + legenda opcional):
+{
+  "mode": "mememix",
+  "pack": "base",
+  "memes": [
+    { "image": "/memes/festa-01.webp", "caption": "opcional" }
+  ]
+}
+
+Imagens — 3 origens:
+  1. Pack oficial → public/memes/ + memes-pack.json + seed
+  2. URL externa   → "image": "https://..."
+  3. Sala online   → jogadores enviam fotos na partida (fica na sessão, não no JSON)
+
+Regras na app: host escolhe pontos máximos (1–7); mão = 5 legendas;
+juiz só joga memes e guarda legendas; vencedor da ronda +1 ponto.
+
+================================================================================
+REGRAS DE ESCRITA
+================================================================================
+
+  • PT-PT, uma ideia por carta, legível em voz alta
+  • O jogo NÃO remove duplicados
+  • «bebe X goles» / «distribui X» → contador automático (Modo Beber)
+  • Família: sem álcool, sem adulto
+  • Pretas CAH: sempre com ___
+  • Sabichão: se usares choices, answer tem de estar nas alíneas
+
+================================================================================
+BLOCO JSON DE REFERÊNCIA
+================================================================================
+
+  pack_amigos_exemplo       — pack mapa completo (1 carta/categoria)
+  pack_familia_exemplo      — família
+  pack_casal_exemplo        — casal
+  pack_cartas_exemplo       — brancas + pretas
+  pack_mememix_exemplo      — legendas MemeMix
+  pack_beber_exemplo        — estrutura baralhos (mínimo)
+  snippet_adicionar_carta_beber  — 1 carta por type (beber, agent, etc.)
+  baralhos_beber_exemplos        — picante, bluff, historia, maldição, extreme
+  modo_beber_na_app              — cores e layout por type na app
+  snippet_adicionar_carta_mapa   — 1 carta por categoria mapa
+  erros_comuns              — checklist
+
+================================================================================

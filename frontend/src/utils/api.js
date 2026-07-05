@@ -128,6 +128,8 @@ export const api = {
   listAdminPacks:     () => get('/admin/packs', { auth: true }),
   exportAdminPack:    (pack) => get(`/admin/packs/${encodeURIComponent(pack)}/export`, { auth: true }),
   updateCommunityMeta:(id, d) => post(`/admin/community/${id}/meta`, d),
+  getContentAudit:    (p = {}) => get(`/admin/content-audit?${new URLSearchParams(p)}`, { auth: true }),
+  previewSubmissionWarnings: (id) => get(`/admin/community/${id}/warnings`, { auth: true }),
 
   getDrinkPacks:      () => get('/drink/packs'),
   getDrinkDecks:      (pack = 'base') => get(`/drink/decks?pack=${encodeURIComponent(pack)}`),
@@ -169,7 +171,37 @@ export const api = {
   getCommunityStats:  () => get('/community/stats', { auth: true }),
   submitCommunity:    (d) => post('/community', d),
   voteCommunity:      (id) => post(`/community/${id}/vote`, {}),
+  unvoteCommunity:    (id) => post(`/community/${id}/unvote`, {}),
   approveCommunity:   (id) => post(`/community/${id}/approve`, {}),
   rejectCommunity:    (id) => post(`/community/${id}/reject`, {}),
   deleteCommunity:    (id) => del(`/community/${id}`),
+  getMisterPairs:     () => get('/mister/pairs'),
+
+  uploadMemeMixPhoto: (roomCode, token, imageBase64) =>
+    fetch(`${BASE}/mememix/rooms/${encodeURIComponent(roomCode)}/upload`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MemeMix-Token': token,
+      },
+      body: JSON.stringify({ imageBase64 }),
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(data.error || 'Upload falhou')
+      return data
+    }),
+
+  deleteMemeMixPhoto: (roomCode, token, memeId) =>
+    fetch(`${BASE}/mememix/rooms/${encodeURIComponent(roomCode)}/memes/${encodeURIComponent(memeId)}/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MemeMix-Token': token,
+      },
+      body: JSON.stringify({ token }),
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(data.error || 'Não foi possível remover')
+      return data
+    }),
 }

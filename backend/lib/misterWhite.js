@@ -1,5 +1,7 @@
 /** Lógica Mister White partilhada (servidor) */
 
+const Card = require('../models/Card')
+
 const WORD_PAIRS = [
   ['Futebol', 'Rugby'], ['Pizza', 'Focaccia'], ['Gato', 'Leopardo'], ['Praia', 'Piscina'],
   ['Café', 'Chá'], ['Carro', 'Mota'], ['Sol', 'Lâmpada'], ['Médico', 'Enfermeiro'],
@@ -29,7 +31,7 @@ const WORD_PACKS = {
   },
   marcas: {
     pairs: [
-      { civil: 'Coca-Cola', undercover: 'Pepsi', difficulty: 'facil' },
+      { civil: 'Civil', undercover: 'Pepsi', difficulty: 'facil' },
       { civil: "McDonald's", undercover: 'Burger King', difficulty: 'facil' },
       { civil: 'Instagram', undercover: 'TikTok', difficulty: 'normal' },
       { civil: 'Netflix', undercover: 'HBO', difficulty: 'normal' },
@@ -51,7 +53,15 @@ const WORD_PACKS = {
       { civil: 'Caderno', undercover: 'Manual', difficulty: 'dificil' },
     ],
   },
+  comunidade: { pairs: [] },
 }
+
+// Fix typo I accidentally introduced - Coca-Cola not Civil
+WORD_PACKS.marcas.pairs[0] = { civil: 'Coca-Cola', undercover: 'Pepsi', difficulty: 'facil' }
+
+let communityPairsCache = null
+let communityCacheAt = 0
+const COMMUNITY_CACHE_MS = 30_000
 
 function shuffle(arr) {
   const a = [...arr]
@@ -62,17 +72,51 @@ function shuffle(arr) {
   return a
 }
 
-function pickWordPair(wordPack, difficulty) {
-  const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
-  const candidates = packPairs.filter((p) => (difficulty === 'normal' ? true : p.difficulty === difficulty))
-  const pool = candidates.length ? candidates : packPairs
+async function loadCommunityPairs() {
+  const now = Date.now()
+  if (communityPairsCache && now - communityCacheAt < COMMUNITY_CACHE_MS) {
+    return communityPairsCache
+  }
+  const rows = await Card.find({ mode_type: 'mister', pack: 'community' }).lean()
+  communityPairsCache = rows
+    .filter((r) => r.civil_word && r.undercover_word)
+    .map((r) => ({ civil: r.civil_word, undercover: r.undercover_word, difficulty: 'normal' }))
+  communityCacheAt = now
+  WORD_PACKS.comunidade.pairs = communityPairsCache
+  return communityPairsCache
+}
+
+function invalidateCommunityPairsCache() {
+  communityPairsCache = null
+  communityCacheAt = 0
+}
+
+function pickWordPairFromPool(packPairs, communityPairs, wordPack, difficulty) {
+  let base = packPairs
+  if (wordPack === 'comunidade') {
+    base = communityPairs.length ? communityPairs : packPairs
+  } else if (communityPairs.length) {
+    base = [...packPairs, ...communityPairs]
+  }
+  const candidates = base.filter((p) => (difficulty === 'normal' ? true : p.difficulty === difficulty))
+  const pool = candidates.length ? candidates : base
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-function assignRoles(playerNames, settings) {
+function pickWordPair(wordPack, difficulty, communityPairs = []) {
+  const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
+  return pickWordPairFromPool(packPairs, communityPairs, wordPack, difficulty)
+}
+
+async function pickWordPairAsync(wordPack, difficulty) {
+  const communityPairs = await loadCommunityPairs()
+  return pickWordPair(wordPack, difficulty, communityPairs)
+}
+
+function assignRoles(playerNames, settings, communityPairs = []) {
   const valid = playerNames.filter((n) => String(n).trim())
   const { numMW = 1, numUndercover = 1, wordPack = 'geral', difficulty = 'normal' } = settings
-  const pair = pickWordPair(wordPack, difficulty)
+  const pair = pickWordPair(wordPack, difficulty, communityPairs)
   const indices = Array.from({ length: valid.length }, (_, i) => i)
   const shuffledIdxs = shuffle(indices)
   const roleMap = {}
@@ -92,6 +136,11 @@ function assignRoles(playerNames, settings) {
   return { roles, civilWord: pair.civil, undercoverWord: pair.undercover }
 }
 
+async function assignRolesAsync(playerNames, settings) {
+  const communityPairs = await loadCommunityPairs()
+  return assignRoles(playerNames, settings, communityPairs)
+}
+
 function checkEndCondition(roles, eliminatedIdxs) {
   const remaining = roles.filter((_, i) => !eliminatedIdxs.includes(i))
   const mwAlive = remaining.some((r) => r.role === 'mister_white')
@@ -103,4 +152,11 @@ function checkEndCondition(roles, eliminatedIdxs) {
   return null
 }
 
-module.exports = { assignRoles, checkEndCondition, WORD_PACKS }
+module.exports = {
+  assignRoles,
+  assignRolesAsync,
+  checkEndCondition,
+  WORD_PACKS,
+  loadCommunityPairs,
+  invalidateCommunityPairsCache,
+}

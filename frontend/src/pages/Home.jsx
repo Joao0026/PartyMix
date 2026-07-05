@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Users2 } from 'lucide-react'
+import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Users2, Moon, Laugh } from 'lucide-react'
 import { useLang } from '../contexts/LangContext'
 
-const MODE_ICONS = { couple: Heart, friends: Users, family: HomeIcon, drink: Beer, cards: Layers, mister: Eye }
+const MODE_ICONS = { couple: Heart, friends: Users, family: HomeIcon, drink: Beer, cards: Layers, mister: Eye, aldeia: Moon, mememix: Laugh }
 const MODE_COLORS = {
   couple:  { gradient: 'from-rose-500 to-pink-600',    glow: 'rgba(244,63,94,0.18)',  ring: '#f43f5e' },
   friends: { gradient: 'from-cyan-400 to-blue-500',    glow: 'rgba(34,211,238,0.15)', ring: '#22d3ee' },
@@ -11,9 +11,15 @@ const MODE_COLORS = {
   drink:   { gradient: 'from-amber-400 to-orange-500', glow: 'rgba(245,158,11,0.18)', ring: '#f59e0b' },
   cards:   { gradient: 'from-yellow-400 to-amber-500', glow: 'rgba(234,179,8,0.15)',  ring: '#eab308' },
   mister:  { gradient: 'from-slate-500 to-slate-700',  glow: 'rgba(148,163,184,0.15)',ring: '#94a3b8' },
+  aldeia:  { gradient: 'from-emerald-500 to-teal-700', glow: 'rgba(16,185,129,0.15)', ring: '#10b981' },
+  mememix: { gradient: 'from-pink-500 to-rose-600',    glow: 'rgba(236,72,153,0.15)', ring: '#ec4899' },
 }
-const MODE_PATHS = { couple:'/GameSetup?mode=couple', friends:'/GameSetup?mode=friends', family:'/GameSetup?mode=family', drink:'/DrinkGame', cards:'/CardsLobby', mister:'/MisterWhite' }
-const MODE_ORDER = ['couple','friends','family','drink','cards','mister']
+const MODE_PATHS = {
+  couple: '/GameSetup?mode=couple', friends: '/GameSetup?mode=friends', family: '/GameSetup?mode=family',
+  drink: '/DrinkGame', cards: '/CardsLobby', mister: '/MisterWhite',
+  aldeia: '/AldeiaMix', mememix: '/MemeMix',
+}
+const MODE_ORDER = ['couple','friends','family','drink','cards','mister','aldeia','mememix']
 
 export default function Home() {
   const navigate = useNavigate()

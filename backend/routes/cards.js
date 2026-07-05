@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const requireAdmin = require('../middleware/requireAdmin');
 const Card = require('../models/Card');
+const { buildPackFilter } = require('../lib/packQuery');
 const { asyncRoute, bool, cleanString, mongoId, oneOf } = require('../lib/validate');
 
 const CARD_CATEGORIES = ['geral','adulto','cultura','absurdo','regra','beber','desafio','poder','sorte'];
@@ -10,6 +11,7 @@ router.get('/', asyncRoute(async (req, res) => {
   const f = {};
   if (req.query.is_black !== undefined) f.is_black = bool(req.query.is_black);
   if (req.query.category) f.category = oneOf(req.query.category, CARD_CATEGORIES, { field: 'category' });
+  if (req.query.pack) f.pack = buildPackFilter(req.query.pack, req.query.include_community);
   res.json(await Card.find(f));
 }));
 

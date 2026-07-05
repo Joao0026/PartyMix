@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const requireAdmin = require('../middleware/requireAdmin');
 const Challenge = require('../models/Challenge');
+const { buildPackFilter } = require('../lib/packQuery');
 const { asyncRoute, bool, cleanString, intInRange, mongoId, oneOf } = require('../lib/validate');
 
 const CATEGORIES = ['telepatia','perguntas','desenho','mimica','proibido','caos','palavra','acao','verdade','consequencia','cultura','desporto','musica','cinema','erotico','romantico','picante','roleplay','dados','casal_pergunta','impostor'];
@@ -29,7 +30,7 @@ router.get('/', asyncRoute(async (req, res) => {
   if (cats) f.category = { $in: cats };
   if (mode_type) f.mode_type = { $in: [oneOf(mode_type, MODES, { field: 'mode_type' }), 'all'] };
   if (difficulty) f.difficulty = oneOf(difficulty, DIFFICULTIES, { field: 'difficulty' });
-  if (pack) f.pack = cleanString(pack, { field: 'pack', max: 60 });
+  if (pack) f.pack = buildPackFilter(pack, req.query.include_community);
   res.json(await Challenge.find(f));
 }));
 
@@ -39,7 +40,7 @@ router.get('/random', asyncRoute(async (req, res) => {
   const cats = categoryFilter(category);
   if (cats) f.category = { $in: cats };
   if (mode_type) f.mode_type = { $in: [oneOf(mode_type, MODES, { field: 'mode_type' }), 'all'] };
-  if (pack) f.pack = cleanString(pack, { field: 'pack', max: 60 });
+  if (pack) f.pack = buildPackFilter(pack, req.query.include_community);
   const count = await Challenge.countDocuments(f);
   if (!count) return res.status(404).json({ error: 'No challenges found' });
   res.json(await Challenge.findOne(f).skip(Math.floor(Math.random() * count)));

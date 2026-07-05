@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Melhora frases na secção 12 do TIPOS-DE-CARTAS-E-PROMPT-CLAUDE.txt"""
+"""Melhora frases na secção de reformulação do COMO-ESCREVER-CARTAS.txt"""
 import re
 from pathlib import Path
 
-TIPOS = Path(__file__).resolve().parents[1] / "data" / "TIPOS-DE-CARTAS-E-PROMPT-CLAUDE.txt"
+MODELOS = Path(__file__).resolve().parents[1] / "data" / "MODELOS-ESCREVER-CARTAS.json"
 
 WHITES = [
     "Uma desculpa que ninguém acreditou",

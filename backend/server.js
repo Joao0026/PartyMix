@@ -1,3 +1,4 @@
+// PartyMix API + WebSocket server
 const express  = require('express')
 const mongoose = require('mongoose')
 const cors     = require('cors')
@@ -30,6 +31,8 @@ app.use('/api/cardroom',   require('./routes/cardroom'))
 app.use('/api/positions',  require('./routes/positions'))
 app.use('/api/ai',         aiLimiter, require('./routes/ai'))
 app.use('/api/community',  communityWriteLimiter, require('./routes/community'))
+app.use('/api/mememix', require('./routes/mememix'))
+app.use('/api/mister', require('./routes/mister'))
 
 app.get('/api/health', (req, res) => res.json({
   status: 'ok',

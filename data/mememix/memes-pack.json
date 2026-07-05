@@ -1,0 +1,9 @@
+{
+  "name": "MemeMix — Memes base",
+  "pack": "base",
+  "mode": "mememix",
+  "description": "Memes oficiais do pack. Ficheiros em frontend/public/memes/. Na sala também se podem usar fotos enviadas pelos jogadores (não vão para este JSON).",
+  "memes": [
+    { "image": "/memes/extreme-teste.png", "caption": "Extreme Teste" }
+  ]
+}

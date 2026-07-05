@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Trophy, RotateCcw } from 'lucide-react'
 import { loadGame, CATEGORY_CONFIG } from '../utils/game'
 import { api } from '../utils/api'
+import { challengePackParams } from '../utils/packParams'
 
 // Fallback challenges per category if API fails
 const FALLBACK = {
@@ -66,7 +67,11 @@ export default function ChallengesOnly() {
     setLoading(true); setResult(null); setChallenge(null)
     const cat = cats[Math.floor(Math.random() * cats.length)]
     try {
-      const c = await api.getRandomChallenge({ category: cat, mode_type: game?.mode || 'friends', ...(game?.contentPack ? { pack: game.contentPack } : {}) })
+      const c = await api.getRandomChallenge({
+        category: cat,
+        mode_type: game?.mode || 'friends',
+        ...challengePackParams(game?.contentPack, game?.includeCommunity !== false),
+      })
       if (c && !c.error) { setChallenge(c); setLoading(false); return }
     } catch {}
     // Fallback
@@ -215,7 +220,7 @@ export default function ChallengesOnly() {
                     </p>
                     {result==='fail' && !isFamily && (
                       <p className="text-amber-400 text-sm mt-1">
-                        {penaltyType==='sips' ? `🍺 ${player?.name} bebe ${challenge.sips_penalty||2} golos!`
+                        {penaltyType==='sips' ? `🍺 ${player?.name} bebe ${challenge.sips_penalty||2} goles!`
                           : penaltyType==='penalty' ? `⚽ ${player?.name} marca penálti!`
                           : '🎲 Penalização a sortear...'}
                       </p>
@@ -261,7 +266,7 @@ export default function ChallengesOnly() {
               <div className="text-5xl mb-2">{penaltyAnim.type==='penalty'?'⚽':'🍺'}</div>
               <div className="text-black font-black text-2xl">{penaltyAnim.name}</div>
               <div className="text-black/80 font-bold text-lg">
-                {penaltyAnim.type==='penalty' ? 'marca um penálti!' : `bebe ${penaltyAnim.sips} golo${penaltyAnim.sips>1?'s':''}!`}
+                {penaltyAnim.type==='penalty' ? 'marca um penálti!' : `bebe ${penaltyAnim.sips} gole${penaltyAnim.sips>1?'s':''}!`}
               </div>
             </div>
           </motion.div>

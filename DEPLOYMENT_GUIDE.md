@@ -118,14 +118,11 @@ See [MONGODB_ATLAS_SETUP.md](./MONGODB_ATLAS_SETUP.md) for detailed instructions
 
 1. **Update API Configuration**
 
-   Edit `frontend/src/utils/api.js`:
-   ```javascript
-   const BASE = process.env.VITE_API_BASE || '/api'
-   ```
+   `frontend/src/utils/api.js` lê `VITE_API_BASE_URL` (com ou sem sufixo `/api`).
 
-   Create `frontend/.env.production`:
+   Cria `frontend/.env.production` ou define no Netlify:
    ```
-   VITE_API_BASE=https://partymix-backend-xxx.onrender.com/api
+   VITE_API_BASE_URL=https://partymix-backend-xxx.onrender.com/api
    ```
 
 2. **Deploy to Netlify**
@@ -157,7 +154,7 @@ See [MONGODB_ATLAS_SETUP.md](./MONGODB_ATLAS_SETUP.md) for detailed instructions
 2. **Configure Environment Variables**
    - Go to Vercel Dashboard
    - Project Settings → Environment Variables
-   - Add: `VITE_API_BASE=your-backend-url`
+   - Add: `VITE_API_BASE_URL=https://your-backend-url/api`
 
 3. **Redeploy**: `vercel --prod`
 
@@ -311,7 +308,7 @@ NODE_ENV=development|production
 
 ### Frontend (`.env.production`)
 ```bash
-VITE_API_BASE=https://your-api-domain.com/api
+VITE_API_BASE_URL=https://your-api-domain.com/api
 VITE_APP_NAME=PartyMix
 ```
 

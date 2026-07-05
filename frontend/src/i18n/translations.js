@@ -10,6 +10,8 @@ export const translations = {
       drink:   { label: 'Modo Beber',   desc: 'Baralho de regras + roleta' },
       cards:   { label: 'Modo Cartas',  desc: 'Estilo Cartas Contra Tugas' },
       mister:  { label: 'Mister White', desc: 'Dedução social — quem é o infiltrado?' },
+      aldeia:  { label: 'AldeiaMix', desc: 'Lobos à solta — noite, dia e votação online' },
+      mememix: { label: 'MemeMix', desc: 'Memes vossos + legendas — juiz escolhe o vencedor' },
     },
     community: 'Cartas da Comunidade',
     // GameSetup

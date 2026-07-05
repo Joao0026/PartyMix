@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Wifi, WifiOff } from 'lucide-react'
-import { getSocketStatus, subscribeSocketStatus } from '../utils/socketStore'
+import { clearGlobalSocket, getSocketStatus, subscribeSocketStatus } from '../utils/socketStore'
+
+const ONLINE_SOCKET_ROUTES = new Set([
+  '/CardsLobby', '/CardsGame',
+  '/MisterWhiteLobby', '/MisterWhiteOnline',
+  '/AldeiaMixLobby', '/AldeiaMixOnline',
+  '/MemeMixLobby', '/MemeMixOnline',
+])
 
 export default function ConnectionStatus() {
+  const { pathname } = useLocation()
+  const onOnlineRoute = ONLINE_SOCKET_ROUTES.has(pathname)
   const [online, setOnline] = useState(() => navigator.onLine)
   const [socketStatus, setSocketStatus] = useState(() => getSocketStatus())
 
@@ -20,6 +30,10 @@ export default function ConnectionStatus() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!onOnlineRoute) clearGlobalSocket()
+  }, [onOnlineRoute])
+
   if (!online) {
     return (
       <StatusBanner tone="red" icon={<WifiOff className="w-4 h-4" />}>
@@ -27,6 +41,8 @@ export default function ConnectionStatus() {
       </StatusBanner>
     )
   }
+
+  if (!onOnlineRoute) return null
 
   if (socketStatus === 'reconnecting') {
     return (

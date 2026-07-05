@@ -1,0 +1,7 @@
+{
+  "name": "MemeMix — Memes comunidade",
+  "pack": "community",
+  "mode": "mememix",
+  "description": "Memes aprovados pela comunidade. Imagens em public/memes/ ou URL.",
+  "memes": []
+}

@@ -6,7 +6,11 @@
 //   server.listen(PORT, ...)  // replace app.listen with server.listen
 
 const { Server } = require('socket.io')
-const { assignRoles: mwAssignRoles, checkEndCondition: mwCheckEnd } = require('./lib/misterWhite')
+const { assignRolesAsync: mwAssignRoles, checkEndCondition: mwCheckEnd, invalidateCommunityPairsCache } = require('./lib/misterWhite')
+const { registerAldeiaMixHandlers, handleAldeiaDisconnect } = require('./lib/aldeiaMixSocket')
+const { registerMemeMixHandlers, handleMemeMixDisconnect } = require('./lib/mememixSocket')
+const { cleanupOrphanUploads } = require('./lib/mememixSessions')
+const { mmRooms } = require('./lib/mememixSocket')
 
 // In-memory game rooms (resets on server restart — acceptable for party game)
 const rooms = {}
@@ -256,7 +260,7 @@ function initWebSocket(httpServer, options = {}) {
     })
 
     // ── MISTER WHITE — START ──────────────────────────────────
-    socket.on('mw_start_game', ({ code }) => {
+    socket.on('mw_start_game', async ({ code }) => {
       const room = mwRooms[code]
       if (!room) return
       if (room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
@@ -266,31 +270,35 @@ function initWebSocket(httpServer, options = {}) {
         socket.emit('error', 'Demasiados especiais para este número de jogadores'); return
       }
 
-      const names = room.players.map((p) => p.name)
-      const { roles, civilWord, undercoverWord } = mwAssignRoles(names, room.settings)
-      room.roles = roles
-      room.civilWord = civilWord
-      room.undercoverWord = undercoverWord
-      room.status = 'reveal'
-      room.revealReady = []
-      room.eliminated = []
-      room.roundNum = 1
-      room.timeLeft = room.settings.discussionSeconds
-      room.gameResult = null
-      room.mwGuessIdx = null
+      try {
+        const names = room.players.map((p) => p.name)
+        const { roles, civilWord, undercoverWord } = await mwAssignRoles(names, room.settings)
+        room.roles = roles
+        room.civilWord = civilWord
+        room.undercoverWord = undercoverWord
+        room.status = 'reveal'
+        room.revealReady = []
+        room.eliminated = []
+        room.roundNum = 1
+        room.timeLeft = room.settings.discussionSeconds
+        room.gameResult = null
+        room.mwGuessIdx = null
 
-      room.players.forEach((p, i) => {
-        const role = roles[i]
-        io.to(p.id).emit('mw_your_role', {
-          role: role.role,
-          word: role.word,
-          colorIdx: role.colorIdx,
-          name: role.name,
+        room.players.forEach((p, i) => {
+          const role = roles[i]
+          io.to(p.id).emit('mw_your_role', {
+            role: role.role,
+            word: role.word,
+            colorIdx: role.colorIdx,
+            name: role.name,
+          })
         })
-      })
-      setImmediate(() => {
-        io.to(code).emit('mw_game_started', sanitizeMw(room))
-      })
+        setImmediate(() => {
+          io.to(code).emit('mw_game_started', sanitizeMw(room))
+        })
+      } catch (err) {
+        socket.emit('error', err.message || 'Erro ao iniciar jogo')
+      }
     })
 
     // ── MISTER WHITE — REVEAL READY ───────────────────────────
@@ -412,6 +420,9 @@ function initWebSocket(httpServer, options = {}) {
       io.to(code).emit('mw_room_updated', sanitizeMw(room))
     })
 
+    registerAldeiaMixHandlers(io, socket)
+    registerMemeMixHandlers(io, socket)
+
     // ── DISCONNECT ────────────────────────────────────────────
     socket.on('disconnect', () => {
       Object.values(rooms).forEach((room) => {
@@ -440,9 +451,12 @@ function initWebSocket(httpServer, options = {}) {
           io.to(room.code).emit('mw_room_updated', sanitizeMw(room))
         }
       })
+      handleAldeiaDisconnect(io, socket)
+      handleMemeMixDisconnect(io, socket)
     })
   })
 
+  cleanupOrphanUploads(Object.keys(mmRooms))
   console.log('✅ WebSocket (Socket.io) ready')
   return io
 }

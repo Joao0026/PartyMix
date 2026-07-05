@@ -59,6 +59,10 @@ export const WORD_PACKS = {
       { civil: 'Caderno', undercover: 'Manual', difficulty: 'dificil' },
     ],
   },
+  comunidade: {
+    label: '🌍 Comunidade',
+    pairs: [],
+  },
 }
 
 export const MW_COLORS = [
@@ -68,16 +72,35 @@ export const MW_COLORS = [
   'from-teal-400 to-cyan-500', 'from-orange-400 to-amber-500', 'from-indigo-400 to-violet-500',
 ]
 
-export function pickWordPair(wordPack, difficulty) {
-  const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
+/** Junta pares aprovados pela comunidade ao pack indicado (e ao pack comunidade). */
+export function mergeCommunityPairs(packs, communityPairs) {
+  if (!Array.isArray(communityPairs) || communityPairs.length === 0) return packs
+  const merged = { ...packs, comunidade: { ...packs.comunidade, pairs: communityPairs } }
+  for (const key of Object.keys(merged)) {
+    if (key === 'comunidade') continue
+    const base = merged[key]?.pairs || []
+    merged[key] = { ...merged[key], pairs: [...base, ...communityPairs] }
+  }
+  return merged
+}
+
+function pickWordPairFromPacks(packs, wordPack, difficulty) {
+  let packPairs = packs[wordPack]?.pairs || packs.geral.pairs
+  if (wordPack === 'comunidade') {
+    packPairs = packs.comunidade?.pairs?.length ? packs.comunidade.pairs : packs.geral.pairs
+  }
   const candidates = packPairs.filter((p) => (difficulty === 'normal' ? true : p.difficulty === difficulty))
   const pool = candidates.length ? candidates : packPairs
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-export function assignRoles(playerNames, { numMW, numUndercover, wordPack, difficulty }) {
+export function pickWordPair(wordPack, difficulty, packs = WORD_PACKS) {
+  return pickWordPairFromPacks(packs, wordPack, difficulty)
+}
+
+export function assignRoles(playerNames, { numMW, numUndercover, wordPack, difficulty }, packs = WORD_PACKS) {
   const valid = playerNames.filter((n) => n.trim())
-  const pair = pickWordPair(wordPack, difficulty)
+  const pair = pickWordPair(wordPack, difficulty, packs)
   const indices = Array.from({ length: valid.length }, (_, i) => i)
   const shuffledIdxs = shuffle([...indices])
   const roleMap = {}

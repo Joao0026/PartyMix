@@ -274,7 +274,7 @@ NODE_ENV=development
 ### Frontend `.env.production` (for deployment)
 ```bash
 # API base URL (points to deployed backend)
-VITE_API_BASE=https://your-api-domain.com/api
+VITE_API_BASE_URL=https://your-api-domain.com/api
 ```
 
 ---

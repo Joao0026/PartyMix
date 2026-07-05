@@ -1,0 +1,29 @@
+# Render Blueprint — backend Node.js
+# Dashboard → New → Blueprint → liga este repo.
+# Depois do 1.º deploy: npm run seed:packs (local com MONGODB_URI de produção).
+
+services:
+  - type: web
+    name: partymix-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.1-8b-instant
+      - key: GROQ_EMBED_MODEL
+        value: nomic-embed-text-v1.5

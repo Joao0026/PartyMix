@@ -3,13 +3,19 @@ const mongoose = require('mongoose')
 const s = new mongoose.Schema({
   submissionType: { type: String, enum: ['card', 'idea'], required: true },
   // Card fields
-  mode:     { type: String, enum: ['friends','family','couple','drink','cards'] },
+  mode:     { type: String, enum: ['friends','family','couple','drink','cards','mister','mememix'] },
   cardType: { type: String },
   isBlack:  { type: Boolean, default: false },
   text:     { type: String, required: true, maxlength: 300 },
   answer:   { type: String, maxlength: 200 },
   choices:  [{ type: String, maxlength: 120 }],
   forbiddenWords: [{ type: String, maxlength: 40 }],
+  secretMission: { type: String, maxlength: 300 },
+  correctQuestion: { type: String, maxlength: 200 },
+  wrongQuestion: { type: String, maxlength: 200 },
+  civilWord: { type: String, maxlength: 80 },
+  undercoverWord: { type: String, maxlength: 80 },
+  drinkSpecialType: { type: String, enum: ['agent','impostor','alliance','miniboss',''], default: '' },
   // Idea fields
   ideaType: { type: String, enum: ['mode','minigame','feature','other'] },
   // Common

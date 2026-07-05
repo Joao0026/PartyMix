@@ -1,73 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus, ChevronLeft, Eye, EyeOff, Users } from 'lucide-react'
 import { shuffle } from '../utils/game'
+import { api } from '../utils/api'
+import {
+  WORD_PACKS,
+  MW_COLORS,
+  mergeCommunityPairs,
+  pickWordPair,
+} from '../utils/misterWhiteShared'
 
-const WORD_PAIRS = [
-  ['Futebol','Rugby'],['Pizza','Focaccia'],['Gato','Leopardo'],['Praia','Piscina'],
-  ['Café','Chá'],['Carro','Mota'],['Sol','Lua'],['Médico','Enfermeiro'],
-  ['Leão','Tigre'],['Cinema','Teatro'],['Guitarra','Violino'],['Crocodilo','Lagarto'],
-  ['Avião','Helicóptero'],['Coca-Cola','Pepsi'],["McDonald's","Burger King"],
-  ['Instagram','TikTok'],['Neve','Granizo'],['Pistola','Espingarda'],
-  ['Praia','Lago'],['Chocolate','Caramelo'],['Castelo','Palácio'],['Tubarão','Baleia'],
-  ['Computador','Tablet'],['Vinho','Cerveja'],['Montanha','Colina'],['Janela','Porta'],
-]
-const WORD_PACKS = {
-  geral: {
-    label: '🌍 Geral',
-    pairs: WORD_PAIRS.map(([civil, undercover]) => ({ civil, undercover, difficulty: 'normal' })),
-  },
-  comida: {
-    label: '🍕 Comida',
-    pairs: [
-      { civil:'Pizza', undercover:'Focaccia', difficulty:'facil' },
-      { civil:'Café', undercover:'Chá', difficulty:'facil' },
-      { civil:'Chocolate', undercover:'Caramelo', difficulty:'normal' },
-      { civil:'Bacalhau', undercover:'Polvo', difficulty:'dificil' },
-    ],
-  },
-  portugal: {
-    label: '🇵🇹 Portugal',
-    pairs: [
-      { civil:'Benfica', undercover:'Sporting', difficulty:'facil' },
-      { civil:'Lisboa', undercover:'Porto', difficulty:'facil' },
-      { civil:'Pastel de nata', undercover:'Queijada', difficulty:'normal' },
-      { civil:'Fado', undercover:'Cante alentejano', difficulty:'dificil' },
-    ],
-  },
-  marcas: {
-    label: '🏷️ Marcas',
-    pairs: [
-      { civil:'Coca-Cola', undercover:'Pepsi', difficulty:'facil' },
-      { civil:"McDonald's", undercover:'Burger King', difficulty:'facil' },
-      { civil:'Instagram', undercover:'TikTok', difficulty:'normal' },
-      { civil:'Netflix', undercover:'HBO', difficulty:'normal' },
-    ],
-  },
-  filmes: {
-    label: '🎬 Filmes',
-    pairs: [
-      { civil:'Cinema', undercover:'Teatro', difficulty:'facil' },
-      { civil:'Harry Potter', undercover:'Senhor dos Anéis', difficulty:'normal' },
-      { civil:'Batman', undercover:'Superman', difficulty:'normal' },
-      { civil:'Terror', undercover:'Suspense', difficulty:'dificil' },
-    ],
-  },
-  escola: {
-    label: '🎒 Escola',
-    pairs: [
-      { civil:'Professor', undercover:'Aluno', difficulty:'facil' },
-      { civil:'Teste', undercover:'Exame', difficulty:'normal' },
-      { civil:'Recreio', undercover:'Intervalo', difficulty:'normal' },
-      { civil:'Caderno', undercover:'Manual', difficulty:'dificil' },
-    ],
-  },
-}
-const COLORS = ['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-lime-400 to-green-500','from-sky-400 to-indigo-500','from-red-400 to-rose-600','from-teal-400 to-cyan-500','from-orange-400 to-amber-500','from-indigo-400 to-violet-500']
+const COLORS = MW_COLORS
 
 export default function MisterWhiteGame() {
   const navigate = useNavigate()
+  const [communityPairs, setCommunityPairs] = useState([])
+  const wordPacks = useMemo(() => mergeCommunityPairs(WORD_PACKS, communityPairs), [communityPairs])
+
+  useEffect(() => {
+    api.getMisterPairs().then((d) => {
+      if (Array.isArray(d?.pairs)) setCommunityPairs(d.pairs)
+    }).catch(() => {})
+  }, [])
   const [step, setStep] = useState('setup')
   const [playerNames, setPlayerNames] = useState(['','','',''])
   const [numUndercover, setNumUndercover] = useState(1)
@@ -96,9 +51,7 @@ export default function MisterWhiteGame() {
   const maxSpec = Math.max(0, valid.length - 2)
 
   const startGame = () => {
-    const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
-    const candidates = packPairs.filter(p => difficulty === 'normal' ? true : p.difficulty === difficulty)
-    const pair = (candidates.length ? candidates : packPairs)[Math.floor(Math.random() * (candidates.length ? candidates : packPairs).length)]
+    const pair = pickWordPair(wordPack, difficulty, wordPacks)
     setCivilWord(pair.civil); setUndercoverWord(pair.undercover)
     // Assign roles randomly but KEEP original player order for reveals/turns
     const indices = Array.from({ length: valid.length }, (_, i) => i)
@@ -252,7 +205,7 @@ export default function MisterWhiteGame() {
                 <h3 className="text-white font-semibold">Tema e dificuldade</h3>
                 <select value={wordPack} onChange={e=>setWordPack(e.target.value)}
                   className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
-                  {Object.entries(WORD_PACKS).map(([id, pack]) => <option key={id} value={id}>{pack.label}</option>)}
+                  {Object.entries(wordPacks).map(([id, pack]) => <option key={id} value={id}>{pack.label}</option>)}
                 </select>
                 <div className="grid grid-cols-3 gap-2">
                   {[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([id,label])=>(

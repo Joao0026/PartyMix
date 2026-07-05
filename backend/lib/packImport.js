@@ -1,6 +1,8 @@
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
 const DrinkPack = require('../models/DrinkPack')
+const { collectFromPackObject, collectAllItems } = require('./contentCollect')
+const { findWarningsForCandidate } = require('./contentSimilarity')
 
 const CHALLENGE_MODES = new Set(['family', 'friends', 'couple', 'drink'])
 const CARD_MODES = new Set(['cards'])
@@ -43,6 +45,52 @@ function cleanAudience(value) {
 
 function normalizeChallengeMode(mode) {
   return mode === 'drink' ? 'friends' : mode
+}
+
+function mememixMemeLabel(entry) {
+  const caption = clean(entry.caption || entry.text, 300)
+  if (caption) return caption
+  const image = clean(entry.image || entry.src, 500)
+  const file = image.split('/').pop()
+  return file || 'meme'
+}
+
+function normalizeMememixLegenda(entry, packName) {
+  if (typeof entry === 'string') {
+    return {
+      text: clean(entry),
+      category: 'legenda',
+      is_black: false,
+      mode_type: 'mememix',
+      pack: packName,
+      image: '',
+    }
+  }
+
+  return {
+    text: clean(entry.text),
+    category: 'legenda',
+    is_black: false,
+    mode_type: 'mememix',
+    pack: clean(entry.pack || packName, 60),
+    image: '',
+    audience: cleanAudience(entry.audience),
+  }
+}
+
+function normalizeMememixMeme(entry, packName) {
+  if (!entry || typeof entry !== 'object') return null
+  const image = clean(entry.image || entry.src, 500)
+  if (!image) return null
+  return {
+    text: mememixMemeLabel(entry),
+    category: 'meme',
+    is_black: false,
+    mode_type: 'mememix',
+    pack: clean(entry.pack || packName, 60),
+    image,
+    audience: cleanAudience(entry.audience),
+  }
 }
 
 function normalizeCardEntry(entry, isBlack, packName) {
@@ -137,6 +185,42 @@ async function insertUnique(Model, doc, counters) {
   counters.inserted += 1
 }
 
+async function insertUniqueMememixLegenda(Model, doc, counters) {
+  if (!doc.text) {
+    counters.invalid += 1
+    return
+  }
+
+  const exists = await Model.findOne({
+    mode_type: 'mememix',
+    category: 'legenda',
+    text: doc.text,
+  })
+  if (exists) {
+    counters.skipped += 1
+    return
+  }
+
+  await new Model(doc).save()
+  counters.inserted += 1
+}
+
+async function insertUniqueMememixMeme(Model, doc, counters) {
+  if (!doc.image) {
+    counters.invalid += 1
+    return
+  }
+
+  const exists = await Model.findOne({ mode_type: 'mememix', category: 'meme', image: doc.image })
+  if (exists) {
+    counters.skipped += 1
+    return
+  }
+
+  await new Model(doc).save()
+  counters.inserted += 1
+}
+
 function collectCards(pack) {
   const out = []
   const packName = clean(pack.pack || pack.name || pack.id || 'base', 60)
@@ -146,6 +230,18 @@ function collectCards(pack) {
   for (const entry of asArray(cards.white)) out.push(normalizeCardEntry(entry, false, packName))
   for (const entry of asArray(cards.black)) out.push(normalizeCardEntry(entry, true, packName))
   return out
+}
+
+function collectMememixLegendas(pack) {
+  if (pack.mode !== 'mememix') return []
+  const packName = clean(pack.pack || pack.name || pack.id || 'base', 60)
+  return asArray(pack.legendas).map((entry) => normalizeMememixLegenda(entry, packName))
+}
+
+function collectMememixMemes(pack) {
+  if (pack.mode !== 'mememix') return []
+  const packName = clean(pack.pack || pack.name || pack.id || 'base', 60)
+  return asArray(pack.memes).map((entry) => normalizeMememixMeme(entry, packName)).filter(Boolean)
 }
 
 function collectChallenges(pack) {
@@ -188,10 +284,15 @@ function collectDrinkDecks(pack) {
 
 async function upsertDrinkPack(doc) {
   const existing = await DrinkPack.findOne({ pack: doc.pack })
+  const deckKeys = Object.keys(doc.decks || {})
+  const isCommunitySlice = deckKeys.length === 1 && deckKeys[0] === 'comunidade'
+
   if (existing) {
-    existing.name = doc.name
-    existing.description = doc.description
-    existing.decks = doc.decks
+    if (!isCommunitySlice) {
+      existing.name = doc.name
+      existing.description = doc.description
+    }
+    existing.decks = { ...(existing.decks || {}), ...(doc.decks || {}) }
     await existing.save()
     return { updated: true }
   }
@@ -199,8 +300,29 @@ async function upsertDrinkPack(doc) {
   return { inserted: true }
 }
 
+async function importPackWarnings(pack) {
+  const packName = clean(pack.pack || pack.name || pack.id || 'base', 60)
+  const incoming = collectFromPackObject(pack, `import:${packName}`, 'import')
+  const { items: corpus } = await collectAllItems({ includeFiles: true, includeDb: true })
+  const filtered = corpus.filter((item) => item.pack !== packName)
+
+  const all = []
+  const seen = new Set()
+  for (const item of incoming) {
+    for (const w of findWarningsForCandidate(item, filtered, { semantic: false })) {
+      const key = `${w.type}|${w.similarTo?.location}|${w.preview}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      all.push(w)
+    }
+  }
+  return all.slice(0, 40)
+}
+
 async function importPackObject(pack) {
   const cards = collectCards(pack)
+  const mememixLegendas = collectMememixLegendas(pack)
+  const mememixMemes = collectMememixMemes(pack)
   const challenges = collectChallenges(pack)
   const drinkDoc = collectDrinkDecks(pack)
   const cardCounters = { inserted: 0, skipped: 0, invalid: 0 }
@@ -208,14 +330,19 @@ async function importPackObject(pack) {
   let drinkPack = null
 
   for (const card of cards) await insertUnique(Card, card, cardCounters)
+  for (const legenda of mememixLegendas) await insertUniqueMememixLegenda(Card, legenda, cardCounters)
+  for (const meme of mememixMemes) await insertUniqueMememixMeme(Card, meme, cardCounters)
   for (const challenge of challenges) await insertUnique(Challenge, challenge, challengeCounters)
   if (drinkDoc) drinkPack = await upsertDrinkPack(drinkDoc)
+
+  const warnings = await importPackWarnings(pack).catch(() => [])
 
   return {
     pack: clean(pack.name || pack.pack || pack.id || 'Pack', 80),
     cards: cardCounters,
     challenges: challengeCounters,
     drinkPack,
+    warnings,
   }
 }
 

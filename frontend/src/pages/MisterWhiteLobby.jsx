@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ChevronLeft, Wifi, Copy, Check } from 'lucide-react'
 import { io } from 'socket.io-client'
-import { getSocketUrl } from '../utils/api'
+import { getSocketUrl, api } from '../utils/api'
 import { setGlobalSocket, setMwLobbyHandoff, patchMwLobbyHandoff } from '../utils/socketStore'
-import { WORD_PACKS } from '../utils/misterWhiteShared'
+import { WORD_PACKS, mergeCommunityPairs } from '../utils/misterWhiteShared'
 
 const API_URL = getSocketUrl()
 
@@ -27,6 +27,14 @@ export default function MisterWhiteLobby() {
   const [wordPack, setWordPack] = useState('geral')
   const [difficulty, setDifficulty] = useState('normal')
   const [discussionSeconds, setDiscussionSeconds] = useState(90)
+  const [communityPairs, setCommunityPairs] = useState([])
+  const wordPacks = useMemo(() => mergeCommunityPairs(WORD_PACKS, communityPairs), [communityPairs])
+
+  useEffect(() => {
+    api.getMisterPairs().then((d) => {
+      if (Array.isArray(d?.pairs)) setCommunityPairs(d.pairs)
+    }).catch(() => {})
+  }, [])
 
   const goToGame = (incomingRoom, playerName, isHost, role) => {
     if (hasNavigatedRef.current) return
@@ -158,7 +166,7 @@ export default function MisterWhiteLobby() {
               <h3 className="text-white font-semibold text-sm">Definições</h3>
               <select value={wordPack} onChange={(e) => setWordPack(e.target.value)}
                 className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
-                {Object.entries(WORD_PACKS).map(([id, pack]) => (
+                {Object.entries(wordPacks).map(([id, pack]) => (
                   <option key={id} value={id}>{pack.label}</option>
                 ))}
               </select>
@@ -239,7 +247,7 @@ export default function MisterWhiteLobby() {
           <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
             <select value={wordPack} onChange={(e) => setWordPack(e.target.value)}
               className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
-              {Object.entries(WORD_PACKS).map(([id, pack]) => (
+              {Object.entries(wordPacks).map(([id, pack]) => (
                 <option key={id} value={id}>{pack.label}</option>
               ))}
             </select>

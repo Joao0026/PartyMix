@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ThumbsUp, Send, Sparkles, Clock, CheckCircle, Lightbulb } from 'lucide-react'
 import { api } from '../utils/api'
+import { DRINK_BARALHOS, DRINK_ESPECIAL_TYPES, DRINK_BARALHO_PLACEHOLDERS, drinkBaralhoLabel } from '../utils/drinkBaralhos'
 
 const MODES = [
   {
@@ -12,6 +13,7 @@ const MODES = [
       {id:'telepatia',label:'🧠 Sincronia'},{id:'perguntas',label:'📚 Sabichão'},
       {id:'desenho',label:'🎨 Rabiscos'},{id:'mimica',label:'🎭 Gestos'},
       {id:'proibido',label:'🚫 Palavra Tabu'},{id:'caos',label:'💥 Caos'},
+      {id:'impostor',label:'🎭 Impostor'},
     ],
   },
   {
@@ -35,16 +37,22 @@ const MODES = [
   {
     id:'drink', label:'🍺 Modo Beber', color:'bg-amber-500/15 border-amber-500/40 text-amber-300',
     showBlackWhite:false, showAnswer:false,
-    cardTypes:[
-      {id:'beber',label:'🍺 Golos'},{id:'regra',label:'📜 Regra da Mesa'},
-      {id:'desafio',label:'⚡ Missão'},{id:'duelo',label:'⚔️ Duelo'},
-      {id:'poder',label:'👑 Poder'},{id:'sorte',label:'🍀 Sorte/Azar'},
-    ],
+    cardTypes: DRINK_BARALHOS.map(({ id, label }) => ({ id, label })),
   },
   {
     id:'cards', label:'🃏 Modo Cartas', color:'bg-yellow-500/15 border-yellow-500/40 text-yellow-300',
-    showBlackWhite:true, showAnswer:false, // Only Cards mode shows black/white, no category needed
-    cardTypes:[], // No category for cards mode — just black or white
+    showBlackWhite:true, showAnswer:false,
+    cardTypes:[],
+  },
+  {
+    id:'mister', label:'👁️ Mister White', color:'bg-slate-500/15 border-slate-400/40 text-slate-300',
+    showBlackWhite:false, showAnswer:false,
+    cardTypes:[],
+  },
+  {
+    id:'mememix', label:'😂 MemeMix', color:'bg-pink-500/15 border-pink-500/40 text-pink-300',
+    showBlackWhite:false, showAnswer:false,
+    cardTypes:[{id:'legenda', label:'💬 Legenda'}],
   },
 ]
 
@@ -58,8 +66,14 @@ const IDEA_TYPES = [
 const TYPE_ICONS = {
   telepatia:'🧠', perguntas:'📚', desenho:'🎨', mimica:'🎭', proibido:'🚫', caos:'💥',
   romantico:'🌹', picante:'🔥', verdade:'❓', acao:'⚡', roleplay:'🎭', quiz:'💬',
-  beber:'🍺', regra:'📜', desafio:'⚡', duelo:'⚔️', poder:'👑', sorte:'🍀', geral:'🃏',
+  beber:'🍺', eununca:'🙅', regra:'📜', desafio:'⚡', cadeia:'🔗', historia:'🎬',
+  provavel:'👉', bluff:'🎭', maldicao:'🔮', duelo:'⚔️', poder:'👑', sorte:'🍀', azar:'💀',
+  preferencia:'🤔', agent:'🕵️', alliance:'🤝', miniboss:'👹', impostor:'🎭', extreme:'💣', geral:'🃏',
+  legenda:'💬', par:'👁️',
+  waterfall:'🌊', regras:'📜', desafios:'⚡', preferias:'🤔', especiais:'🛡️',
 }
+
+const MEMEMIX_LEGENDA_PLACEHOLDER = 'Ex: Quando disseste «só mais um copo» e acabaste às 6 da manhã'
 
 // Card type that has answers (question types per mode)
 const ANSWER_TYPES = ['perguntas','quiz','casal_pergunta']
@@ -86,6 +100,12 @@ export default function CommunityCards() {
   const [cAnswer,   setCAnswer]   = useState('')
   const [cChoices,  setCChoices]  = useState(['','','',''])
   const [cForbiddenWords, setCForbiddenWords] = useState(['','','','',''])
+  const [cSecretMission, setCSecretMission] = useState('')
+  const [cCorrectQuestion, setCCorrectQuestion] = useState('')
+  const [cWrongQuestion, setCWrongQuestion] = useState('')
+  const [cCivilWord, setCCivilWord] = useState('')
+  const [cUndercoverWord, setCUndercoverWord] = useState('')
+  const [cSpecialType, setCSpecialType] = useState('')
   const [cAuthor,   setCAuthor]   = useState('')
 
   // Idea form state
@@ -95,45 +115,133 @@ export default function CommunityCards() {
 
   const selectedModeObj = MODES.find(m => m.id === cMode)
   const isCardsMode     = cMode === 'cards'
+  const isMisterMode    = cMode === 'mister'
+  const isMememixMode   = cMode === 'mememix'
+  const needsCardType   = cMode && !isCardsMode && !isMisterMode && selectedModeObj?.cardTypes.length > 0
   // Show answer field when type is a question type
   const showAnswerField = selectedModeObj?.showAnswer && ANSWER_TYPES.includes(cType)
   const showForbiddenField = cType === 'proibido'
+  const isDrinkMode = cMode === 'drink'
+  const showDrinkPreferencia = isDrinkMode && cType === 'preferias'
+  const showEspecialPicker = isDrinkMode && cType === 'especiais'
+  const showDrinkAgent = showEspecialPicker && cSpecialType === 'agent'
+  const showFriendsImpostor = cMode === 'friends' && cType === 'impostor'
+  const showDrinkImpostor = showEspecialPicker && cSpecialType === 'impostor'
+  const showImpostor = showFriendsImpostor || showDrinkImpostor
+  const showDrinkText = isDrinkMode && cType && !showDrinkAgent && !showDrinkImpostor && !showDrinkPreferencia && !(showEspecialPicker && !cSpecialType)
+  const showMapText = !isCardsMode && !isDrinkMode && !isMisterMode && !isMememixMode && cType && !showImpostor
+  const showMisterPair = isMisterMode
+  const showMememixLegenda = isMememixMode
+  const preferChoicesOk = cChoices.filter((c) => c.trim()).length >= 2
 
-  const load = () => {
-    setLoading(true)
-    const p = {limit:200}
-    if (statusFilter !== 'all') p.status = statusFilter
-    if (modeFilter   !== 'all') p.mode   = modeFilter
-    api.getCommunity(p)
-      .then(d => { setItems(Array.isArray(d.items)?d.items:[]); setLoading(false) })
-      .catch(() => setLoading(false))
+  const resetCardFields = () => {
+    setCType('')
+    setCIsBlack(false)
+    setCText('')
+    setCAnswer('')
+    setCChoices(['', ''])
+    setCForbiddenWords(['', '', '', '', ''])
+    setCSecretMission('')
+    setCCorrectQuestion('')
+    setCWrongQuestion('')
+    setCCivilWord('')
+    setCUndercoverWord('')
+    setCSpecialType('')
   }
-  useEffect(() => { load() }, [statusFilter, modeFilter])
 
-  const vote = async id => {
-    if (voted.has(id)) return
-    const nv = new Set([...voted,id]); setVoted(nv); saveVoted(nv)
-    setItems(prev => prev.map(i => i._id===id ? {...i,votes:i.votes+1} : i))
-    await api.voteCommunity(id)
+  const loadRequestRef = useRef(0)
+
+  const load = useCallback(() => {
+    const reqId = ++loadRequestRef.current
+    setLoading(true)
+    const p = { limit: 200 }
+    if (statusFilter !== 'all') p.status = statusFilter
+    if (modeFilter !== 'all') p.mode = modeFilter
+    api.getCommunity(p)
+      .then((d) => {
+        if (reqId !== loadRequestRef.current) return
+        setItems(Array.isArray(d.items) ? d.items : [])
+      })
+      .catch(() => {
+        if (reqId !== loadRequestRef.current) return
+      })
+      .finally(() => {
+        if (reqId !== loadRequestRef.current) return
+        setLoading(false)
+      })
+  }, [statusFilter, modeFilter])
+
+  useEffect(() => { load() }, [load])
+
+  const toggleVote = async (id) => {
+    if (voted.has(id)) {
+      const nv = new Set(voted)
+      nv.delete(id)
+      setVoted(nv)
+      saveVoted(nv)
+      setItems(prev => prev.map(i => i._id === id ? { ...i, votes: Math.max(0, i.votes - 1) } : i))
+      try {
+        await api.unvoteCommunity(id)
+      } catch {
+        const rv = new Set(nv)
+        rv.add(id)
+        setVoted(rv)
+        saveVoted(rv)
+        setItems(prev => prev.map(i => i._id === id ? { ...i, votes: i.votes + 1 } : i))
+      }
+      return
+    }
+    const nv = new Set([...voted, id])
+    setVoted(nv)
+    saveVoted(nv)
+    setItems(prev => prev.map(i => i._id === id ? { ...i, votes: i.votes + 1 } : i))
+    try {
+      await api.voteCommunity(id)
+    } catch {
+      const rv = new Set(nv)
+      rv.delete(id)
+      setVoted(rv)
+      saveVoted(rv)
+      setItems(prev => prev.map(i => i._id === id ? { ...i, votes: Math.max(0, i.votes - 1) } : i))
+    }
   }
 
   const submitCard = async () => {
-    if (!cMode || !cText.trim()) return
-    if (!isCardsMode && !cType) return
+    if (!cMode) return
+    if (!isCardsMode && !isMisterMode && !isMememixMode && !cType) return
+    if (showMisterPair && (!cCivilWord.trim() || !cUndercoverWord.trim())) return
+    if (showMememixLegenda && !cText.trim()) return
+    if (showEspecialPicker && !cSpecialType) return
+    if (showDrinkAgent && !cSecretMission.trim()) return
+    if (showImpostor && (!cCorrectQuestion.trim() || !cWrongQuestion.trim())) return
+    if (showDrinkPreferencia && (!preferChoicesOk || !cText.trim())) return
+    if (showDrinkText && !cText.trim()) return
+    if (showMapText && !cText.trim()) return
+    if (isCardsMode && !cText.trim()) return
     if (showAnswerField && !cAnswer.trim()) return
     if (showForbiddenField && cForbiddenWords.filter(w=>w.trim()).length !== 5) return
     setSubmitting(true)
+    const preferChoices = cChoices.map(c=>c.trim()).filter(Boolean)
     await api.submitCommunity({
       submissionType:'card', mode:cMode,
-      cardType:  isCardsMode ? 'geral' : cType,
+      cardType:  isCardsMode ? 'geral' : isMisterMode ? 'par' : isMememixMode ? 'legenda' : cType,
       isBlack:   isCardsMode ? cIsBlack : false,
-      text:      cText.trim(),
+      text:      showImpostor ? cCorrectQuestion.trim()
+        : showDrinkAgent ? cSecretMission.trim()
+        : showMisterPair ? `${cCivilWord.trim()} · ${cUndercoverWord.trim()}`
+        : cText.trim(),
       answer:    cAnswer.trim() || undefined,
-      choices:   showAnswerField ? cChoices.map(c=>c.trim()).filter(Boolean) : undefined,
+      choices:   showDrinkPreferencia ? preferChoices.slice(0, 2) : showAnswerField ? preferChoices : undefined,
       forbiddenWords: showForbiddenField ? cForbiddenWords.map(w=>w.trim()).filter(Boolean) : undefined,
+      secretMission: showDrinkAgent ? cSecretMission.trim() : undefined,
+      drinkSpecialType: showEspecialPicker ? cSpecialType : undefined,
+      correctQuestion: showImpostor ? cCorrectQuestion.trim() : undefined,
+      wrongQuestion: showImpostor ? cWrongQuestion.trim() : undefined,
+      civilWord: showMisterPair ? cCivilWord.trim() : undefined,
+      undercoverWord: showMisterPair ? cUndercoverWord.trim() : undefined,
       author:    cAuthor.trim() || 'Anónimo',
     })
-    setCMode(''); setCType(''); setCIsBlack(false); setCText(''); setCAnswer(''); setCChoices(['','','','']); setCForbiddenWords(['','','','','']); setCAuthor('')
+    setCMode(''); resetCardFields(); setCAuthor('')
     setSubmitting(false); setSubmitted(true); setTimeout(()=>setSubmitted(false),3000)
     setTab('browse'); load()
   }
@@ -148,38 +256,51 @@ export default function CommunityCards() {
   }
 
   const getModeInfo  = id => MODES.find(m=>m.id===id)
-  const getCardTypeLabel = item => getModeInfo(item.mode)?.cardTypes.find(t=>t.id===item.cardType)?.label || item.cardType
+  const getCardTypeLabel = (item) => {
+    if (item.mode === 'drink') {
+      const baralho = drinkBaralhoLabel(item.cardType)
+      if (item.drinkSpecialType) return `${baralho} · ${drinkBaralhoLabel(item.drinkSpecialType)}`
+      return baralho
+    }
+    return getModeInfo(item.mode)?.cardTypes.find(t => t.id === item.cardType)?.label || item.cardType
+  }
   const getIdeaLabel = id => IDEA_TYPES.find(t=>t.id===id)?.label||id
 
   const inp = 'w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 outline-none focus:border-violet-500 text-sm placeholder-slate-500'
 
+  const visibleItems = useMemo(() => items.filter((item) => {
+    if (statusFilter !== 'all' && item.status !== statusFilter) return false
+    if (modeFilter !== 'all' && item.mode !== modeFilter) return false
+    return true
+  }), [items, statusFilter, modeFilter])
+
   const stats = {
-    approved: items.filter(i=>i.status==='approved').length,
-    pending:  items.filter(i=>i.status==='pending').length,
-    votes:    items.reduce((s,i)=>s+i.votes,0),
+    approved: visibleItems.filter(i => i.status === 'approved').length,
+    pending:  visibleItems.filter(i => i.status === 'pending').length,
+    votes:    visibleItems.reduce((s, i) => s + i.votes, 0),
   }
 
   return (
     <div className="min-h-screen bg-[#080b14] flex flex-col">
-      <div className="px-4 pt-8 pb-4 flex items-center gap-3 max-w-lg mx-auto w-full">
+      <div className="px-4 pt-8 pb-4 flex items-center gap-3 max-w-lg md:max-w-3xl mx-auto w-full">
         <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
         <div className="flex-1">
           <h1 className="text-white font-black text-xl flex items-center gap-2"><Sparkles className="text-violet-400 w-5 h-5"/>Cartas da Comunidade</h1>
-          <p className="text-slate-500 text-sm">Vota nas melhores ideias. Só o admin aprova para entrar no jogo.</p>
+          <p className="text-slate-500 text-sm">Vota nas melhores ideias — clica outra vez para retirar. Só o admin aprova para entrar no jogo.</p>
         </div>
       </div>
 
       <AnimatePresence>
         {submitted&&(
           <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-            className="mx-4 max-w-lg mx-auto w-full mb-2 bg-green-500/15 border border-green-500/30 rounded-2xl p-3 text-center">
+            className="mx-4 mb-2 max-w-lg md:max-w-3xl mx-auto w-full bg-green-500/15 border border-green-500/30 rounded-2xl p-3 text-center">
             <p className="text-green-400 font-bold">✅ Submetido! A aguardar votos da comunidade.</p>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="px-4 max-w-lg mx-auto w-full mb-4">
+      <div className="px-4 max-w-lg md:max-w-3xl mx-auto w-full mb-4">
         <div className="flex bg-white/[0.04] border border-white/[0.06] rounded-2xl p-1 gap-1">
           {[['browse','🃏 Ver'],['submit_card','✏️ Carta'],['submit_idea','💡 Ideia']].map(([id,label])=>(
             <button key={id} onClick={()=>setTab(id)}
@@ -190,7 +311,7 @@ export default function CommunityCards() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 pb-8 max-w-lg mx-auto w-full">
+      <div className="flex-1 px-4 pb-8 max-w-lg md:max-w-3xl mx-auto w-full">
         <AnimatePresence mode="wait">
 
           {/* ── BROWSE ── */}
@@ -206,33 +327,34 @@ export default function CommunityCards() {
               </div>
 
               {/* Filters */}
-              <div className="space-y-2">
-                <div className="flex gap-1.5 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
                   {[['all','Todas'],['pending','Em revisão'],['approved','Aprovadas']].map(([id,l])=>(
                     <button key={id} onClick={()=>setStatusFilter(id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border flex-shrink-0 transition-all ${statusFilter===id?'bg-violet-600/30 border-violet-500 text-violet-300':'bg-white/[0.03] border-white/[0.06] text-slate-400'}`}>
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${statusFilter===id?'bg-violet-600/30 border-violet-500 text-violet-300':'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:text-white'}`}>
                       {l}
                     </button>
                   ))}
                 </div>
-                <div className="flex gap-1.5 overflow-x-auto pb-1" style={{scrollbarWidth:'none'}}>
-                  <button onClick={()=>setModeFilter('all')}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border flex-shrink-0 transition-all ${modeFilter==='all'?'bg-slate-600/30 border-slate-500 text-white':'bg-white/[0.03] border-white/[0.06] text-slate-400'}`}>
-                    Todos
-                  </button>
-                  {MODES.map(m=>(
-                    <button key={m.id} onClick={()=>setModeFilter(m.id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap border flex-shrink-0 transition-all ${modeFilter===m.id?m.color:'bg-white/[0.03] border-white/[0.06] text-slate-400'}`}>
-                      {m.label}
-                    </button>
-                  ))}
+                <div>
+                  <label className="text-slate-500 text-xs uppercase tracking-wider mb-1.5 block">Modo</label>
+                  <select
+                    value={modeFilter}
+                    onChange={(e) => setModeFilter(e.target.value)}
+                    className={inp + ' cursor-pointer'}
+                  >
+                    <option value="all">Todos os modos</option>
+                    {MODES.map(m => (
+                      <option key={m.id} value={m.id}>{m.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               {/* List */}
-              {loading?<p className="text-slate-400 text-center py-8">A carregar...</p>
-                :items.length===0?<p className="text-slate-500 text-center py-8">Nenhuma submissão</p>
-                :[...items].sort((a,b)=>b.votes-a.votes).map((item,i)=>{
+              {loading ? <p className="text-slate-400 text-center py-8">A carregar...</p>
+                : visibleItems.length === 0 ? <p className="text-slate-500 text-center py-8">Nenhuma submissão</p>
+                : [...visibleItems].sort((a, b) => b.votes - a.votes).map((item, i) => {
                   const modeInfo=getModeInfo(item.mode)
                   return(
                     <motion.div key={item._id} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{delay:i*0.03}}
@@ -268,12 +390,29 @@ export default function CommunityCards() {
                         {Array.isArray(item.forbiddenWords)&&item.forbiddenWords.length>0&&(
                           <p className="text-slate-500 text-xs mt-1">🚫 Proibidas: {item.forbiddenWords.join(', ')}</p>
                         )}
+                        {item.secretMission&&(
+                          <p className="text-slate-500 text-xs mt-1">🕵️ Missão: {item.secretMission}</p>
+                        )}
+                        {item.correctQuestion&&(
+                          <p className="text-slate-500 text-xs mt-1">✅ Certa: {item.correctQuestion}</p>
+                        )}
+                        {item.wrongQuestion&&(
+                          <p className="text-slate-500 text-xs mt-1">❌ Errada: {item.wrongQuestion}</p>
+                        )}
+                        {item.civilWord&&(
+                          <p className="text-slate-500 text-xs mt-1">✅ Civil: {item.civilWord}</p>
+                        )}
+                        {item.undercoverWord&&(
+                          <p className="text-slate-500 text-xs mt-1">🕵️ Undercover: {item.undercoverWord}</p>
+                        )}
                         <p className="text-slate-600 text-xs mt-1.5">@{item.author}</p>
                       </div>
-                      <button onClick={()=>vote(item._id)} disabled={voted.has(item._id)}
-                        className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border flex-shrink-0 transition-all ${voted.has(item._id)?'bg-violet-600/20 border-violet-500/50 text-violet-400':'bg-white/[0.04] border-white/[0.07] text-slate-400 hover:text-violet-400'}`}>
-                        <ThumbsUp className="w-4 h-4"/>
+                      <button type="button" onClick={() => toggleVote(item._id)}
+                        title={voted.has(item._id) ? 'Retirar voto' : 'Gostei'}
+                        className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border flex-shrink-0 transition-all ${voted.has(item._id) ? 'bg-violet-600/25 border-violet-500/60 text-violet-300 hover:bg-violet-600/15' : 'bg-white/[0.04] border-white/[0.07] text-slate-400 hover:text-violet-400 hover:border-violet-500/30'}`}>
+                        <ThumbsUp className={`w-4 h-4 ${voted.has(item._id) ? 'fill-current' : ''}`}/>
                         <span className="text-xs font-bold">{item.votes}</span>
+                        {voted.has(item._id) && <span className="text-[10px] text-violet-400/80 leading-none">Retirar</span>}
                       </button>
                     </motion.div>
                   )
@@ -293,7 +432,7 @@ export default function CommunityCards() {
                   <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">1. Para que modo?</label>
                   <div className="space-y-2">
                     {MODES.map(m=>(
-                      <button key={m.id} onClick={()=>{setCMode(m.id);setCType('');setCIsBlack(false);setCAnswer('');setCChoices(['','','','']);setCForbiddenWords(['','','','',''])}}
+                      <button key={m.id} onClick={()=>{setCMode(m.id);resetCardFields(); if(m.id==='mememix') setCType('legenda')}}
                         className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cMode===m.id?m.color:'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
                         {m.label}
                       </button>
@@ -318,12 +457,22 @@ export default function CommunityCards() {
                   </div>
                 )}
 
-                {cMode && !isCardsMode && selectedModeObj?.cardTypes.length > 0 && (
+                {needsCardType && (
                   <div>
-                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">2. Tipo de carta</label>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">{isDrinkMode ? '2. Baralho' : '2. Tipo de carta'}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedModeObj.cardTypes.map(ct=>(
-                        <button key={ct.id} onClick={()=>{setCType(ct.id);setCAnswer('');setCChoices(['','','','']);setCForbiddenWords(['','','','',''])}}
+                        <button key={ct.id} onClick={()=>{
+                          setCType(ct.id)
+                          setCSpecialType('')
+                          setCAnswer('')
+                          setCText('')
+                          setCSecretMission('')
+                          setCCorrectQuestion('')
+                          setCWrongQuestion('')
+                          setCChoices(ct.id === 'preferias' ? ['', ''] : ['', '', '', ''])
+                          setCForbiddenWords(['','','','',''])
+                        }}
                           className={`px-3 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cType===ct.id?'bg-violet-600/30 border-violet-500 text-violet-200':'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
                           {ct.label}
                         </button>
@@ -332,27 +481,135 @@ export default function CommunityCards() {
                   </div>
                 )}
 
-                {/* Step 3: Text */}
-                {((cMode && isCardsMode) || (cMode && !isCardsMode && cType)) && (
+                {/* Step 3: Card content */}
+                {cMode && isCardsMode && (
                   <div>
-                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">
-                      {isCardsMode ? '3.' : '3.'} Texto da carta
-                    </label>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">3. Texto da carta</label>
+                    <textarea value={cText} onChange={e=>setCText(e.target.value)}
+                      placeholder={cIsBlack ? 'Escreve a pergunta... usa ___ para espaços' : 'Escreve a resposta ou piada...'}
+                      rows={3} className={inp+' resize-none'}/>
+                    {cText && (
+                      <div className={`mt-2 rounded-xl p-3 border text-sm ${cIsBlack?'bg-black border-white/15 text-white':'bg-white border-slate-200 text-slate-900'}`}>
+                        {cText}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {showMisterPair && (
+                  <div className="space-y-3">
+                    <label className="text-slate-400 text-xs uppercase tracking-wider block">2. Par de palavras</label>
+                    <p className="text-slate-500 text-xs">Obrigatório: palavra dos <b className="text-green-400">civis</b> e palavra do <b className="text-blue-400">undercover</b> (infiltrado). Mister White não tem palavra.</p>
+                    <input value={cCivilWord} onChange={e=>setCCivilWord(e.target.value)}
+                      placeholder="Palavra civil — ex: Pizza"
+                      className={inp}/>
+                    <input value={cUndercoverWord} onChange={e=>setCUndercoverWord(e.target.value)}
+                      placeholder="Palavra undercover — ex: Focaccia (parecida mas diferente)"
+                      className={inp}/>
+                  </div>
+                )}
+
+                {showMememixLegenda && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">2. Legenda MemeMix</label>
+                    <p className="text-slate-500 text-xs mb-2">Frase curta para combinar com memes — estilo «Quando…».</p>
+                    <textarea value={cText} onChange={e=>setCText(e.target.value)}
+                      placeholder={MEMEMIX_LEGENDA_PLACEHOLDER}
+                      rows={3} className={inp+' resize-none'}/>
+                    {cText && (
+                      <div className="mt-2 rounded-xl p-3 border text-sm bg-white border-slate-200 text-slate-900">
+                        {cText}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {showEspecialPicker && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">3. Tipo especial</label>
+                    <p className="text-slate-500 text-xs mb-2">Cartas do baralho Especiais — escolhe o tipo.</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {DRINK_ESPECIAL_TYPES.map(st => (
+                        <button key={st.id} type="button" onClick={() => {
+                          setCSpecialType(st.id)
+                          setCText('')
+                          setCSecretMission('')
+                          setCCorrectQuestion('')
+                          setCWrongQuestion('')
+                        }}
+                          className={`px-3 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cSpecialType === st.id ? 'bg-violet-600/30 border-violet-500 text-violet-200' : 'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {showImpostor && cType && (
+                  <div className="space-y-3">
+                    <label className="text-slate-400 text-xs uppercase tracking-wider block">{showDrinkImpostor ? '4. Perguntas do Impostor' : '3. Perguntas do Impostor'}</label>
+                    <p className="text-slate-500 text-xs">{showDrinkImpostor ? 'Baralho Especiais — pergunta «certa» e «errada» para o infiltrado.' : 'No mapa Amigos: pergunta «certa» e «errada» que o infiltrado vê.'}</p>
+                    <input value={cCorrectQuestion} onChange={e=>setCCorrectQuestion(e.target.value)}
+                      placeholder="Pergunta certa (ex: Quem arrasava na pista de dança?)"
+                      className={inp}/>
+                    <input value={cWrongQuestion} onChange={e=>setCWrongQuestion(e.target.value)}
+                      placeholder="Pergunta errada (ex: Quem tropeça a caminhar em linha reta?)"
+                      className={inp}/>
+                  </div>
+                )}
+
+                {showDrinkAgent && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">4. Missão secreta</label>
+                    <textarea value={cSecretMission} onChange={e=>setCSecretMission(e.target.value)}
+                      placeholder="Ex: Faz duas pessoas repetirem a mesma palavra tua."
+                      rows={3} className={inp+' resize-none'}/>
+                  </div>
+                )}
+
+                {showDrinkPreferencia && cType && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">3. As duas opções</label>
+                    <p className="text-slate-500 text-xs mb-2">O dilema «preferias X ou Y?» — não escrevas aqui quem bebe.</p>
+                    <div className="space-y-2">
+                      <input value={cChoices[0] ?? ''} onChange={e=>setCChoices(cs=>[e.target.value, cs[1] ?? ''])}
+                        placeholder="Opção A — ex: Nunca mais viajar"
+                        className={inp}/>
+                      <input value={cChoices[1] ?? ''} onChange={e=>setCChoices(cs=>[cs[0] ?? '', e.target.value])}
+                        placeholder="Opção B — ex: Nunca mais usar redes sociais"
+                        className={inp}/>
+                    </div>
+                  </div>
+                )}
+
+                {showDrinkPreferencia && preferChoicesOk && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">4. Quem bebe?</label>
+                    <textarea value={cText} onChange={e=>setCText(e.target.value)}
+                      placeholder="Ex: Minoritários bebem 2. Empate = todos bebem 1."
+                      rows={2} className={inp+' resize-none'}/>
+                  </div>
+                )}
+
+                {cMode && !isCardsMode && (showDrinkText || showMapText) && cType && (
+                  <div>
+                    <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">{showEspecialPicker ? '4. Texto da carta' : '3. Texto da carta'}</label>
                     <textarea value={cText} onChange={e=>setCText(e.target.value)}
                       placeholder={
-                        isCardsMode && cIsBlack ? 'Escreve a pergunta... usa ___ para espaços'
-                        : isCardsMode ? 'Escreve a resposta ou piada...'
-                        : cType === 'telepatia' ? 'Ex: Tema: coisas que há numa cozinha. Digam uma palavra ao mesmo tempo.'
-                        : cType === 'perguntas' ? 'Escreve a pergunta de cultura, história, música, etc.'
-                        : cType === 'proibido' ? 'Escreve a palavra que a equipa tem de adivinhar.'
-                        : cType === 'desenho' ? 'Escreve o que tem de ser desenhado.'
-                        : cType === 'mimica' ? 'Escreve o que tem de ser representado por gestos.'
-                        : 'Escreve o desafio.'
+                        isDrinkMode && DRINK_BARALHO_PLACEHOLDERS[cType]
+                          ? DRINK_BARALHO_PLACEHOLDERS[cType]
+                          : isDrinkMode && cSpecialType && DRINK_BARALHO_PLACEHOLDERS[cSpecialType]
+                          ? DRINK_BARALHO_PLACEHOLDERS[cSpecialType]
+                          : cType === 'telepatia' ? 'Ex: Tema: coisas que há numa cozinha. Digam uma palavra ao mesmo tempo.'
+                          : cType === 'perguntas' ? 'Escreve a pergunta de cultura, história, música, etc.'
+                          : cType === 'proibido' ? 'Escreve a palavra que a equipa tem de adivinhar.'
+                          : cType === 'desenho' ? 'Escreve o que tem de ser desenhado.'
+                          : cType === 'mimica' ? 'Escreve o que tem de ser representado por gestos.'
+                          : 'Escreve o desafio ou instrução completa.'
                       }
                       rows={3} className={inp+' resize-none'}/>
-                    {/* Preview */}
-                    {cText&&(
-                      <div className={`mt-2 rounded-xl p-3 border text-sm ${isCardsMode&&cIsBlack?'bg-black border-white/15 text-white':'bg-white border-slate-200 text-slate-900'}`}>
+                    {cText && (
+                      <div className="mt-2 rounded-xl p-3 border text-sm bg-white border-slate-200 text-slate-900">
                         {cText}
                       </div>
                     )}
@@ -394,12 +651,32 @@ export default function CommunityCards() {
                 )}
 
                 {/* Author */}
-                {((cMode&&isCardsMode)||(cMode&&!isCardsMode&&cType))&&cText&&(
+                {((cMode && isCardsMode && cText) || (cMode && showMisterPair && cCivilWord.trim() && cUndercoverWord.trim()) || (cMode && showMememixLegenda && cText.trim()) || (cMode && !isCardsMode && !isMisterMode && !isMememixMode && cType && (
+                  showDrinkAgent ? cSecretMission.trim()
+                  : showImpostor ? (cCorrectQuestion.trim() && cWrongQuestion.trim())
+                  : showDrinkPreferencia ? (preferChoicesOk && cText.trim())
+                  : cText.trim()
+                ))) && (
                   <input value={cAuthor} onChange={e=>setCAuthor(e.target.value)} placeholder="O teu nome (opcional)" className={inp}/>
                 )}
 
                 <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={submitCard}
-                  disabled={!cMode||(!isCardsMode&&!cType)||!cText.trim()||(showAnswerField&&!cAnswer.trim())||(showForbiddenField&&cForbiddenWords.filter(w=>w.trim()).length!==5)||submitting}
+                  disabled={
+                    !cMode
+                    || (needsCardType && !cType)
+                    || (isCardsMode && !cText.trim())
+                    || (showMisterPair && (!cCivilWord.trim() || !cUndercoverWord.trim()))
+                    || (showMememixLegenda && !cText.trim())
+                    || (showEspecialPicker && !cSpecialType)
+                    || (showDrinkAgent && !cSecretMission.trim())
+                    || (showImpostor && (!cCorrectQuestion.trim() || !cWrongQuestion.trim()))
+                    || (showDrinkPreferencia && (!preferChoicesOk || !cText.trim()))
+                    || (showDrinkText && !cText.trim())
+                    || (showMapText && !cText.trim())
+                    || (showAnswerField && !cAnswer.trim())
+                    || (showForbiddenField && cForbiddenWords.filter(w=>w.trim()).length!==5)
+                    || submitting
+                  }
                   className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2 disabled:opacity-40">
                   <Send className="w-4 h-4"/>{submitting?'A submeter...':'Submeter Carta'}
                 </motion.button>
@@ -411,7 +688,13 @@ export default function CommunityCards() {
                   <li>• <b className="text-white">Modo Cartas</b>: escolhe apenas branca ou preta</li>
                   <li>• <b className="text-white">Perguntas</b>: têm de ter resposta correta</li>
                   <li>• <b className="text-white">Palavra Tabu</b>: tem de ter 5 palavras proibidas</li>
-                  <li>• <b className="text-white">Sincronia</b>: tema para duas pessoas dizerem a mesma palavra</li>
+                  <li>• <b className="text-white">Modo Beber</b>: escolhe o baralho (Waterfall, Eu Nunca, Regras, Especiais…)</li>
+                  <li>• <b className="text-white">Especiais</b>: Agente, Impostor, Aliança ou Mini Boss</li>
+                  <li>• <b className="text-white">Preferias?</b>: primeiro as 2 opções, depois quem bebe</li>
+                  <li>• <b className="text-white">Mister White</b>: par civil + undercover (sempre os dois)</li>
+                  <li>• <b className="text-white">MemeMix</b>: legendas curtas para combinar com memes</li>
+                  <li>• <b className="text-white">Impostor</b> (Amigos/Beber): pergunta certa + pergunta errada</li>
+                  <li>• <b className="text-white">Agente</b>: só a missão secreta</li>
                   <li>• Os votos ajudam o admin a escolher o melhor conteúdo</li>
                   <li>• Só entra no jogo depois de aprovação no painel admin</li>
                 </ul>

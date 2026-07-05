@@ -1,0 +1,14 @@
+{
+  "name": "Família - Comunidade",
+  "mode": "family",
+  "pack": "community",
+  "description": "Desafios aprovados da comunidade (Modo Família).",
+  "categories": {
+    "telepatia": [],
+    "perguntas": [],
+    "desenho": [],
+    "mimica": [],
+    "proibido": [],
+    "impostor": []
+  }
+}

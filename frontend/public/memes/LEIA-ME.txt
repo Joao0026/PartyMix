@@ -1,0 +1,11 @@
+Coloca aqui as imagens dos memes oficiais (jpg, png, webp).
+
+Exemplo:
+  frontend/public/memes/festa-01.webp
+
+No JSON (data/mememix/memes-pack.json):
+  { "image": "/memes/festa-01.webp", "caption": "opcional" }
+
+Depois: npm run seed:packs
+
+Fotos enviadas na sala durante o jogo não ficam aqui — ficam só na sessão online.

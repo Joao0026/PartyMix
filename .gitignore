@@ -81,4 +81,9 @@ jspm_packages/
 # DynamoDB Local files
 .dynamodb/
 
-./partymix_for_claude.zip
+# MemeMix session uploads (temporary)
+uploads/
+
+# Python / rascunhos locais
+scripts/__pycache__/
+data/_pdf_extract.txt

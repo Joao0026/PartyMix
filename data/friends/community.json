@@ -1,0 +1,15 @@
+{
+  "name": "Amigos - Comunidade",
+  "mode": "friends",
+  "pack": "community",
+  "description": "Desafios aprovados da comunidade (Modo Amigos).",
+  "categories": {
+    "telepatia": [],
+    "perguntas": [],
+    "desenho": [],
+    "mimica": [],
+    "proibido": [],
+    "caos": [],
+    "impostor": []
+  }
+}

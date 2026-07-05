@@ -10,6 +10,7 @@
     "seed": "cd backend && npm run seed",
     "import:pack": "cd backend && npm run import:pack --",
     "seed:packs": "cd backend && npm run seed:packs",
+    "audit:cards": "node scripts/audit-cards.js",
     "check": "cd backend && npm run check && cd ../frontend && npm run build",
     "test": "cd backend && npm test"
   },

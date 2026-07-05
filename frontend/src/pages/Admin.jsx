@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff } from 'lucide-react'
 import { api, clearAdminToken, getAdminToken } from '../utils/api'
+import { PACK_IMPORT_TEMPLATES, SNIPPET_TEMPLATES, COLOCAR_NA_APP } from '../utils/packJsonTemplates'
 
 function PasswordGate({ onUnlock }) {
   const [pw, setPw] = useState('')
@@ -110,24 +111,51 @@ function StatsTab() {
   )
 }
 
-const MODE_COLORS={friends:'bg-cyan-500/20 border-cyan-500/40 text-cyan-300',family:'bg-sky-500/20 border-sky-500/40 text-sky-300',couple:'bg-rose-500/20 border-rose-500/40 text-rose-300',drink:'bg-amber-500/20 border-amber-500/40 text-amber-300',cards:'bg-yellow-500/20 border-yellow-500/40 text-yellow-300'}
-const MODE_LABELS={friends:'👥 Amigos',family:'🏡 Família',couple:'💕 Casal',drink:'🍺 Beber',cards:'🃏 Cartas'}
-const TYPE_ICONS={telepatia:'🧠',perguntas:'📚',desenho:'🎨',mimica:'🎭',proibido:'🚫',caos:'💥',romantico:'🌹',picante:'🔥',verdade:'❓',acao:'⚡',roleplay:'🎭',quiz:'💬',beber:'🍺',regra:'📜',desafio:'⚡',duelo:'⚔️',poder:'👑',sorte:'🍀',geral:'🃏'}
+const MODE_COLORS={friends:'bg-cyan-500/20 border-cyan-500/40 text-cyan-300',family:'bg-sky-500/20 border-sky-500/40 text-sky-300',couple:'bg-rose-500/20 border-rose-500/40 text-rose-300',drink:'bg-amber-500/20 border-amber-500/40 text-amber-300',cards:'bg-yellow-500/20 border-yellow-500/40 text-yellow-300',mister:'bg-slate-500/20 border-slate-400/40 text-slate-300',mememix:'bg-pink-500/20 border-pink-500/40 text-pink-300'}
+const MODE_LABELS={friends:'👥 Amigos',family:'🏡 Família',couple:'💕 Casal',drink:'🍺 Beber',cards:'🃏 Cartas',mister:'👁️ Mister White',mememix:'😂 MemeMix'}
+const TYPE_ICONS={telepatia:'🧠',perguntas:'📚',desenho:'🎨',mimica:'🎭',proibido:'🚫',caos:'💥',romantico:'🌹',picante:'🔥',verdade:'❓',acao:'⚡',roleplay:'🎭',quiz:'💬',waterfall:'🌊',eununca:'🙅',regras:'📜',desafios:'⚡',cadeia:'🔗',historia:'🎬',provavel:'👉',bluff:'🎭',maldicao:'🔮',poder:'👑',preferias:'🤔',extreme:'💣',especiais:'🛡️',agent:'🕵️',alliance:'🤝',miniboss:'👹',impostor:'🎭',geral:'🃏'}
 
 function CommunityTab(){
-  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[filter,setFilter]=useState('pending'),[modeFilter,setModeFilter]=useState('all'),[typeFilter,setTypeFilter]=useState('all'),[minVotes,setMinVotes]=useState(0),[working,setWorking]=useState({}),[selected,setSelected]=useState([])
-  const load=()=>{
+  const [items,setItems]=useState([]),[loading,setLoading]=useState(true),[filter,setFilter]=useState('pending'),[modeFilter,setModeFilter]=useState('all'),[typeFilter,setTypeFilter]=useState('all'),[minVotes,setMinVotes]=useState(0),[working,setWorking]=useState({}),[selected,setSelected]=useState([]),[warnMap,setWarnMap]=useState({}),[lastApproveMsg,setLastApproveMsg]=useState(null)
+  const loadRequestRef=useRef(0)
+  const load=useCallback(()=>{
+    const reqId=++loadRequestRef.current
     setLoading(true)
     const params={status:filter,limit:100}
     if(modeFilter!=='all')params.mode=modeFilter
-    api.getCommunity(params).then(d=>{setItems(Array.isArray(d.items)?d.items:[]);setLoading(false)}).catch(()=>setLoading(false))
+    api.getCommunity(params)
+      .then(d=>{
+        if(reqId!==loadRequestRef.current)return
+        setItems(Array.isArray(d.items)?d.items:[])
+      })
+      .catch(()=>{})
+      .finally(()=>{
+        if(reqId!==loadRequestRef.current)return
+        setLoading(false)
+      })
+  },[filter,modeFilter])
+  useEffect(()=>{load();setSelected([])},[load])
+  const loadWarnings=async(id)=>{
+    try{
+      const d=await api.previewSubmissionWarnings(id)
+      setWarnMap(m=>({...m,[id]:Array.isArray(d.warnings)?d.warnings:[]}))
+    }catch{setWarnMap(m=>({...m,[id]:[]}))}
   }
-  useEffect(()=>{load();setSelected([])},[filter,modeFilter])
-  const approve=async id=>{setWorking(w=>({...w,[id]:'approving'}));await api.approveCommunity(id);setWorking(w=>({...w,[id]:null}));load()}
+  const approve=async id=>{
+    setWorking(w=>({...w,[id]:'approving'}))
+    try{
+      const res=await api.approveCommunity(id)
+      const w=Array.isArray(res.warnings)?res.warnings:[]
+      if(w.length)setLastApproveMsg({id,w})
+      else setLastApproveMsg(null)
+    }catch(e){setLastApproveMsg({id,error:e?.message||'Erro'})}
+    setWorking(w=>({...w,[id]:null}));load()
+  }
   const reject=async id=>{setWorking(w=>({...w,[id]:'rejecting'}));await api.rejectCommunity(id);setWorking(w=>({...w,[id]:null}));load()}
   const remove=async id=>{await api.deleteCommunity(id);load()}
   const updateMeta=async (item, patch)=>{setWorking(w=>({...w,[item._id]:'meta'}));await api.updateCommunityMeta(item._id,{pack:item.pack||'',audience:item.audience||'',...patch});setWorking(w=>({...w,[item._id]:null}));load()}
   const visibleItems=items
+    .filter(item=>modeFilter==='all'||item.mode===modeFilter)
     .filter(item=>typeFilter==='all'||item.cardType===typeFilter||item.submissionType===typeFilter)
     .filter(item=>(item.votes||0)>=minVotes)
     .sort((a,b)=>(b.votes||0)-(a.votes||0))
@@ -135,6 +163,14 @@ function CommunityTab(){
   const approveSelected=async()=>{for(const id of selected){await api.approveCommunity(id)};setSelected([]);load()}
   return(
     <div className="space-y-4">
+      {lastApproveMsg?.w?.length>0&&(
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs space-y-1">
+          <p className="text-amber-200 font-bold">Avisos de similaridade (aprovado na mesma)</p>
+          {lastApproveMsg.w.slice(0,5).map((w,i)=>(
+            <p key={i} className="text-slate-300"><span className="text-amber-300 uppercase">{w.type}</span>: {w.message||''} → {w.similarTo?.location}</p>
+          ))}
+        </div>
+      )}
       <div className="flex gap-2">
         {[['pending','⏳'],['approved','✅'],['rejected','❌']].map(([v,e])=>(
           <button key={v} onClick={()=>setFilter(v)} className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${filter===v?'bg-violet-600/30 border-violet-500 text-violet-200':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>{e} {v.charAt(0).toUpperCase()+v.slice(1)}</button>
@@ -149,7 +185,7 @@ function CommunityTab(){
           <select value={typeFilter} onChange={e=>setTypeFilter(e.target.value)} className={inp}>
             <option value="all">Todos os tipos</option>
             <option value="idea">Ideias</option>
-            {['telepatia','perguntas','desenho','mimica','proibido','caos','romantico','picante','verdade','acao','roleplay','quiz','beber','regra','desafio','duelo','poder','sorte','geral'].map(t=><option key={t} value={t}>{t}</option>)}
+            {['telepatia','perguntas','desenho','mimica','proibido','caos','romantico','picante','verdade','acao','roleplay','quiz','waterfall','eununca','regras','desafios','cadeia','especiais','poder','preferias','provavel','bluff','extreme','geral'].map(t=><option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <label className="block text-slate-500 text-xs">Votos mínimos: {minVotes}</label>
@@ -180,6 +216,8 @@ function CommunityTab(){
           <p className="text-white font-medium">{item.text}</p>
             </div>
           </div>
+          {item.civilWord&&<p className="text-green-300 text-sm">Civil: {item.civilWord}</p>}
+          {item.undercoverWord&&<p className="text-blue-300 text-sm">Undercover: {item.undercoverWord}</p>}
           {item.answer&&<p className="text-emerald-300 text-sm">Resposta: {item.answer}</p>}
           {Array.isArray(item.choices)&&item.choices.length>0&&<p className="text-slate-400 text-xs">Alíneas: {item.choices.join(' / ')}</p>}
           {Array.isArray(item.forbiddenWords)&&item.forbiddenWords.length>0&&<p className="text-slate-400 text-xs">Proibidas: {item.forbiddenWords.join(', ')}</p>}
@@ -203,9 +241,17 @@ function CommunityTab(){
             </select>
           </div>
           {filter==='pending'&&(
-            <div className="flex gap-2">
-              <button onClick={()=>approve(item._id)} disabled={!!working[item._id]} className="flex-1 bg-green-500/20 border border-green-500/40 text-green-400 font-bold rounded-xl py-2.5 text-sm flex items-center justify-center gap-1 disabled:opacity-50"><Check className="w-3.5 h-3.5"/>{working[item._id]==='approving'?'A aprovar...':'Aprovar + Jogo'}</button>
-              <button onClick={()=>reject(item._id)} disabled={!!working[item._id]} className="flex-1 bg-red-500/20 border border-red-500/40 text-red-400 font-bold rounded-xl py-2.5 text-sm flex items-center justify-center gap-1 disabled:opacity-50"><X className="w-3.5 h-3.5"/>{working[item._id]==='rejecting'?'A rejeitar...':'Rejeitar'}</button>
+            <div className="flex gap-2 flex-wrap">
+              <button type="button" onClick={()=>loadWarnings(item._id)} className="text-xs rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-amber-200">🔍 Ver similares</button>
+              <button onClick={()=>approve(item._id)} disabled={!!working[item._id]} className="flex-1 min-w-[8rem] bg-green-500/20 border border-green-500/40 text-green-400 font-bold rounded-xl py-2.5 text-sm flex items-center justify-center gap-1 disabled:opacity-50"><Check className="w-3.5 h-3.5"/>{working[item._id]==='approving'?'A aprovar...':'Aprovar + Jogo'}</button>
+              <button onClick={()=>reject(item._id)} disabled={!!working[item._id]} className="flex-1 min-w-[8rem] bg-red-500/20 border border-red-500/40 text-red-400 font-bold rounded-xl py-2.5 text-sm flex items-center justify-center gap-1 disabled:opacity-50"><X className="w-3.5 h-3.5"/>{working[item._id]==='rejecting'?'A rejeitar...':'Rejeitar'}</button>
+            </div>
+          )}
+          {warnMap[item._id]?.length>0&&(
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-2 space-y-1 text-xs">
+              {warnMap[item._id].map((w,i)=>(
+                <p key={i} className="text-slate-400"><span className="text-amber-300 font-bold">{w.type}</span> {w.message||''} — <span className="text-slate-500">{w.similarTo?.location}</span></p>
+              ))}
             </div>
           )}
           {filter!=='pending'&&(
@@ -352,10 +398,29 @@ function PacksTab() {
 }
 
 function ImportPackTab(){
-  const [text,setText]=useState('{\n  "name": "Pack exemplo",\n  "mode": "family",\n  "categories": {\n    "perguntas": [\n      {\n        "text": "Qual é a capital da Austrália?",\n        "answer": "Camberra",\n        "choices": ["Sydney", "Melbourne", "Camberra", "Perth"],\n        "difficulty": "medio"\n      }\n    ]\n  }\n}')
+  const [templateId,setTemplateId]=useState('friends')
+  const [text,setText]=useState(()=>JSON.stringify(PACK_IMPORT_TEMPLATES[0].pack,null,2))
   const [result,setResult]=useState(null)
   const [error,setError]=useState('')
   const [loading,setLoading]=useState(false)
+
+  const activeTemplate=PACK_IMPORT_TEMPLATES.find(t=>t.id===templateId)||PACK_IMPORT_TEMPLATES[0]
+
+  const loadTemplate=(id)=>{
+    const tpl=PACK_IMPORT_TEMPLATES.find(t=>t.id===id)
+    if(!tpl)return
+    setTemplateId(id)
+    setText(JSON.stringify(tpl.pack,null,2))
+    setResult(null)
+    setError('')
+  }
+
+  const loadSnippet=(snippet)=>{
+    setText(JSON.stringify(snippet.json,null,2))
+    setResult(null)
+    setError('')
+  }
+
   const importNow=async()=>{
     setError('');setResult(null)
     let pack
@@ -365,12 +430,40 @@ function ImportPackTab(){
     catch(e){setError(e?.message||'Erro ao importar pack')}
     finally{setLoading(false)}
   }
+
   return(
     <div className="space-y-4">
       <div className={card+' space-y-3'}>
+        <h3 className="text-white font-semibold">Como colocar cartas na app</h3>
+        <div className="rounded-xl border border-violet-500/25 bg-violet-500/10 p-3 space-y-2 text-sm">
+          <p className="text-violet-200 font-bold">Opção A — Ficheiros (muitas cartas)</p>
+          <ol className="text-slate-300 text-xs space-y-1 list-decimal list-inside">
+            {COLOCAR_NA_APP.metodo_1_ficheiros.map((line,i)=><li key={i}>{line}</li>)}
+          </ol>
+          <p className="text-violet-200 font-bold pt-1">Opção B — Este ecrã (pack ou teste)</p>
+          <ol className="text-slate-300 text-xs space-y-1 list-decimal list-inside">
+            {COLOCAR_NA_APP.metodo_2_admin_importar.map((line,i)=><li key={i}>{line}</li>)}
+          </ol>
+          <p className="text-slate-500 text-xs pt-1">Modelos completos: <code className="text-amber-300">data/MODELOS-ESCREVER-CARTAS.json</code></p>
+        </div>
+      </div>
+
+      <div className={card+' space-y-3'}>
         <h3 className="text-white font-semibold">Importar Pack JSON</h3>
-        <p className="text-slate-400 text-sm">Cola aqui um pack de `data/.../base.json`. Repetidas são ignoradas automaticamente.</p>
-        <textarea value={text} onChange={e=>setText(e.target.value)} className={inp+' h-72 font-mono text-xs resize-none'} />
+        <label className="block text-slate-400 text-xs uppercase tracking-wider">Modelo de pack</label>
+        <select value={templateId} onChange={e=>loadTemplate(e.target.value)} className={inp}>
+          {PACK_IMPORT_TEMPLATES.map(t=><option key={t.id} value={t.id}>{t.label}</option>)}
+        </select>
+        {activeTemplate?.hint && <p className="text-slate-500 text-xs">{activeTemplate.hint}</p>}
+        <label className="block text-slate-400 text-xs uppercase tracking-wider">Snippets (1 carta — cola no teu ficheiro ou adapta)</label>
+        <div className="flex flex-wrap gap-1.5">
+          {SNIPPET_TEMPLATES.map(s=>(
+            <button key={s.id} type="button" onClick={()=>loadSnippet(s)} className="text-xs rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-slate-300 hover:text-white hover:border-violet-500/40">
+              {s.label}
+            </button>
+          ))}
+        </div>
+        <textarea value={text} onChange={e=>setText(e.target.value)} className={inp+' h-72 font-mono text-xs resize-none'} spellCheck={false} />
         <button onClick={importNow} disabled={loading||!text.trim()} className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl py-3 disabled:opacity-40">
           {loading?'A importar...':'Importar para a base de dados'}
         </button>
@@ -381,9 +474,161 @@ function ImportPackTab(){
           <p className="text-green-300 font-bold">Pack importado: {result.pack}</p>
           <p className="text-slate-300 text-sm">Cartas: {result.cards.inserted} novas, {result.cards.skipped} repetidas, {result.cards.invalid} inválidas.</p>
           <p className="text-slate-300 text-sm">Desafios: {result.challenges.inserted} novos, {result.challenges.skipped} repetidos, {result.challenges.invalid} inválidos.</p>
-          {result.drinkPack && <p className="text-slate-300 text-sm">Baralho Beber: atualizado na BD.</p>}
+          {result.drinkPack && <p className="text-amber-200 text-sm font-bold">Baralho Beber: pack substituído na BD. Para packs grandes edita data/drink/decks.json + seed:packs.</p>}
+          {Array.isArray(result.warnings) && result.warnings.length > 0 && (
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-2 space-y-1 text-xs max-h-40 overflow-y-auto">
+              <p className="text-amber-200 font-bold">Avisos de similaridade (import feito na mesma)</p>
+              {result.warnings.slice(0, 10).map((w, i) => (
+                <p key={i} className="text-slate-400"><span className="text-amber-300">{w.type}</span> → {w.similarTo?.location}</p>
+              ))}
+            </div>
+          )}
         </div>
       )}
+    </div>
+  )
+}
+
+function QualidadeTab() {
+  const [report, setReport] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState(null)
+
+  const [includeDb, setIncludeDb] = useState(true)
+  const [semantic, setSemantic] = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    setErr(null)
+    const params = { source: includeDb ? 'both' : 'files' }
+    if (semantic) params.semantic = 'true'
+    api.getContentAudit(params)
+      .then((d) => { setReport(d); setLoading(false) })
+      .catch((e) => { setErr(e?.message || 'Erro'); setLoading(false) })
+  }
+
+  useEffect(() => { load() }, [])
+
+  if (loading) return <p className="text-slate-400 text-sm">A auditar catálogo (data/ + BD)…</p>
+  if (err) return (
+    <div className={card}>
+      <p className="text-red-300 text-sm">{err}</p>
+      <button onClick={load} className="mt-3 text-violet-300 text-sm underline">Tentar de novo</button>
+    </div>
+  )
+
+  const s = report?.stats || {}
+  const ok = report?.ok
+
+  return (
+    <div className="space-y-4">
+      <div className={`rounded-2xl p-4 border ${ok ? 'bg-green-500/10 border-green-500/30' : 'bg-amber-500/10 border-amber-500/30'}`}>
+        <p className={`font-bold ${ok ? 'text-green-300' : 'text-amber-300'}`}>
+          {ok ? '✅ Conteúdo OK' : '⚠️ Problemas encontrados'}
+        </p>
+        <p className="text-slate-400 text-xs mt-1">JSON + MongoDB. Variantes/similares são avisos. CLI: <code className="text-amber-300">npm run audit:cards -- --db --semantic</code></p>
+      </div>
+
+      <div className={card + ' space-y-3'}>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <button type="button" onClick={() => setIncludeDb((v) => !v)} className={`w-11 h-6 rounded-full relative ${includeDb ? 'bg-violet-500' : 'bg-white/[0.12]'}`}>
+            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${includeDb ? 'left-6' : 'left-1'}`}/>
+          </button>
+          <span className="text-slate-300 text-sm">Incluir MongoDB</span>
+        </label>
+        <label className="flex items-center gap-3 cursor-pointer">
+          <button type="button" onClick={() => setSemantic((v) => !v)} className={`w-11 h-6 rounded-full relative ${semantic ? 'bg-amber-500' : 'bg-white/[0.12]'}`}>
+            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full ${semantic ? 'left-6' : 'left-1'}`}/>
+          </button>
+          <span className="text-slate-300 text-sm">Semântico Groq (lento)</span>
+        </label>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: 'Itens', n: s.items, icon: '🎴' },
+          { label: 'BD', n: s.bySource?.db, icon: '🗄️' },
+          { label: 'Exactos', n: s.exactDuplicateGroups, icon: '🔴' },
+          { label: 'Variantes drink', n: s.drinkVariantPairs, icon: '🍺' },
+          { label: 'Quase iguais', n: s.nearDuplicatePairs, icon: '🔍' },
+          { label: 'Semânticos', n: s.semanticPairs, icon: '🤖' },
+        ].map((b) => (
+          <div key={b.label} className={`${card} text-center`}>
+            <p className="text-2xl mb-1">{b.icon}</p>
+            <p className="text-white font-black text-2xl">{b.n ?? 0}</p>
+            <p className="text-slate-500 text-xs">{b.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {s.byMode && (
+        <div className={card}>
+          <h3 className="text-white font-semibold mb-2">Por modo</h3>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(s.byMode).map(([mode, count]) => (
+              <span key={mode} className="text-xs rounded-lg bg-white/[0.06] border border-white/[0.08] px-2 py-1 text-slate-300">
+                {mode}: <strong className="text-white">{count}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {report?.validationErrors?.length > 0 && (
+        <div className={card + ' space-y-2 max-h-64 overflow-y-auto'}>
+          <h3 className="text-white font-semibold">Validação</h3>
+          {report.validationErrors.slice(0, 30).map((e, i) => (
+            <div key={i} className="text-xs border-b border-white/[0.06] pb-2">
+              <p className="text-red-300">{e.message}</p>
+              <p className="text-slate-500">{e.file} · {e.deck}</p>
+              {e.preview && <p className="text-slate-400 truncate">{e.preview}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {report?.exactDuplicates?.length > 0 && (
+        <div className={card + ' space-y-2 max-h-48 overflow-y-auto'}>
+          <h3 className="text-white font-semibold">Duplicados exactos</h3>
+          {report.exactDuplicates.slice(0, 15).map((g, i) => (
+            <div key={i} className="text-xs">
+              <p className="text-amber-200 truncate">×{g.count} — {g.text}</p>
+              <p className="text-slate-500">{g.locations?.map((l) => `${l.location || l.file} [${l.source}]`).join(' · ')}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {report?.drinkVariants?.length > 0 && (
+        <div className={card + ' space-y-2 max-h-48 overflow-y-auto'}>
+          <h3 className="text-white font-semibold">🍺 Variantes drink</h3>
+          {report.drinkVariants.slice(0, 12).map((p, i) => (
+            <div key={i} className="text-xs border-b border-white/[0.06] pb-2">
+              <p className="text-slate-300 truncate">{p.a?.preview}</p>
+              <p className="text-slate-500">{p.a?.location} ↔ {p.b?.location}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {report?.semanticDuplicates?.length > 0 && (
+        <div className={card + ' space-y-2 max-h-48 overflow-y-auto'}>
+          <h3 className="text-white font-semibold">🤖 Similares Groq</h3>
+          {report.semanticDuplicates.slice(0, 12).map((p, i) => (
+            <div key={i} className="text-xs border-b border-white/[0.06] pb-2">
+              <p className="text-violet-300">{Math.round((p.ratio || 0) * 100)}%</p>
+              <p className="text-slate-300 truncate">{p.a?.preview}</p>
+              <p className="text-slate-500">{p.a?.location} ↔ {p.b?.location}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {report?.semanticSkipped && <p className="text-amber-300 text-xs">{report.semanticSkipped}</p>}
+
+      <button onClick={load} className="w-full rounded-xl border border-white/10 py-3 text-slate-300 text-sm hover:text-white">
+        🔄 Atualizar auditoria
+      </button>
     </div>
   )
 }
@@ -420,7 +665,7 @@ function DiceTab(){
   )
 }
 
-const TABS=[{id:'stats',label:'📊 Stats'},{id:'community',label:'🌍 Comunidade'},{id:'packs',label:'📦 Packs'},{id:'import',label:'⬆️ Importar'},{id:'challenges',label:'📋 Desafios'},{id:'cards',label:'🃏 Cartas'},{id:'dice',label:'🎲 Dados'}]
+const TABS=[{id:'stats',label:'📊 Stats'},{id:'community',label:'🌍 Comunidade'},{id:'qualidade',label:'✅ Qualidade'},{id:'packs',label:'📦 Packs'},{id:'import',label:'⬆️ Importar'},{id:'challenges',label:'📋 Desafios'},{id:'cards',label:'🃏 Cartas'},{id:'dice',label:'🎲 Dados'}]
 
 export default function Admin(){
   const navigate=useNavigate()
@@ -428,7 +673,7 @@ export default function Admin(){
   const [tab,setTab]=useState('stats')
   const logout=()=>{clearAdminToken();setUnlocked(false)}
   if(!unlocked)return<PasswordGate onUnlock={()=>setUnlocked(true)}/>
-  const ActiveTab={stats:StatsTab,community:CommunityTab,packs:PacksTab,import:ImportPackTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
+  const ActiveTab={stats:StatsTab,community:CommunityTab,qualidade:QualidadeTab,packs:PacksTab,import:ImportPackTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
   return(
     <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
       <div className="w-full max-w-lg">

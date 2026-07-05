@@ -3,12 +3,16 @@ const requireAdmin = require('../middleware/requireAdmin')
 const CommunitySubmission = require('../models/CommunitySubmission')
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
+const { appendDrinkCommunityCard } = require('../lib/communityDrink')
+const { appendMisterCommunityPair, appendMememixCommunityLegenda } = require('../lib/communityMister')
+const { invalidateCommunityPairsCache } = require('../lib/misterWhite')
+const { auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, bool, cleanString, intInRange, mongoId, oneOf } = require('../lib/validate')
 
 const SUBMISSION_TYPES = ['card', 'idea']
-const MODES = ['friends','family','couple','drink','cards']
+const MODES = ['friends','family','couple','drink','cards','mister','mememix']
 const IDEA_TYPES = ['mode','minigame','feature','other']
-const CARD_TYPES = ['telepatia','perguntas','desenho','mimica','proibido','caos','beber','regra','desafio','duelo','poder','sorte','romantico','picante','verdade','acao','roleplay','quiz','geral']
+const CARD_TYPES = ['telepatia','perguntas','desenho','mimica','proibido','caos','waterfall','eununca','regras','desafios','cadeia','historia','provavel','bluff','maldicao','duelo','poder','preferias','picante','extreme','especiais','agent','alliance','miniboss','impostor','romantico','verdade','acao','roleplay','quiz','geral','legenda','par','beber','regra','desafio','preferencia','sorte','azar']
 
 // GET /api/community?status=pending&mode=friends&page=1
 router.get('/', asyncRoute(async (req, res) => {
@@ -31,12 +35,31 @@ router.get('/', asyncRoute(async (req, res) => {
 // POST /api/community — submit a card or idea
 router.post('/', asyncRoute(async (req, res) => {
   const submissionType = oneOf(req.body.submissionType, SUBMISSION_TYPES, { field: 'submissionType', required: true })
+  const mode = oneOf(req.body.mode, MODES, { field: 'mode', defaultValue: submissionType === 'card' ? 'friends' : undefined })
+  const civilWord = cleanString(req.body.civilWord, { field: 'civilWord', max: 80 })
+  const undercoverWord = cleanString(req.body.undercoverWord, { field: 'undercoverWord', max: 80 })
+  let text = cleanString(req.body.text, { field: 'text', max: 300, required: false })
+
+  if (submissionType === 'card') {
+    if (mode === 'mister') {
+      if (!civilWord || !undercoverWord) {
+        return res.status(400).json({ error: 'Mister White: indica palavra civil e palavra undercover' })
+      }
+      text = text || `${civilWord} · ${undercoverWord}`
+    }
+    if (!text) {
+      return res.status(400).json({ error: 'text é obrigatório' })
+    }
+  } else if (!text) {
+    return res.status(400).json({ error: 'text é obrigatório' })
+  }
+
   const payload = {
     submissionType,
-    mode: oneOf(req.body.mode, MODES, { field: 'mode', defaultValue: submissionType === 'card' ? 'friends' : undefined }),
-    cardType: oneOf(req.body.cardType, CARD_TYPES, { field: 'cardType', defaultValue: 'geral' }),
+    mode,
+    cardType: oneOf(req.body.cardType, CARD_TYPES, { field: 'cardType', defaultValue: mode === 'mememix' ? 'legenda' : mode === 'mister' ? 'par' : 'geral' }),
     isBlack: bool(req.body.isBlack),
-    text: cleanString(req.body.text, { field: 'text', max: 300, required: true }),
+    text,
     answer: cleanString(req.body.answer, { field: 'answer', max: 200 }),
     choices: Array.isArray(req.body.choices)
       ? req.body.choices.map((choice) => cleanString(choice, { field: 'choice', max: 120 })).filter(Boolean).slice(0, 4)
@@ -44,6 +67,12 @@ router.post('/', asyncRoute(async (req, res) => {
     forbiddenWords: Array.isArray(req.body.forbiddenWords)
       ? req.body.forbiddenWords.map((w) => cleanString(w, { field: 'forbiddenWord', max: 40 })).filter(Boolean).slice(0, 5)
       : [],
+    secretMission: cleanString(req.body.secretMission, { field: 'secretMission', max: 300 }),
+    correctQuestion: cleanString(req.body.correctQuestion, { field: 'correctQuestion', max: 200 }),
+    wrongQuestion: cleanString(req.body.wrongQuestion, { field: 'wrongQuestion', max: 200 }),
+    civilWord,
+    undercoverWord,
+    drinkSpecialType: oneOf(req.body.drinkSpecialType, ['agent','impostor','alliance','miniboss',''], { field: 'drinkSpecialType', defaultValue: '' }),
     ideaType: oneOf(req.body.ideaType, IDEA_TYPES, { field: 'ideaType', defaultValue: submissionType === 'idea' ? 'other' : undefined }),
     author: cleanString(req.body.author, { field: 'author', max: 50, defaultValue: 'Anónimo' }),
     pack: cleanString(req.body.pack, { field: 'pack', max: 60 }),
@@ -66,6 +95,16 @@ router.post('/:id/vote', asyncRoute(async (req, res) => {
   res.json(sub)
 }))
 
+// POST /api/community/:id/unvote
+router.post('/:id/unvote', asyncRoute(async (req, res) => {
+  const sub = await CommunitySubmission.findById(mongoId(req.params.id))
+  if (!sub) return res.status(404).json({ error: 'Not found' })
+
+  sub.votes = Math.max(0, (sub.votes || 0) - 1)
+  await sub.save()
+  res.json(sub)
+}))
+
 // POST /api/community/:id/approve — admin manually approves + creates real card/challenge
 router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
     const sub = await CommunitySubmission.findById(mongoId(req.params.id))
@@ -73,10 +112,12 @@ router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
     if (sub.status === 'approved') return res.json({ message: 'Already approved', sub })
 
     let linked = null
+    let warnings = []
 
     if (sub.submissionType === 'card') {
+      warnings = await auditSubmissionWarnings(sub, { semantic: true }).catch(() => [])
+
       if (sub.mode === 'cards') {
-        // Create a Card document
         linked = await new Card({
           text:      sub.text,
           category:  sub.cardType || 'geral',
@@ -86,19 +127,35 @@ router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
           audience:  sub.audience || '',
         }).save()
         sub.linkedCardId = linked._id
+      } else if (sub.mode === 'drink') {
+        const drinkResult = await appendDrinkCommunityCard(sub, {
+          drinkPackId: sub.pack && sub.pack !== 'community' ? sub.pack : 'base',
+        })
+        linked = { type: 'drink', deck: 'comunidade', ...drinkResult }
+      } else if (sub.mode === 'mister') {
+        const misterResult = await appendMisterCommunityPair(sub)
+        linked = { type: 'mister', ...misterResult }
+        if (misterResult.card) sub.linkedCardId = misterResult.card._id
+        invalidateCommunityPairsCache()
+      } else if (sub.mode === 'mememix') {
+        const mmResult = await appendMememixCommunityLegenda(sub)
+        linked = { type: 'mememix', ...mmResult }
+        if (mmResult.card) sub.linkedCardId = mmResult.card._id
       } else {
-        // Create a Challenge document
         const categoryMap = {
           telepatia:'telepatia', perguntas:'perguntas', proibido:'proibido',
-          mimica:'mimica', desenho:'desenho', palavra:'palavra', caos:'caos',
+          mimica:'mimica', desenho:'desenho', palavra:'palavra', caos:'caos', impostor:'impostor',
           acao:'acao', verdade:'verdade', consequencia:'consequencia',
           cultura:'cultura', desporto:'desporto', musica:'musica', cinema:'cinema',
           romantico:'romantico', picante:'picante', erotico:'picante', roleplay:'roleplay', quiz:'casal_pergunta',
           beber:'acao', regra:'consequencia', desafio:'acao', duelo:'acao', poder:'acao', sorte:'consequencia',
         }
+        const isImpostor = sub.cardType === 'impostor'
         linked = await new Challenge({
-          text:        sub.text,
-          category:    categoryMap[sub.cardType] || 'acao',
+          text:        isImpostor ? (sub.correctQuestion || sub.text) : sub.text,
+          category:    isImpostor ? 'impostor' : (categoryMap[sub.cardType] || 'acao'),
+          correct_question: isImpostor ? (sub.correctQuestion || sub.text || '') : '',
+          wrong_question:   isImpostor ? (sub.wrongQuestion || '') : '',
           mode_type:   sub.mode === 'couple' ? 'couple' : sub.mode === 'family' ? 'family' : 'friends',
           answer:      sub.answer || '',
           choices:     sub.choices || [],
@@ -115,7 +172,7 @@ router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
     sub.status = 'approved'
     await sub.save()
 
-    res.json({ message: 'Approved and added to game', sub, linked })
+    res.json({ message: 'Approved and added to game', sub, linked, warnings })
 }))
 
 // POST /api/community/:id/reject

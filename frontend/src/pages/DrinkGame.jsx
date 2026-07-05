@@ -1,38 +1,24 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, RotateCcw, Check, Sparkles, Lock, PartyPopper } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw, Check, Sparkles, Lock, PartyPopper, Plus, Trash2 } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
+import { challengePackParams } from '../utils/packParams'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 
 import { FALLBACK_DRINK_DECKS } from '../utils/drinkDecksFallback'
 import { parseCardPenalty, penaltyHint, formatGoles } from '../utils/penalties'
+import { drinkCardImageSrc } from '../utils/drinkCardImage'
+import {
+  buildAgentPublicPool,
+  buildPlayableDrinkDeck,
+  composeAgentCard,
+} from '../utils/drinkAgentCompose'
+import { normalizeDrinkCategories, selectableDrinkCategories } from '../utils/drinkBaralhos'
+import { substitutePlayerTokens } from '../utils/drinkPlayerText'
 
-const SECRET_AGENT_CARDS = [
-  {
-    type:'agent', emoji:'🕵️', title:'Agente Secreto',
-    publicText:'Missão pública: faz uma pergunta inocente ao grupo e continua o jogo normalmente.',
-    secretMission:'Missão secreta: faz alguém dizer o nome de um cantor. Se conseguires antes do teu próximo turno, distribuis 3 goles.',
-  },
-  {
-    type:'agent', emoji:'🕵️', title:'Agente Secreto',
-    publicText:'Missão pública: elogia alguém da mesa.',
-    secretMission:'Missão secreta: faz outro jogador tocar no teu ombro. Se conseguires, escolhes alguém para beber 2.',
-  },
-  {
-    type:'agent', emoji:'🕵️', title:'Agente Secreto',
-    publicText:'Missão pública: escolhe uma pessoa para contar uma história rápida.',
-    secretMission:'Missão secreta: faz alguém dizer uma cor. Se conseguires, ficas imune à próxima carta.',
-  },
-  {
-    type:'agent', emoji:'🕵️', title:'Agente Secreto',
-    publicText:'Missão pública: todos brindam e alguém escolhe o próximo tema de conversa.',
-    secretMission:'Missão secreta: faz alguém perguntar “porquê?”. Se conseguires, essa pessoa bebe 2.',
-  },
-]
-
-// ── ROULETTE ─────────────────────────────────────────────────
+const MAX_DRINK_PLAYERS = 15
 const ROULETTE_SEGS=[
   {label:'Bebe 2',color:'#f59e0b',action:'drink',val:2},
   {label:'Desafio!',color:'#06b6d4',action:'challenge'},
@@ -132,8 +118,39 @@ function Roulette({players,currentPlayerIdx}){
   )
 }
 
+function DrinkCardBackdrop({ image }) {
+  const src = drinkCardImageSrc(image)
+  if (!src) return null
+  return (
+    <>
+      <img
+        src={src}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => { e.currentTarget.style.display = 'none' }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/35" aria-hidden />
+    </>
+  )
+}
+
 // ── CARD DECK ────────────────────────────────────────────────
-function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDrawn, onAgentResult, onMiniBossResult, onImpostorResult, onAutoPenalty }) {
+function CardDeck({
+  activeDeck,
+  agentPublicPool,
+  agentMissionPool,
+  players,
+  deckSessionId,
+  impostorPairs,
+  onCardDrawn,
+  onAgentResult,
+  onMiniBossResult,
+  onImpostorResult,
+  onAutoPenalty,
+}) {
   const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
   const [current, setCurrent] = useState(null)
   const [agentOpen, setAgentOpen] = useState(false)
@@ -142,6 +159,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
   const [impostorIndex, setImpostorIndex] = useState(null)
   const [impostorDone, setImpostorDone] = useState(false)
   const [recentTypes, setRecentTypes] = useState([])
+  const recentPublicTextsRef = useRef([])
   /** Índice do jogador que deve tirar a próxima carta (ou que acabou de tirar, conforme ecrã) */
   const [nextReaderIdx, setNextReaderIdx] = useState(0)
   /** Quem tirou a carta atualmente visível */
@@ -158,22 +176,37 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
     setNextReaderIdx(0)
     setLastReaderIdx(null)
     setRecentTypes([])
+    recentPublicTextsRef.current = []
   }, [deckSessionId, activeDeck])
+
+  const finalizeAgent = (raw) => {
+    if (!agentPublicPool.length) return raw
+    const composed = composeAgentCard(raw, agentPublicPool, recentPublicTextsRef.current)
+    if (composed.publicText) {
+      recentPublicTextsRef.current = [...recentPublicTextsRef.current.slice(-12), composed.publicText]
+    }
+    return composed
+  }
 
   const draw = () => {
     if (!deck.length) return
     if (current?.type === 'impostor' && !impostorDone) return
     const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
     const safeIdx = drinkSpam ? deck.findIndex(card => card.type !== 'beber') : -1
-    const injectAgent = recentTypes.length >= 2 && Math.random() < 0.12
+    const canInjectAgent =
+      agentPublicPool.length > 0 &&
+      agentMissionPool.length > 0 &&
+      recentTypes.length >= 2 &&
+      Math.random() < 0.12
     const injectImpostor = players.length >= 3 && recentTypes.length >= 3 && Math.random() < 0.1
     const idx = safeIdx > 0 ? safeIdx : 0
-    let card = injectAgent
-      ? SECRET_AGENT_CARDS[Math.floor(Math.random()*SECRET_AGENT_CARDS.length)]
+    let card = canInjectAgent
+      ? agentMissionPool[Math.floor(Math.random() * agentMissionPool.length)]
       : injectImpostor
       ? impostorPairs[Math.floor(Math.random()*impostorPairs.length)]
       : deck[idx]
-    const rest = injectAgent || injectImpostor ? deck : deck.filter((_, i) => i !== idx)
+    const rest = canInjectAgent || injectImpostor ? deck : deck.filter((_, i) => i !== idx)
+    if (card?.type === 'agent') card = finalizeAgent(card)
     const reader = nextReaderIdx % players.length
     setLastReaderIdx(reader)
     setCurrent(card)
@@ -187,7 +220,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
     setNextReaderIdx((reader + 1) % players.length)
     onCardDrawn?.(card, reader)
     const hint = penaltyHint(card.text || card.publicText || '')
-    if (hint && onAutoPenalty && !['agent', 'impostor', 'miniboss', 'alliance', 'mirror'].includes(card.type)) {
+    if (hint && onAutoPenalty && !['agent', 'impostor', 'miniboss', 'alliance', 'preferencia'].includes(card.type)) {
       onAutoPenalty(parseCardPenalty(card.text || ''), reader, hint)
     }
   }
@@ -206,12 +239,12 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
     ai: 'from-violet-700 to-purple-800',
     agent: 'from-slate-800 to-zinc-950',
     alliance: 'from-pink-600 to-rose-700',
-    mirror: 'from-sky-600 to-indigo-700',
     miniboss: 'from-red-700 to-orange-700',
     impostor: 'from-fuchsia-700 to-purple-900',
+    preferencia: 'from-indigo-600 to-violet-700',
   }
   const TYPE_LABELS = {
-    beber: 'Golos',
+    beber: 'Beber',
     regra: 'Regra da Mesa',
     desafio: 'Missão',
     poder: 'Poder',
@@ -221,12 +254,22 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
     ai: 'Surpresa IA',
     agent: 'Agente Secreto',
     alliance: 'Aliança',
-    mirror: 'Espelho',
     miniboss: 'Mini Boss',
     impostor: 'Impostor',
+    preferencia: 'Preferias?',
   }
 
   const impostorLocked = current?.type === 'impostor' && !impostorDone
+  const cardImageSrc = current ? drinkCardImageSrc(current.image) : ''
+  const readerName = whoReads?.name || ''
+  const px = (s) => substitutePlayerTokens(s, players, {
+    reader: readerName,
+    readerGender: whoReads?.gender ?? null,
+  })
+  const cardTitle = current ? px(current.title) : ''
+  const cardText = current ? px(current.text) : ''
+  const cardPublicText = current ? px(current.publicText) : ''
+  const cardSecretMission = current ? px(current.secretMission) : ''
 
   const resolveAgent = (outcome) => {
     setAgentResult(outcome)
@@ -264,19 +307,36 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
             exit={{ scale: 0.9, opacity: 0 }}
             className={`relative w-full overflow-hidden bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}
           >
-            <div className="absolute -right-8 -top-10 text-9xl opacity-15">{current.emoji}</div>
-            <div className="absolute left-5 top-5 rounded-full border border-white/20 bg-black/15 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/75">
+            <DrinkCardBackdrop image={current.image} />
+            <div className="absolute left-5 top-5 z-20 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/90">
               {TYPE_LABELS[current.type] || 'Carta'}
             </div>
-            <div className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-3xl border border-white/20 bg-white/15 text-6xl shadow-inner">
-              {current.emoji}
-            </div>
-            <h3 className="text-white font-black text-3xl mb-4">{current.title}</h3>
+            <div className={`relative z-10 flex flex-col justify-center ${cardImageSrc ? 'min-h-[12rem]' : ''}`}>
+            {!cardImageSrc && (
+              <div className="absolute -right-8 -top-10 text-9xl opacity-15 pointer-events-none">{current.emoji}</div>
+            )}
+            {!cardImageSrc && (
+              <div className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-3xl border border-white/20 bg-white/15 text-6xl shadow-inner">
+                {current.emoji}
+              </div>
+            )}
+            {cardImageSrc && (
+              <div className="mx-auto mb-3 text-4xl drop-shadow-md" aria-hidden>{current.emoji}</div>
+            )}
+            <h3 className="text-white font-black text-3xl mb-4 drop-shadow-sm">{cardTitle}</h3>
             {current.type === 'agent' ? (
               <div className="space-y-3">
+                {current.publicText ? (
+                  <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
+                    <p className="text-white/60 text-xs font-black uppercase tracking-[0.18em] mb-1">Lê isto em voz alta à mesa</p>
+                    <p className="text-white/90 font-medium leading-relaxed">{cardPublicText}</p>
+                  </div>
+                ) : (
+                  <p className="text-red-300 text-sm font-bold">Sem baralho público activo — esta carta Agente não devia aparecer.</p>
+                )}
                 {!agentOpen ? (
                   <>
-                    <p className="text-white/80 text-sm font-bold">Só {whoReads?.name} deve ver a missão secreta.</p>
+                    <p className="text-white/80 text-sm font-bold">Só {whoReads?.name} vê a missão secreta no telemóvel.</p>
                     <button onClick={()=>setAgentOpen(true)} className="w-full rounded-2xl bg-white/15 border border-white/20 py-3 text-white font-black">
                       Ver missão secreta
                     </button>
@@ -285,11 +345,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
                   <div className="space-y-3">
                     <div className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
                       <p className="text-amber-200 text-xs font-black uppercase tracking-[0.18em] mb-1">Missão secreta</p>
-                      <p className="text-white font-bold leading-relaxed">{current.secretMission}</p>
-                    </div>
-                    <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
-                      <p className="text-white/60 text-xs font-black uppercase tracking-[0.18em] mb-1">Lê isto em voz alta</p>
-                      <p className="text-white/90 font-medium leading-relaxed">{current.publicText}</p>
+                      <p className="text-white font-bold leading-relaxed">{cardSecretMission}</p>
                     </div>
                     {!agentResult ? (
                       <div className="grid grid-cols-1 gap-2 pt-1">
@@ -315,7 +371,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
               </div>
             ) : current.type === 'miniboss' ? (
               <div className="space-y-4">
-                <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
+                <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
                 {!bossResult ? (
                   <div className="grid grid-cols-2 gap-2">
                     <button type="button" onClick={() => resolveBoss('success')} className="rounded-2xl bg-emerald-500 text-black py-3 font-black">
@@ -331,6 +387,27 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
                   </div>
                 )}
               </div>
+            ) : current.type === 'preferencia' && Array.isArray(current.choices) && current.choices.length >= 2 ? (
+              <div className="space-y-4 text-left">
+                <p className="text-white/70 text-xs font-black uppercase tracking-[0.18em] text-center">Would you rather</p>
+                <div className="grid gap-3">
+                  {current.choices.slice(0, 2).map((choice, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-white font-bold leading-snug"
+                    >
+                      <span className="text-white/50 text-sm font-black mr-2">{String.fromCharCode(65 + idx)}.</span>
+                      {px(choice)}
+                    </div>
+                  ))}
+                </div>
+                {cardText && (
+                  <p className="text-white/85 text-sm font-medium text-center leading-relaxed rounded-2xl border border-white/15 bg-black/10 px-3 py-2">
+                    {cardText}
+                  </p>
+                )}
+                <p className="text-white/50 text-xs text-center">Conta dedos — minoritários bebem (não entra no contador automático).</p>
+              </div>
             ) : current.type === 'impostor' && impostorIndex !== null ? (
               <ImpostorCard
                 players={players}
@@ -345,7 +422,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
               />
             ) : (
               <div className="space-y-2">
-                <p className="text-white/90 font-medium leading-relaxed text-lg">{current.text}</p>
+                <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
                 {penaltyHint(current.text) && (
                   <p className="text-amber-200 text-sm font-bold rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2">
                     {penaltyHint(current.text)} (registado no contador)
@@ -353,6 +430,7 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
                 )}
               </div>
             )}
+            </div>
           </motion.div>
         ) : (
           <motion.div
@@ -406,19 +484,21 @@ function CardDeck({ activeDeck, players, deckSessionId, impostorPairs, onCardDra
 export default function DrinkGame(){
   const navigate=useNavigate()
   const [phase,setPhase]=useState('setup')
+  const [setupStep, setSetupStep] = useState(0)
   const [playerNames,setPlayerNames]=useState(['','',''])
   const [playerDrinks,setPlayerDrinks]=useState(['','',''])
-  const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','especiais'])
+  const [playerGenders,setPlayerGenders]=useState([null, null, null])
+  const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','cadeia','especiais'])
   const [tab,setTab]=useState('deck')
   const [deckSessionId, setDeckSessionId] = useState(0)
   const [drinkStats,setDrinkStats]=useState([])
   const [activeRules,setActiveRules]=useState([])
   const [activeAlliances,setActiveAlliances]=useState([])
-  const [mirrorShields,setMirrorShields]=useState([])
   const [turnCount,setTurnCount]=useState(0)
   const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
   const [deckCategories, setDeckCategories] = useState(FALLBACK_DRINK_DECKS)
   const [contentPack, setContentPack] = useState('base')
+  const [includeCommunity, setIncludeCommunity] = useState(true)
   const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
   const [decksLoading, setDecksLoading] = useState(true)
   const [lastPenaltyHint, setLastPenaltyHint] = useState(null)
@@ -438,14 +518,32 @@ export default function DrinkGame(){
     .map((name,i)=>({
       name:name.trim(),
       drink:(playerDrinks[i]??'').trim(),
+      gender: playerGenders[i] ?? null,
       color:['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-rose-400 to-red-500','from-sky-400 to-blue-500'][i%8]
     }))
     .filter(p=>p.name)
 
-  const activeDeck = useMemo(
-    () => deckCategories.filter((c) => selectedCats.includes(c.id)).flatMap((c) => c.cards),
+  const playersSetupReady = players.length >= 2 && players.every((p) => p.gender === 'm' || p.gender === 'f')
+
+  const genderSymbol = (g) => (g === 'm' ? '♂' : g === 'f' ? '♀' : '')
+
+  const agentPublicPool = useMemo(
+    () => buildAgentPublicPool(deckCategories, selectedCats),
     [deckCategories, selectedCats]
   )
+
+  const activeDeck = useMemo(
+    () => buildPlayableDrinkDeck(deckCategories, selectedCats, includeCommunity),
+    [deckCategories, selectedCats, includeCommunity]
+  )
+
+  const agentMissionPool = useMemo(
+    () => activeDeck.filter((c) => c.type === 'agent'),
+    [activeDeck]
+  )
+
+  const agentNeedsOtherDeck =
+    selectedCats.includes('especiais') && agentPublicPool.length === 0
 
   const cardsUntilSurpriseRef = useRef(3)
 
@@ -458,10 +556,10 @@ export default function DrinkGame(){
   }))
 
   const startGame = () => {
+    if (!playersSetupReady) return
     setDrinkStats(freshStats(players.length))
     setActiveRules([])
     setActiveAlliances([])
-    setMirrorShields([])
     setTurnCount(0)
     setDeckSessionId((k) => k + 1)
     setPhase('playing')
@@ -563,13 +661,6 @@ export default function DrinkGame(){
       ])
     }
 
-    if (card?.type === 'mirror') {
-      setMirrorShields((shields) => {
-        const next = [...shields]
-        next[readerIndex] = (next[readerIndex] || 0) + 1
-        return next
-      })
-    }
   }
 
   const handleAgentResult = (outcome, readerIndex) => {
@@ -592,7 +683,11 @@ export default function DrinkGame(){
   }
 
   const fetchSurpriseChallenge = async () => {
-    const roster = players.map((p) => ({ name: p.name, drink: p.drink || '' }))
+    const roster = players.map((p) => ({
+      name: p.name,
+      drink: p.drink || '',
+      gender: p.gender || '',
+    }))
     if (roster.length < 1) return
     setSurpriseLoading(true)
     setSurpriseErr(null)
@@ -628,19 +723,23 @@ export default function DrinkGame(){
     Promise.all([
       api.getDrinkPacks().catch(() => []),
       api.getDrinkDecks(contentPack).catch(() => null),
-      api.getChallenges({ category: 'impostor', mode_type: 'friends', ...(contentPack ? { pack: contentPack } : {}) }).catch(() => []),
+      api.getChallenges({
+        category: 'impostor',
+        mode_type: 'friends',
+        ...challengePackParams(contentPack, includeCommunity),
+      }).catch(() => []),
     ]).then(([packs, decks, impostorRows]) => {
       if (cancelled) return
       if (Array.isArray(packs) && packs.length) {
         setPackOptions(packs.map((p) => ({ pack: p.pack, name: p.name || p.pack })))
       }
-      const cats = decks?.categories?.length ? decks.categories : FALLBACK_DRINK_DECKS
+      const cats = normalizeDrinkCategories(decks?.categories?.length ? decks.categories : FALLBACK_DRINK_DECKS)
       setDeckCategories(cats)
-      setSelectedCats((prev) => prev.filter((id) => cats.some((c) => c.id === id)))
+      setSelectedCats((prev) => prev.filter((id) => id !== 'comunidade' && cats.some((c) => c.id === id)))
       if (Array.isArray(impostorRows)) setImpostorPairs(mergeImpostorPairs(IMPOSTOR_PAIRS, impostorRows))
     }).finally(() => { if (!cancelled) setDecksLoading(false) })
     return () => { cancelled = true }
-  }, [contentPack])
+  }, [contentPack, includeCommunity])
 
   const handleAutoPenalty = (parsed, readerIndex, hint) => {
     if (!parsed) return
@@ -694,7 +793,12 @@ export default function DrinkGame(){
                 <div key={player.name} className="flex items-center gap-3 p-4 border-b border-white/[0.06] last:border-b-0">
                   <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${player.color} flex items-center justify-center text-white font-black`}>{player.name[0]}</div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-bold truncate">{player.name}</p>
+                    <p className="text-white font-bold truncate">
+                      {genderSymbol(player.gender) && (
+                        <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
+                      )}
+                      {player.name}
+                    </p>
                     <p className="text-slate-500 text-xs">Distribuiu {stat.distributed} · Agente {stat.agentSuccess} · Regras {stat.rulesCreated}</p>
                   </div>
                   <div className="text-right">
@@ -722,66 +826,238 @@ export default function DrinkGame(){
   if(phase==='setup')return(
     <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
       <div className="w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-8">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
-          <div><h1 className="text-white font-black text-2xl">🍺 Modo Beber</h1><p className="text-slate-500 text-sm">Configura o teu baralho</p></div>
-        </div>
-        {/* Players */}
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 mb-4">
-          <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
-          <p className="text-slate-500 text-xs mb-3">Opcional: o que cada um está a beber — a IA usa nos desafios surpresa (só nomes e bebidas que escreveres).</p>
-          {playerNames.map((n,i)=>(
-            <div key={i} className="mb-3 last:mb-0 space-y-1.5">
-              <input value={n} onChange={e=>setPlayerNames(ns=>ns.map((x,j)=>j===i?e.target.value:x))}
-                placeholder="Nome"
-                className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 outline-none border border-white/[0.08] focus:border-amber-500/50 text-sm"/>
-              <input value={playerDrinks[i]??''} onChange={e=>setPlayerDrinks(ds=>ds.map((x,j)=>j===i?e.target.value:x))}
-                placeholder="O que está a beber? (opcional)"
-                className="w-full bg-white/[0.03] text-slate-200 rounded-xl px-4 py-2 outline-none border border-white/[0.06] focus:border-amber-500/40 text-sm placeholder-slate-600"/>
-            </div>
-          ))}
-          {playerNames.length<8&&<button type="button" onClick={()=>{setPlayerNames(n=>[...n,'']); setPlayerDrinks(d=>[...d,''])}} className="text-amber-400 text-sm hover:text-amber-300 transition-colors">+ Adicionar jogador</button>}
-        </div>
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 mb-4">
-          <h3 className="text-white font-semibold mb-2">Pack de conteúdo</h3>
-          <p className="text-slate-500 text-xs mb-2">Só jogas cartas deste pack (importa com npm run seed:packs).</p>
-          <select value={contentPack} onChange={(e)=>setContentPack(e.target.value)}
-            className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 border border-white/[0.08] text-sm">
-            {packOptions.map((p)=><option key={p.pack} value={p.pack}>{p.name}</option>)}
-          </select>
-          {decksLoading && <p className="text-amber-400 text-xs mt-2">A carregar baralhos…</p>}
-        </div>
-        {/* Deck categories */}
-        <div className="mb-6">
-          <h3 className="text-white font-semibold mb-3">Categorias do baralho</h3>
-          <div className="space-y-2">
-            {deckCategories.map(cat=>{
-              const isSel=selectedCats.includes(cat.id)
-              return(
-                <motion.button key={cat.id} whileTap={!cat.premium?{scale:0.98}:{}} onClick={()=>toggleCat(cat.id)}
-                  className={`w-full rounded-2xl p-4 flex items-center gap-3 border transition-all text-left ${cat.premium?'opacity-50 cursor-not-allowed border-white/[0.04] bg-white/[0.02]':isSel?'border-amber-500/40 bg-amber-500/8':'border-white/[0.06] bg-white/[0.03] hover:border-white/[0.15]'}`}>
-                  <div className="text-2xl flex-shrink-0 w-10 text-center">{cat.label.split(' ')[0]}</div>
-                  <div className="flex-1">
-                    <p className={`font-bold text-sm ${isSel||cat.premium?'text-white':'text-slate-400'}`}>{cat.label}</p>
-                    <p className="text-slate-500 text-xs">{cat.desc}{!cat.premium&&` · ${cat.cards.length} cartas`}</p>
-                    {cat.premium&&<p className="text-amber-600 text-xs mt-0.5">Em breve — conteúdo premium</p>}
-                  </div>
-                  {cat.premium?<Lock className="text-slate-600 w-4 h-4 flex-shrink-0"/>
-                    :<div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSel?'border-amber-400 bg-amber-500':'border-white/[0.20]'}`}>
-                      {isSel&&<Check className="text-white w-3 h-3"/>}
-                    </div>
-                  }
-                </motion.button>
-              )
-            })}
+        <div className="flex items-center gap-3 mb-5">
+          <button
+            onClick={() => setupStep > 0 ? setSetupStep(0) : navigate('/')}
+            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-all"
+          >
+            <ChevronLeft className="w-5 h-5"/>
+          </button>
+          <div className="flex-1">
+            <h1 className="text-white font-black text-2xl">🍺 Modo Beber</h1>
+            <p className="text-slate-500 text-sm">
+              {setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Baralhos'}
+            </p>
           </div>
         </div>
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={startGame}
-          disabled={players.length<2||selectedCats.length===0}
-          className="w-full text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40"
-          style={{background:'linear-gradient(135deg,#f59e0b,#d97706)'}}>
-          🍻 Começar! ({activeDeck.length} cartas)
-        </motion.button>
+
+        <div className="w-full bg-white/[0.06] rounded-full h-1 mb-6">
+          <div
+            className="bg-gradient-to-r from-amber-400 to-orange-500 h-1 rounded-full transition-all"
+            style={{ width: setupStep === 0 ? '50%' : '100%' }}
+          />
+        </div>
+
+        <AnimatePresence mode="wait">
+          {setupStep === 0 && (
+            <motion.div
+              key="setup-players"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              className="space-y-4"
+            >
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+                <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
+                <p className="text-slate-500 text-xs mb-4">
+                  Nome e género (♂ ♀) obrigatórios — usados nas cartas (ex.: reader_a → ao João / à Maria). Bebida opcional.
+                </p>
+                <div className="space-y-3">
+                  {playerNames.map((n, i) => {
+                    const needsGender = n.trim() && playerGenders[i] !== 'm' && playerGenders[i] !== 'f'
+                    return (
+                    <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <input
+                          value={n}
+                          onChange={(e) => setPlayerNames((ns) => ns.map((x, j) => (j === i ? e.target.value : x)))}
+                          placeholder={`Jogador ${i + 1}`}
+                          className="flex-1 min-w-0 bg-transparent text-white rounded-xl px-2 py-2 outline-none placeholder-slate-600 text-sm font-medium"
+                        />
+                        {playerNames.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPlayerNames((ns) => ns.filter((_, j) => j !== i))
+                              setPlayerDrinks((ds) => ds.filter((_, j) => j !== i))
+                              setPlayerGenders((gs) => gs.filter((_, j) => j !== i))
+                            }}
+                            className="text-slate-600 hover:text-red-400 p-1 transition-colors flex-shrink-0"
+                          >
+                            <Trash2 className="w-4 h-4"/>
+                          </button>
+                        )}
+                        <div className={`flex gap-1 flex-shrink-0 ml-auto rounded-xl p-0.5 ${needsGender ? 'ring-1 ring-amber-400/50' : ''}`}>
+                          {[
+                            { id: 'm', label: '♂', title: 'Masculino' },
+                            { id: 'f', label: '♀', title: 'Feminino' },
+                          ].map((opt) => (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              title={opt.title}
+                              onClick={() => setPlayerGenders((gs) => gs.map((g, j) => (j === i ? opt.id : g)))}
+                              className={`w-9 h-9 rounded-xl border text-base font-bold transition-all ${
+                                playerGenders[i] === opt.id
+                                  ? opt.id === 'm'
+                                    ? 'border-sky-400/50 bg-sky-500/20 text-sky-200'
+                                    : 'border-pink-400/50 bg-pink-500/20 text-pink-200'
+                                  : 'border-white/[0.08] bg-white/[0.04] text-slate-500 hover:text-white'
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <input
+                        value={playerDrinks[i] ?? ''}
+                        onChange={(e) => setPlayerDrinks((ds) => ds.map((x, j) => (j === i ? e.target.value : x)))}
+                        placeholder="O que está a beber? (opcional)"
+                        className="w-full bg-white/[0.04] text-slate-200 rounded-xl px-3 py-2 outline-none border border-white/[0.06] focus:border-amber-500/40 text-sm placeholder-slate-600"
+                      />
+                    </div>
+                    )
+                  })}
+                </div>
+                {!playersSetupReady && players.length >= 2 && (
+                  <p className="text-amber-400/90 text-xs mt-3">Escolhe ♂ ou ♀ para cada jogador com nome.</p>
+                )}
+                {players.length < 2 && playerNames.some((name) => name.trim()) && (
+                  <p className="text-amber-400/90 text-xs mt-3">Mínimo 2 jogadores com nome e género.</p>
+                )}
+                {playerNames.length < MAX_DRINK_PLAYERS && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPlayerNames((n) => [...n, ''])
+                      setPlayerDrinks((d) => [...d, ''])
+                      setPlayerGenders((g) => [...g, null])
+                    }}
+                    className="mt-3 w-full border border-dashed border-white/[0.1] rounded-2xl py-2.5 text-slate-500 hover:text-white hover:border-white/[0.25] transition-all flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Plus className="w-4 h-4"/> Adicionar jogador
+                  </button>
+                )}
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => setSetupStep(1)}
+                disabled={!playersSetupReady}
+                className="w-full text-black font-black rounded-2xl py-4 text-lg disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
+              >
+                Escolher baralhos
+                <ChevronRight className="w-5 h-5"/>
+              </motion.button>
+            </motion.div>
+          )}
+
+          {setupStep === 1 && (
+            <motion.div
+              key="setup-decks"
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -16 }}
+              className="space-y-4"
+            >
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Jogadores</p>
+                <div className="flex flex-wrap gap-2">
+                  {players.map((p) => (
+                    <span
+                      key={p.name}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1 text-sm text-white"
+                    >
+                      {genderSymbol(p.gender) && (
+                        <span className={p.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(p.gender)}</span>
+                      )}
+                      {p.name}
+                      {p.drink && <span className="text-slate-500 text-xs">· {p.drink}</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
+                <h3 className="text-white font-semibold mb-2">Pack de conteúdo</h3>
+                <select
+                  value={contentPack}
+                  onChange={(e) => setContentPack(e.target.value)}
+                  className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 border border-white/[0.08] text-sm"
+                >
+                  {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
+                </select>
+                <label className="flex items-center gap-3 mt-3 cursor-pointer">
+                  <button
+                    type="button"
+                    onClick={() => setIncludeCommunity((v) => !v)}
+                    className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-amber-500' : 'bg-white/[0.12]'}`}
+                  >
+                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
+                  </button>
+                  <span className="text-slate-300 text-sm">Incluir baralho Comunidade</span>
+                </label>
+                {decksLoading && <p className="text-amber-400 text-xs mt-2">A carregar baralhos…</p>}
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-3">Categorias do baralho</h3>
+                <div className="space-y-2">
+                  {selectableDrinkCategories(deckCategories).map(cat => {
+                    const isSel = selectedCats.includes(cat.id)
+                    return (
+                      <motion.button
+                        key={cat.id}
+                        whileTap={!cat.premium ? { scale: 0.98 } : {}}
+                        onClick={() => toggleCat(cat.id)}
+                        className={`w-full rounded-2xl p-4 flex items-center gap-3 border transition-all text-left ${
+                          cat.premium
+                            ? 'opacity-50 cursor-not-allowed border-white/[0.04] bg-white/[0.02]'
+                            : isSel
+                              ? 'border-amber-500/40 bg-amber-500/8'
+                              : 'border-white/[0.06] bg-white/[0.03] hover:border-white/[0.15]'
+                        }`}
+                      >
+                        <div className="text-2xl flex-shrink-0 w-10 text-center">{cat.label.split(' ')[0]}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`font-bold text-sm ${isSel || cat.premium ? 'text-white' : 'text-slate-400'}`}>{cat.label}</p>
+                          <p className="text-slate-500 text-xs truncate">{cat.desc}{!cat.premium && ` · ${cat.cards.length} cartas`}</p>
+                          {cat.premium && <p className="text-amber-600 text-xs mt-0.5">Em breve — conteúdo premium</p>}
+                        </div>
+                        {cat.premium ? (
+                          <Lock className="text-slate-600 w-4 h-4 flex-shrink-0"/>
+                        ) : (
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSel ? 'border-amber-400 bg-amber-500' : 'border-white/[0.20]'}`}>
+                            {isSel && <Check className="text-white w-3 h-3"/>}
+                          </div>
+                        )}
+                      </motion.button>
+                    )
+                  })}
+                </div>
+                {agentNeedsOtherDeck && (
+                  <p className="text-amber-400/90 text-xs mt-3 leading-relaxed">
+                    Agente Secreto precisa de outro baralho activo (ex.: Eu Nunca, Regras, Desafios). Só com Especiais, cartas Agente não entram.
+                  </p>
+                )}
+              </div>
+
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={startGame}
+                disabled={selectedCats.length === 0 || !playersSetupReady}
+                className="w-full text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
+              >
+                🍻 Começar! ({activeDeck.length} cartas)
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   )
@@ -790,7 +1066,7 @@ export default function DrinkGame(){
     <div className="min-h-screen flex flex-col" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
       <div className="p-4 border-b border-white/[0.06]">
         <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={()=>setPhase('setup')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
+          <button onClick={() => { setSetupStep(1); setPhase('setup') }} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
           <h1 className="text-white font-bold">🍺 Modo Beber</h1>
           <button type="button" onClick={()=>setPhase('results')} className="text-amber-300 text-xs font-black rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2">
             Fim
@@ -808,7 +1084,7 @@ export default function DrinkGame(){
       </div>
       <div className="flex-1 flex flex-col items-center px-4 py-5 max-w-lg mx-auto w-full">
         <div className="w-full mb-4 space-y-3">
-          {(activeRules.length > 0 || activeAllianceList.length > 0 || mirrorShields.some(Boolean)) && (
+          {(activeRules.length > 0 || activeAllianceList.length > 0) && (
             <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-white font-black text-sm">Estado da mesa</p>
@@ -847,23 +1123,6 @@ export default function DrinkGame(){
                 </div>
               )}
 
-              {mirrorShields.some(Boolean) && (
-                <div className="space-y-2">
-                  <p className="text-sky-300 text-xs font-black uppercase tracking-[0.16em]">Espelhos</p>
-                  {mirrorShields.map((count, idx)=>count ? (
-                    <div key={players[idx]?.name || idx} className="rounded-2xl border border-sky-400/20 bg-sky-400/10 p-3 flex items-center justify-between gap-3">
-                      <p className="text-white text-sm">🛡️ {players[idx]?.name} pode refletir {count} penalização{count > 1 ? 'ões' : ''}</p>
-                      <button
-                        type="button"
-                        onClick={()=>setMirrorShields((shields)=>shields.map((value, shieldIdx)=>shieldIdx===idx ? Math.max(0, (value || 0) - 1) : value))}
-                        className="text-sky-100 text-xs font-black rounded-xl bg-white/10 px-3 py-2"
-                      >
-                        Usar
-                      </button>
-                    </div>
-                  ) : null)}
-                </div>
-              )}
             </div>
           )}
 
@@ -876,7 +1135,12 @@ export default function DrinkGame(){
               {players.map((player, idx)=>(
                 <div key={player.name} className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-2">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <p className="text-white text-sm font-bold truncate">{player.name}</p>
+                    <p className="text-white text-sm font-bold truncate">
+                      {genderSymbol(player.gender) && (
+                        <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
+                      )}
+                      {player.name}
+                    </p>
                     <p className="text-amber-300 text-xs font-black">{drinkStats[idx]?.drinks || 0}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-1">
@@ -937,6 +1201,8 @@ export default function DrinkGame(){
               <CardDeck
                 key={deckSessionId}
                 activeDeck={activeDeck}
+                agentPublicPool={agentPublicPool}
+                agentMissionPool={agentMissionPool}
                 players={players}
                 deckSessionId={deckSessionId}
                 impostorPairs={impostorPairs}

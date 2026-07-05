@@ -27,4 +27,26 @@ export const FALLBACK_DRINK_DECKS = [
       { type: 'regra', emoji: '📜', title: 'Nova Regra!', text: 'Quem disser "sim" ou "não" bebe 1 gole até ao fim do jogo!' },
     ],
   },
+  {
+    id: 'preferias',
+    label: '🤔 Preferias?',
+    desc: 'Would you rather — escolhas impossíveis',
+    premium: false,
+    cards: [
+      {
+        type: 'preferencia',
+        emoji: '🤔',
+        title: 'Preferias?',
+        text: 'Minoritários bebem 2. Empate = todos bebem 1.',
+        choices: ['Ter 10 dedos das mãos nos pés', 'Ter 10 dedos dos pés nas mãos'],
+      },
+    ],
+  },
+  {
+    id: 'comunidade',
+    label: '🌍 Comunidade',
+    desc: 'Cartas aprovadas pela comunidade',
+    premium: false,
+    cards: [],
+  },
 ]

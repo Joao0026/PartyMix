@@ -96,3 +96,19 @@ export function clearMwLobbyHandoff() {
 export function patchMwLobbyHandoff(patch) {
   if (mwLobbyHandoff) mwLobbyHandoff = { ...mwLobbyHandoff, ...patch }
 }
+
+let amLobbyHandoff = null
+export function setAmLobbyHandoff(payload) { amLobbyHandoff = payload }
+export function peekAmLobbyHandoff() { return amLobbyHandoff }
+export function clearAmLobbyHandoff() { amLobbyHandoff = null }
+export function patchAmLobbyHandoff(patch) {
+  if (amLobbyHandoff) amLobbyHandoff = { ...amLobbyHandoff, ...patch }
+}
+
+let mmLobbyHandoff = null
+export function setMmLobbyHandoff(payload) { mmLobbyHandoff = payload }
+export function peekMmLobbyHandoff() { return mmLobbyHandoff }
+export function clearMmLobbyHandoff() { mmLobbyHandoff = null }
+export function patchMmLobbyHandoff(patch) {
+  if (mmLobbyHandoff) mmLobbyHandoff = { ...mmLobbyHandoff, ...patch }
+}

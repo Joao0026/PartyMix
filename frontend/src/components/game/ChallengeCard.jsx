@@ -81,11 +81,11 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
   const getPenaltyText = () => {
     if (isFamily) return null // No drinking in family mode
     const sips = Math.floor(Math.random() * 5) + 1
-    if (penaltyType === 'sips')    return `🍺 ${player?.name} bebe ${sips} golo${sips>1?'s':''}!`
+    if (penaltyType === 'sips')    return `🍺 ${player?.name} bebe ${sips} gole${sips>1?'s':''}!`
     if (penaltyType === 'penalty') return `⚽ ${player?.name} marca um penálti!`
     // both — show generic message, actual penalty handled by parent
     return Math.random() < 0.5
-      ? `🍺 ${player?.name} bebe ${sips} golo${sips>1?'s':''}!`
+      ? `🍺 ${player?.name} bebe ${sips} gole${sips>1?'s':''}!`
       : `⚽ ${player?.name} marca um penálti!`
   }
 
@@ -167,7 +167,7 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
                           : isFamily
                           ? 'Falhou! A passar ao próximo turno...'
                           : mode === 'friends'
-                          ? 'Falhou! Bebe 2 golos.'
+                          ? 'Falhou! Bebe 2 goles.'
                           : getPenaltyText() || 'Falhou!')
                         setTimeout(() => handleResult(isCorrect ? 'success' : 'fail', { autoNext: true }), 1200)
                       }}

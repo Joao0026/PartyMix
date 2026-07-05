@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { loadGame } from '../utils/game'
 import { api } from '../utils/api'
+import { challengePackParams } from '../utils/packParams'
 import ChallengeCard from '../components/game/ChallengeCard'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 import MiniGameModal from '../components/game/MiniGameModal'
@@ -254,13 +255,16 @@ export default function MapGame() {
 
   useEffect(() => {
     let cancelled = false
-    const pack = game?.contentPack || 'base'
-    void api.getChallenges({ category: 'impostor', mode_type: 'friends', pack }).then((rows) => {
+    void api.getChallenges({
+      category: 'impostor',
+      mode_type: 'friends',
+      ...challengePackParams(game?.contentPack, game?.includeCommunity !== false),
+    }).then((rows) => {
       if (cancelled || !Array.isArray(rows)) return
       setImpostorPairs(mergeImpostorPairs(IMPOSTOR_PAIRS, rows))
     }).catch(() => {})
     return () => { cancelled = true }
-  }, [game?.contentPack])
+  }, [game?.contentPack, game?.includeCommunity])
 
   const handleRoll = async val => {
     if (rolled||moving) return
@@ -280,7 +284,7 @@ export default function MapGame() {
       if(tile.type==='challenge'||tile.type==='start'){
         const category = tile.category || cats[0]
         try{
-          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends',...(game?.contentPack?{pack:game.contentPack}:{})})
+          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends',...challengePackParams(game?.contentPack, game?.includeCommunity !== false)})
           if(c&&!c.error){setChallenge(c);setShowChallenge(true);return}
         }catch{}
         setChallenge(fallbackChallenge(category, game?.mode || 'friends'))
@@ -295,7 +299,7 @@ export default function MapGame() {
       all_play: { emoji:'👨‍👩‍👧', title:'Todos jogam!', text:'Toda a mesa participa neste desafio. Se acertarem, o jogador da vez ganha ponto.' },
       team_duel:{ emoji:'⚔️', title:'Duelo de equipas', text:'A equipa adversária lê. Quem responder melhor ganha o ponto.' },
       duel:     { emoji:'⚔️', title:'Duelo', text:'Escolhe um adversário. Quem vencer fica com o ponto.' },
-      shot:     { emoji:'🍻', title:'Shot/Duelo', text:'Escolhe um adversário. Perdedor bebe 2 golos.' },
+      shot:     { emoji:'🍻', title:'Shot/Duelo', text:'Escolhe um adversário. Perdedor bebe 2 goles.' },
       bonus:    { emoji:'⭐', title:'Bónus difícil', text:'Pergunta difícil. Se acertar, vale 2 pontos.' },
       risk:     { emoji:'⚠️', title:'Risco', text:'Se falhar, perde 1 ponto. Pensa bem antes de responder.' },
     }[tile.special]
@@ -311,7 +315,7 @@ export default function MapGame() {
         ? 'Risco, se falhar perde 1 ponto: '
         : 'Duelo: '
       try{
-        const params = {category:effectiveCategory,mode_type:game?.mode||'friends',...(game?.contentPack?{pack:game.contentPack}:{})}
+        const params = {category:effectiveCategory,mode_type:game?.mode||'friends',...challengePackParams(game?.contentPack, game?.includeCommunity !== false)}
         if (tile.special === 'bonus') params.difficulty = 'dificil'
         const c=await api.getRandomChallenge(params)
         const base = (c&&!c.error) ? c : fallbackChallenge(effectiveCategory, game?.mode || 'friends')
@@ -606,8 +610,8 @@ export default function MapGame() {
                   : penaltyAnim.type==='shield'
                   ? 'usou a proteção!'
                   : penaltyAnim.type==='distribute'
-                  ? `distribui ${penaltyAnim.sips} golos!`
-                  : `bebe ${penaltyAnim.sips} golo${penaltyAnim.sips>1?'s':''}!`}
+                  ? `distribui ${penaltyAnim.sips} goles!`
+                  : `bebe ${penaltyAnim.sips} gole${penaltyAnim.sips>1?'s':''}!`}
               </div>
             </div>
           </motion.div>

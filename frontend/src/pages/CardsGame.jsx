@@ -6,6 +6,7 @@ import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 import { getSocketUrl } from '../utils/api'
+import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
 const API_URL = getSocketUrl()
@@ -46,6 +47,8 @@ const ALL_PACKS = Object.values(PACKS)
 function SetupScreen({ onCreateOnline, initialName }) {
   const navigate = useNavigate()
   const [selPacks, setSelPacks] = useState(['base','festa','dark'])
+  const [includeCommunity, setIncludeCommunity] = useState(true)
+  const [creating, setCreating] = useState(false)
   const [playerName, setPlayerName] = useState(initialName || '')
 
   // Preencher quando vier de CardsLobby
@@ -98,17 +101,40 @@ function SetupScreen({ onCreateOnline, initialName }) {
           </div>
           <p className="text-slate-600 text-xs mt-2 text-center">
             Total: {selPacks.reduce((s,id)=>s+(PACKS[id]?.black.length||0),0)} pretas + {selPacks.reduce((s,id)=>s+(PACKS[id]?.white.length||0),0)} brancas
+            {includeCommunity ? ' + comunidade' : ''}
           </p>
+          <label className="flex items-center gap-3 mt-3 cursor-pointer">
+            <button type="button" onClick={() => setIncludeCommunity((v) => !v)}
+              className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-amber-500' : 'bg-white/[0.12]'}`}>
+              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
+            </button>
+            <span className="text-slate-300 text-sm">Incluir cartas da comunidade (BD)</span>
+          </label>
         </div>
 
         <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-          onClick={() => {
-            const packs = {black:shuffle(selPacks.flatMap(id=>PACKS[id]?.black||[])),white:shuffle(selPacks.flatMap(id=>PACKS[id]?.white||[]))}
-            onCreateOnline(packs, playerName.trim())
+          onClick={async () => {
+            setCreating(true)
+            try {
+              let black = shuffle(selPacks.flatMap(id => PACKS[id]?.black || []))
+              let white = shuffle(selPacks.flatMap(id => PACKS[id]?.white || []))
+              if (includeCommunity) {
+                try {
+                  const rows = await api.getCards({ pack: 'community' })
+                  if (Array.isArray(rows)) {
+                    black = shuffle([...black, ...rows.filter((c) => c.is_black).map((c) => c.text)])
+                    white = shuffle([...white, ...rows.filter((c) => !c.is_black).map((c) => c.text)])
+                  }
+                } catch { /* offline — só packs locais */ }
+              }
+              onCreateOnline({ black, white }, playerName.trim())
+            } finally {
+              setCreating(false)
+            }
           }}
-          disabled={selPacks.length===0 || !playerName.trim()}
+          disabled={selPacks.length===0 || !playerName.trim() || creating}
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40">
-          📡 Criar Sala Online
+          {creating ? 'A preparar…' : '📡 Criar Sala Online'}
         </motion.button>
       </div>
     </div>
