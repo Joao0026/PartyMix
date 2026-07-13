@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { LangProvider } from './contexts/LangContext'
 import ConnectionStatus from './components/ConnectionStatus'
 import InstallPrompt from './components/InstallPrompt'
@@ -39,9 +39,60 @@ function PageLoader() {
   )
 }
 
+function IOSViewportFix() {
+  useEffect(() => {
+    const setViewportHeight = () => {
+      const height = window.visualViewport?.height || window.innerHeight
+      document.documentElement.style.setProperty('--app-vh', `${height}px`)
+    }
+
+    setViewportHeight()
+    window.visualViewport?.addEventListener('resize', setViewportHeight)
+    window.visualViewport?.addEventListener('scroll', setViewportHeight)
+    window.addEventListener('resize', setViewportHeight)
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', setViewportHeight)
+      window.visualViewport?.removeEventListener('scroll', setViewportHeight)
+      window.removeEventListener('resize', setViewportHeight)
+    }
+  }, [])
+
+  return null
+}
+
+function ScrollReset() {
+  const { pathname, search } = useLocation()
+
+  useLayoutEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+
+    const reset = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      document.documentElement.scrollTop = 0
+      document.body.scrollTop = 0
+    }
+
+    reset()
+    const raf = window.requestAnimationFrame(reset)
+    const timer = window.setTimeout(reset, 80)
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+      window.clearTimeout(timer)
+    }
+  }, [pathname, search])
+
+  return null
+}
+
 export default function App() {
   return (
     <LangProvider>
+      <IOSViewportFix />
+      <ScrollReset />
       <ConnectionStatus />
       <InstallPrompt />
       <Suspense fallback={<PageLoader />}>
