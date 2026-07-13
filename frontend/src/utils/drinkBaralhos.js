@@ -18,7 +18,6 @@ export const DRINK_BARALHOS = [
 ]
 
 export const DRINK_ESPECIAL_TYPES = [
-  { id: 'agent', label: '🕵️ Agente Secreto' },
   { id: 'impostor', label: '🎭 Impostor' },
   { id: 'alliance', label: '🤝 Aliança' },
   { id: 'miniboss', label: '👹 Mini Boss' },
@@ -37,7 +36,7 @@ export const DRINK_BARALHO_PLACEHOLDERS = {
   maldicao: 'Ex: Amaldiçoado: só frases de 3 palavras. Passa a maldição a quem te fizer rir.',
   picante: 'Ex: Revela o crush mais embaraçoso da tua vida. Ou bebe 3 goles.',
   poder: 'Ex: Distribui 4 goles como quiseres pelo grupo.',
-  preferias: 'Minoritários bebem 2 goles. Empate = todos bebem 1 gole.',
+  preferias: 'Minoria bebe 1',
   extreme: 'Ex: Bebe 3 goles ou responde à pergunta mais incómoda que o grupo inventar.',
   alliance: 'Ex: Dupla com o jogador à tua direita. Se um beber, o outro bebe metade.',
   miniboss: 'Ex: Em 25 segundos, nomeiem 12 programas de TV portugueses. Sucesso → mesa distribui 6 goles. Falha → mesa bebe 6 goles.',

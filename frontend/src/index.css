@@ -14,7 +14,7 @@ body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   min-height: 100dvh;
-  background: #0f172a;
+  background: #080b14;
   overflow-x: hidden;
 }
 #root {
@@ -22,6 +22,40 @@ body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   min-height: 100dvh;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 640px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@layer components {
+  .surface {
+    @apply rounded-2xl border border-white/[0.10] bg-white/[0.06];
+  }
+  .surface-sm {
+    @apply rounded-xl border border-white/[0.08] bg-white/[0.05];
+  }
+  .section-label {
+    @apply text-xs font-black uppercase tracking-[0.12em] text-slate-400;
+  }
+  .input-field {
+    @apply w-full bg-slate-800/80 border border-white/[0.12] text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500/60;
+  }
+  .sticky-cta {
+    @apply sticky bottom-0 z-20 pt-3 pb-safe -mx-4 px-4;
+    background: linear-gradient(to top, rgb(36 48 68) 65%, rgb(36 48 68 / 0.85) 85%, transparent);
+  }
+  .btn-primary {
+    @apply w-full rounded-2xl py-4 font-black text-white transition-transform active:scale-[0.98];
+  }
 }
 
 @layer utilities {
@@ -40,6 +74,13 @@ body {
   }
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+  .bottom-safe-4 {
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
+  .overlay-safe-pad {
+    padding: 1rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 }
 ::-webkit-scrollbar { width: 4px; }

@@ -1,10 +1,14 @@
-import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ChevronLeft, Wifi } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { io } from 'socket.io-client'
 import { setGlobalSocket, setCardsLobbyHandoff } from '../utils/socketStore'
 import { getSocketUrl } from '../utils/api'
+import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
+import ShareRoomLink from '../components/layout/ShareRoomLink'
 
 const API_URL = getSocketUrl()
 
@@ -45,6 +49,7 @@ function pickGameStateForHandoff(s) {
 
 export default function CardsLobby() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [name,    setName]    = useState('')
   const [code,    setCode]    = useState('')
   const [error,   setError]   = useState(null)
@@ -55,6 +60,66 @@ export default function CardsLobby() {
   const handRef = useRef(null)
   const hasNavigatedRef = useRef(false)
   const pendingStartRef = useRef(null)
+
+  useEffect(() => {
+    const saved = loadCardsSession()
+    if (saved?.playerName) setName(saved.playerName)
+    if (saved?.code) setCode(saved.code)
+  }, [])
+
+  useEffect(() => {
+    const q = searchParams.get('code')
+    if (q) setCode(q.trim().toUpperCase())
+  }, [searchParams])
+
+  const savedSession = loadCardsSession()
+
+  const rejoinSaved = () => {
+    const saved = loadCardsSession()
+    if (!saved?.code || !saved?.playerName) return
+    setName(saved.playerName)
+    setCode(saved.code)
+    setJoining(true)
+    setError(null)
+    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    setSocket(s)
+    setGlobalSocket(s)
+    const enterGame = (rawGameState) => {
+      if (hasNavigatedRef.current) return
+      hasNavigatedRef.current = true
+      const room = pickRoomForHandoff(roomRef.current)
+      const gameState = pickGameStateForHandoff(rawGameState)
+      const hand = Array.isArray(handRef.current) ? handRef.current.map(String) : []
+      setCardsLobbyHandoff({ room, playerName: saved.playerName, gameState, hand })
+      navigate('/CardsGame', { replace: true, state: { online: true } })
+    }
+    const enterGameAfterHand = (rawGameState) => {
+      if (hasNavigatedRef.current) return
+      pendingStartRef.current = rawGameState
+      s.once('your_hand', (hand) => {
+        if (hasNavigatedRef.current) return
+        handRef.current = hand
+        const pending = pendingStartRef.current
+        pendingStartRef.current = null
+        if (pending) enterGame(pending)
+      })
+    }
+    s.once('connect', () => {
+      s.on('cards_rejoined', ({ room: r, playerName: pn, isHost: ih }) => {
+        setRoom(r)
+        roomRef.current = r
+        setJoining(false)
+        saveCardsSession({ code: r.code, playerName: pn || saved.playerName, isHost: ih })
+        if (r.status === 'playing') {
+          enterGameAfterHand({ status: r.status, round: r.round, czarIdx: r.czarIdx, czarName: r.players[r.czarIdx]?.name, czarId: r.czarId, blackCard: r.blackCard, players: r.players })
+        }
+      })
+      s.on('your_hand', (hand) => { handRef.current = hand })
+      s.on('error', (msg) => { setError(msg); setJoining(false) })
+      s.emit('cards_rejoin_room', { code: saved.code, playerName: saved.playerName })
+    })
+    s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false) })
+  }
 
   const join = () => {
     if (!name.trim() || !code.trim()) return
@@ -92,6 +157,16 @@ export default function CardsLobby() {
       setRoom(r)
       roomRef.current = r
       setJoining(false)
+      saveCardsSession({ code: r.code, playerName: name.trim(), isHost: r.host === name.trim() })
+      if (r.status === 'playing') {
+        enterGameAfterHand({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
+      }
+    })
+    s.on('cards_rejoined', ({ room: r, playerName: pn }) => {
+      setRoom(r)
+      roomRef.current = r
+      setJoining(false)
+      saveCardsSession({ code: r.code, playerName: pn || name.trim(), isHost: r.host === (pn || name.trim()) })
       if (r.status === 'playing') {
         enterGameAfterHand({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
       }
@@ -116,10 +191,9 @@ export default function CardsLobby() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-6">
+    <PageShell mode="cards" innerClassName="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <BackButton onClick={() => navigate('/')} />
           <div>
             <h1 className="text-white font-black text-xl flex items-center gap-2"><Wifi className="text-green-400 w-5 h-5"/>Entrar na Sala</h1>
             <p className="text-slate-500 text-sm">Entra numa sala criada por outra pessoa</p>
@@ -140,6 +214,12 @@ export default function CardsLobby() {
                 placeholder="XXXX" maxLength={6}
                 className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600"/>
             </div>
+            {savedSession?.code && (
+              <button type="button" onClick={rejoinSaved} disabled={joining}
+                className="w-full bg-white/[0.06] border border-violet-500/30 text-violet-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
+                Voltar à sala {savedSession.code} ({savedSession.playerName})
+              </button>
+            )}
             {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
             <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
               onClick={join} disabled={joining||!name.trim()||!code.trim()}
@@ -158,17 +238,16 @@ export default function CardsLobby() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6 text-center">
-              <p className="text-slate-400 text-sm mb-2">Sala</p>
-              <p className="text-white font-black text-4xl tracking-[0.2em]">{room.code}</p>
+            <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
+              <ShareRoomLink mode="cards" code={room.code} />
             </div>
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
               <p className="text-slate-400 text-sm font-semibold">{room.players?.length} jogador{room.players?.length!==1?'es':''}</p>
               {(room.players||[]).map((p,i)=>(
-                <div key={i} className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${i===0?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
-                  <span className="text-white font-medium">{p.name}{p.name===name?' (Tu)':''}</span>
-                  {i===0&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
+                <div key={i} className={`flex items-center gap-3 ${p.disconnected ? 'opacity-40' : ''}`}>
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${p.name===room.host?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
+                  <span className={`text-white font-medium ${p.disconnected ? 'line-through' : ''}`}>{p.name}{p.name===name?' (Tu)':''}</span>
+                  {p.name===room.host&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
                 </div>
               ))}
             </div>
@@ -180,7 +259,6 @@ export default function CardsLobby() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   )
 }

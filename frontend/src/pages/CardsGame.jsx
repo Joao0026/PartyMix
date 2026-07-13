@@ -1,11 +1,17 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Crown, RotateCcw, Copy, Check, Users, Wifi } from 'lucide-react'
+import { Crown, RotateCcw, Copy, Check, Users, Wifi } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
+import GameShell from '../components/layout/GameShell'
 import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
+import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
+import ShareRoomLink from '../components/layout/ShareRoomLink'
+import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
@@ -59,10 +65,9 @@ function SetupScreen({ onCreateOnline, initialName }) {
   const togglePack = id => setSelPacks(s=>s.includes(id)?(s.length>1?s.filter(x=>x!==id):s):[...s,id])
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-6">
+    <PageShell mode="cards" innerClassName="space-y-6">
         <div className="flex items-center gap-3">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <BackButton onClick={() => navigate('/')} />
           <div><h1 className="text-white font-black text-2xl">🃏 Modo Cartas</h1><p className="text-slate-500 text-sm">Cria sala e partilha o código no telemóvel</p></div>
         </div>
 
@@ -136,50 +141,33 @@ function SetupScreen({ onCreateOnline, initialName }) {
           className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40">
           {creating ? 'A preparar…' : '📡 Criar Sala Online'}
         </motion.button>
-      </div>
-    </div>
+    </PageShell>
   )
 }
 
 // ── ONLINE LOBBY ─────────────────────────────────────────────
 function OnlineLobby({ socket, room, playerName, packs, onStart }) {
-  const [copied, setCopied] = useState(false)
   const isHost = room?.host === playerName
   const nonSelf = (room?.players||[]).filter(p=>p.name!==playerName)
 
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(room.code) }
-    catch { const el=document.createElement('input');el.value=room.code;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el) }
-    setCopied(true); setTimeout(()=>setCopied(false),2000)
-  }
-
   if (!room) {
     return (
-      <div className="min-h-screen bg-[#080b14] flex items-center justify-center px-4 py-8">
-        <div className="text-center space-y-4 p-6 rounded-3xl border border-white/[0.08] bg-white/[0.04]">
+      <PageShell mode="cards" className="justify-center" innerClassName="text-center space-y-4 p-6 surface rounded-3xl">
           <p className="text-white font-bold text-xl">A carregar a sala...</p>
           <p className="text-slate-400 text-sm">A sala está a ser criada. Aguarda um momento e não feches a página.</p>
-        </div>
-      </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-6">
+    <PageShell mode="cards" innerClassName="space-y-6">
         <div className="flex items-center gap-2">
           <Wifi className="text-green-400 w-5 h-5"/>
           <h2 className="text-white font-black text-xl">Sala Online</h2>
         </div>
 
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6 text-center space-y-4">
-          <p className="text-slate-400 text-sm">Código da sala</p>
-          <p className="text-white font-black text-5xl tracking-[0.2em]">{room?.code}</p>
-          <button onClick={copy}
-            className={`w-full py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all ${copied?'bg-green-500/20 border border-green-500/50 text-green-400':'bg-violet-600/20 border border-violet-500/50 text-violet-300'}`}>
-            {copied?<><Check className="w-5 h-5"/>Copiado!</>:<><Copy className="w-5 h-5"/>Copiar Código</>}
-          </button>
-          <p className="text-slate-600 text-xs">Abre <span className="text-white">{window.location.origin}/CardsLobby</span> nos outros telemóveis</p>
+        <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
+          <ShareRoomLink mode="cards" code={room?.code} codeSize="xl" />
         </div>
 
         <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
@@ -189,10 +177,10 @@ function OnlineLobby({ socket, room, playerName, packs, onStart }) {
             <motion.div animate={{rotate:360}} transition={{repeat:Infinity,duration:2,ease:'linear'}} className="ml-auto w-3 h-3 border border-violet-500 border-t-transparent rounded-full"/>
           </div>
           {(room?.players||[]).map((p,i)=>(
-            <div key={i} className="flex items-center gap-3 mb-2">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${i===0?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
-              <span className="text-white font-medium">{p.name}{p.name===playerName?' (Tu)':''}</span>
-              {i===0&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
+            <div key={i} className={`flex items-center gap-3 mb-2 ${p.disconnected ? 'opacity-40' : ''}`}>
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${p.name===room?.host?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
+              <span className={`text-white font-medium ${p.disconnected ? 'line-through' : ''}`}>{p.name}{p.name===playerName?' (Tu)':''}</span>
+              {p.name===room?.host&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
             </div>
           ))}
         </div>
@@ -206,8 +194,7 @@ function OnlineLobby({ socket, room, playerName, packs, onStart }) {
         ):(
           <p className="text-slate-400 text-center py-4">⏳ À espera que o host inicie...</p>
         )}
-      </div>
-    </div>
+    </PageShell>
   )
 }
 
@@ -234,6 +221,10 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const [gameEnded,    setGameEnded]    = useState(false)
   const [finalScores,  setFinalScores]  = useState([])
   const [czarId,       setCzarId]       = useState(null)
+  const [reconnecting, setReconnecting] = useState(false)
+  const [disconnected, setDisconnected] = useState(false)
+  const playerNameRef = useRef(playerName)
+  playerNameRef.current = playerName
 
   const HAND_SIZE = 7
   const czar       = players[czarIdx]
@@ -314,6 +305,33 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setFinalScores(d.scores)
     }
 
+    const onCardsRejoined = ({ room: r, playerName: pn, isHost: ih }) => {
+      saveCardsSession({ code: r.code, playerName: pn, isHost: ih })
+      setReconnecting(false)
+      setDisconnected(false)
+    }
+    const onDisconnect = () => {
+      setDisconnected(true)
+      setReconnecting(true)
+    }
+    const onConnect = () => {
+      setDisconnected(false)
+      const saved = loadCardsSession()
+      if (saved?.code && playerNameRef.current) {
+        socket.emit('cards_rejoin_room', { code: saved.code, playerName: playerNameRef.current })
+      }
+    }
+    const onRoomUpdated = (r) => {
+      setPlayers(r.players.map((p) => p.name))
+      setScores(Object.fromEntries(r.players.map((p) => [p.name, p.score])))
+      setCzarIdx(r.czarIdx ?? 0)
+      setCzarId(r.czarId)
+    }
+
+    socket.on('disconnect', onDisconnect)
+    socket.on('connect', onConnect)
+    socket.on('cards_rejoined', onCardsRejoined)
+    socket.on('room_updated', onRoomUpdated)
     socket.on('game_started', onGameStarted)
     socket.on('your_hand', onYourHand)
     socket.on('submission_update', onSubUpdate)
@@ -322,6 +340,10 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
     socket.on('new_round', onNewRound)
     socket.on('game_ended', onGameEnded)
     return () => {
+      socket.off('disconnect', onDisconnect)
+      socket.off('connect', onConnect)
+      socket.off('cards_rejoined', onCardsRejoined)
+      socket.off('room_updated', onRoomUpdated)
       socket.off('game_started', onGameStarted)
       socket.off('your_hand', onYourHand)
       socket.off('submission_update', onSubUpdate)
@@ -378,7 +400,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const czarName = players[czarIdx]
   const nonCzars = players.filter(p=>p!==czarName)
   const myName = mode==='local'?null:playerName
-  const imCzar = mode==='online'?(czarId===socket?.id):false
+  const imCzar = mode==='online'?(czarName===playerName):false
   const requiredCards = Math.min(2, Math.max(1, (String(currentBlack || '').match(/___/g) || []).length))
 
   // For local: current player whose turn it is to play
@@ -400,7 +422,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
 
   // Game ended
   if(gameEnded) return(
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center justify-center px-4 text-center gap-6">
+    <PageShell mode="victory" className="justify-center" innerClassName="flex flex-col items-center text-center gap-6">
       <span className="text-7xl">🏆</span>
       <h1 className="text-white font-black text-3xl">Jogo Terminado!</h1>
       <div className="space-y-2 w-full max-w-xs">
@@ -415,7 +437,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         <button onClick={()=>window.location.reload()} className="px-6 py-3 rounded-2xl bg-white/[0.07] text-white font-bold flex items-center gap-2"><RotateCcw className="w-4 h-4"/>Novo</button>
         <button onClick={()=>navigate('/')} className="px-6 py-3 rounded-2xl bg-violet-600 text-white font-bold">Início</button>
       </div>
-    </div>
+    </PageShell>
   )
 
   // Current hand to display
@@ -431,17 +453,25 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   }
 
   return(
-    <div className="min-h-screen bg-[#080b14] flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-white/[0.06]">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+    <GameShell
+      mode="cards"
+      header={
+        <div className="flex items-center justify-between">
+          <BackButton onClick={() => navigate('/')} />
           <div className="flex items-center gap-2"><Crown className="text-amber-400 w-4 h-4"/><span className="text-white font-bold text-sm">R{roundNum} · Czar: {czarName}</span></div>
           <div className="flex gap-1.5">{players.map(p=><div key={p} className="text-center"><p className={`text-xs font-black ${p===czarName?'text-amber-400':'text-white'}`}>{scores[p]||0}</p><p className="text-slate-600 text-xs">{p.split(' ')[0]}</p></div>)}</div>
         </div>
-      </div>
+      }
+    >
 
       <div className="flex-1 px-4 py-4 max-w-lg mx-auto w-full space-y-4">
+        {mode === 'online' && (
+          <ReconnectBanner
+            reconnecting={reconnecting && !disconnected}
+            disconnected={disconnected}
+            onRetry={() => socket?.connect()}
+          />
+        )}
         {/* Black card */}
         <div className="bg-black border border-white/20 rounded-3xl p-6 text-center min-h-28 flex items-center justify-center">
           <p className="text-white font-black text-xl leading-snug">{currentBlack}</p>
@@ -567,7 +597,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
           </div>
         )}
       </div>
-    </div>
+    </GameShell>
   )
 }
 
@@ -616,11 +646,33 @@ export default function CardsGame() {
     setIsHost(incomingRoom.host === incomingPlayerName)
     setGameMode('online')
     setPhase(gameState ? 'game' : 'lobby')
+    saveCardsSession({
+      code: incomingRoom.code,
+      playerName: incomingPlayerName || '',
+      isHost: incomingRoom.host === incomingPlayerName,
+    })
 
     if (handoff) {
       setTimeout(() => clearCardsLobbyHandoff(), 0)
     }
   }, [location.state])
+
+  useEffect(() => {
+    if (gameMode !== 'online' || !socket) return
+    const onConnect = () => {
+      const saved = loadCardsSession()
+      if (saved?.code && playerName) {
+        socket.emit('cards_rejoin_room', { code: saved.code, playerName })
+      }
+    }
+    const onRejoined = ({ room: r }) => setRoom(r)
+    socket.on('connect', onConnect)
+    socket.on('cards_rejoined', onRejoined)
+    return () => {
+      socket.off('connect', onConnect)
+      socket.off('cards_rejoined', onRejoined)
+    }
+  }, [gameMode, socket, playerName])
 
   // Connect socket for online mode
   const connectSocket = () => {
@@ -640,7 +692,11 @@ export default function CardsGame() {
     setPlayerName(name.trim()); setPacks(packs); setIsHost(true); setGameMode('online'); setPhase('connecting')
     const selectedIds = ALL_PACKS.filter(p=>packs.black.some(c=>PACKS[p.id]?.black.includes(c))).map(p=>p.id)
     s.emit('create_room', { playerName:name.trim(), packs:selectedIds.length>0?selectedIds:['base'] })
-    s.on('room_created', ({code,room:r})=>{ setRoom({...r,code}); setPhase('lobby') })
+    s.on('room_created', ({code,room:r})=>{
+      setRoom({...r,code})
+      setPhase('lobby')
+      saveCardsSession({ code, playerName: name.trim(), isHost: true })
+    })
     s.on('room_updated', r=>setRoom(r))
     s.on('error', msg=>{ alert(msg); setPhase('setup'); s.disconnect() })
     s.on('connect_error', ()=>{ alert('Não foi possível conectar. Tenta de novo.'); setPhase('setup'); s.disconnect() })
@@ -662,13 +718,11 @@ export default function CardsGame() {
 
   if(phase==='setup') return <SetupScreen onCreateOnline={handleCreateOnline} initialName={playerName}/>
   if(phase==='connecting') return (
-    <div className="min-h-screen bg-[#080b14] flex items-center justify-center px-4 py-8">
-      <div className="text-center space-y-4">
+    <PageShell mode="cards" className="justify-center" innerClassName="text-center space-y-4">
         <div className="mx-auto w-16 h-16 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
         <h1 className="text-white font-black text-2xl">A criar sala...</h1>
         <p className="text-slate-400">Aguarda enquanto a sala é gerada e os outros jogadores se podem juntar.</p>
-      </div>
-    </div>
+    </PageShell>
   )
   if(phase==='lobby') return <OnlineLobby socket={socket} room={room} playerName={playerName} packs={packs} onStart={handleStartOnlineGame}/>
   return <GameScreen mode={gameMode} socket={socket} room={room} playerName={playerName} players={localPlayers} packs={packs} initialHand={initialHand} initialGameState={gameState} isHost={isHost}/>

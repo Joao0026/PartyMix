@@ -1,24 +1,110 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, RotateCcw, Check, Sparkles, Lock, PartyPopper, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, RotateCcw, Check, Lock, Plus, Trash2 } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
+import { fetchChallenges, fetchDrinkDecks, fetchDrinkPacks } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
+import PreferenciaCard from '../components/game/PreferenciaCard'
 
 import { FALLBACK_DRINK_DECKS } from '../utils/drinkDecksFallback'
-import { parseCardPenalty, penaltyHint, formatGoles } from '../utils/penalties'
+import { formatGoles } from '../utils/penalties'
 import { drinkCardImageSrc } from '../utils/drinkCardImage'
 import {
   buildAgentPublicPool,
   buildPlayableDrinkDeck,
   composeAgentCard,
+  pickBalancedDeckCard,
 } from '../utils/drinkAgentCompose'
 import { normalizeDrinkCategories, selectableDrinkCategories } from '../utils/drinkBaralhos'
 import { substitutePlayerTokens } from '../utils/drinkPlayerText'
+import PageShell from '../components/layout/PageShell'
+import ModeHeader from '../components/layout/ModeHeader'
+import BackButton from '../components/layout/BackButton'
+import GameShell from '../components/layout/GameShell'
 
 const MAX_DRINK_PLAYERS = 15
+
+const IMPOSTOR_PENALTY_TEXT =
+  'Se a mesa descobrir o impostor, ele bebe 2 goles. Se falhar, distribui 2 goles.'
+
+/** Duração de regras/caos: rondas = cartas; voltas = volta à mesa até ao mesmo jogador. */
+function parseActiveDuration(card) {
+  const text = `${card?.text || ''} ${card?.title || ''}`.toLowerCase()
+
+  if (/at[eé]\s+sair\s+outra\s+regra/.test(text)) {
+    return { unit: 'untilReplaced' }
+  }
+
+  const voltaCount = text.match(/(\d+)\s*voltas?\b/)
+  if (voltaCount) {
+    return { unit: 'lap', amount: Math.min(20, parseInt(voltaCount[1], 10) || 1) }
+  }
+  if (/volta[s]?\s*(?:à mesa|à\s+mesa)|at[eé] ao fim da volta|durante uma volta|pr[oó]xima volta|\buma volta\b/.test(text)) {
+    return { unit: 'lap', amount: 1 }
+  }
+
+  const rondaCount = text.match(/(?:durante\s+(?:as\s+)?(?:pr[oó]ximas?\s+)?)?(\d+)\s*rondas?\b/)
+  if (rondaCount) {
+    return { unit: 'round', amount: Math.min(20, parseInt(rondaCount[1], 10) || 1) }
+  }
+  if (/at[eé] ao fim da ronda|esta ronda|nesta ronda/.test(text)) {
+    return { unit: 'round', amount: 1 }
+  }
+
+  if (card?.type === 'caos') return { unit: 'round', amount: 3 }
+  if (card?.type === 'regra') return { unit: 'round', amount: 5 }
+  return { unit: 'round', amount: 5 }
+}
+
+function buildActiveRule(card, readerIndex, nextTurn, playerCount) {
+  const duration = parseActiveDuration(card)
+  const untilReplaced = duration.unit === 'untilReplaced'
+  return {
+    id: `${Date.now()}-${Math.random()}`,
+    text: card.text,
+    ownerIndex: readerIndex,
+    type: card.type,
+    untilReplaced,
+    durationUnit: untilReplaced ? null : duration.unit,
+    expiresAt: untilReplaced ? null : expiresAfterDuration(nextTurn, duration, playerCount),
+  }
+}
+
+function parseAllianceDuration(card) {
+  const text = `${card?.text || ''} ${card?.title || ''}`.toLowerCase()
+  if (/at[eé]\s+[àa]\s+pr[oó]xima\s+alian[çc]a|at[eé]\s+sair\s+outra\s+alian[çc]a/.test(text)) {
+    return { unit: 'untilReplaced' }
+  }
+  const duration = parseActiveDuration(card)
+  if (duration.unit === 'untilReplaced') return null
+  const hasExplicitDuration = /(\d+)\s*(?:rondas?|voltas?)\b|durante\s+uma\s+volta|pr[oó]xima\s+volta|at[eé]\s+ao\s+fim\s+da\s+volta|esta\s+ronda|nesta\s+ronda|at[eé]\s+ao\s+fim\s+da\s+ronda/.test(text)
+  return hasExplicitDuration ? duration : null
+}
+
+function formatDurationTimeLeft(item, turnCount, playerCount) {
+  if (item.untilReplaced) return ' · até à próxima aliança'
+  return formatRuleTimeLeft(item, turnCount, playerCount)
+}
+
+function expiresAfterDuration(nextTurn, duration, playerCount) {
+  if (duration.unit === 'untilReplaced') return null
+  if (duration.unit === 'lap') return nextTurn + duration.amount * Math.max(1, playerCount)
+  return nextTurn + duration.amount
+}
+
+function formatRuleTimeLeft(rule, turnCount, playerCount) {
+  if (rule.untilReplaced || !rule?.expiresAt) return ''
+  const remaining = Math.max(0, rule.expiresAt - turnCount)
+  if (remaining === 0) return ''
+  if (rule.durationUnit === 'lap') {
+    const laps = Math.ceil(remaining / Math.max(1, playerCount))
+    return ` · ${laps} volta${laps === 1 ? '' : 's'}`
+  }
+  return ` · ${remaining} ronda${remaining === 1 ? '' : 's'}`
+}
 const ROULETTE_SEGS=[
   {label:'Bebe 2',color:'#f59e0b',action:'drink',val:2},
   {label:'Desafio!',color:'#06b6d4',action:'challenge'},
@@ -76,8 +162,9 @@ function Roulette({players,currentPlayerIdx}){
           <div className="w-0 h-0 border-l-8 border-r-8 border-b-16 border-l-transparent border-r-transparent border-b-white" style={{borderBottomWidth:20}}/>
         </div>
         <motion.div
-          animate={{rotate:totalRot}}
-          transition={{duration:3.5,ease:[0.23,1,0.32,1]}}
+          animate={{ rotate: totalRot, scale: spinning ? [1, 1.05, 0.98, 1.02, 1] : 1 }}
+          transition={{ duration: 3.5, ease: [0.23,1,0.32,1] }}
+          className="drop-shadow-[0_0_28px_rgba(245,158,11,0.35)]"
           style={{width:260,height:260}}>
           <svg width="260" height="260">
             {ROULETTE_SEGS.map((seg,i)=>{
@@ -141,24 +228,24 @@ function DrinkCardBackdrop({ image }) {
 function CardDeck({
   activeDeck,
   agentPublicPool,
-  agentMissionPool,
   players,
   deckSessionId,
   impostorPairs,
   onCardDrawn,
   onAgentResult,
-  onMiniBossResult,
+  onAllianceChosen,
   onImpostorResult,
-  onAutoPenalty,
 }) {
   const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
   const [current, setCurrent] = useState(null)
   const [agentOpen, setAgentOpen] = useState(false)
   const [agentResult, setAgentResult] = useState(null)
-  const [bossResult, setBossResult] = useState(null)
   const [impostorIndex, setImpostorIndex] = useState(null)
   const [impostorDone, setImpostorDone] = useState(false)
+  const [allianceDone, setAllianceDone] = useState(false)
+  const [allianceTarget, setAllianceTarget] = useState('')
   const [recentTypes, setRecentTypes] = useState([])
+  const [recentDeckIds, setRecentDeckIds] = useState([])
   const recentPublicTextsRef = useRef([])
   /** Índice do jogador que deve tirar a próxima carta (ou que acabou de tirar, conforme ecrã) */
   const [nextReaderIdx, setNextReaderIdx] = useState(0)
@@ -170,12 +257,14 @@ function CardDeck({
     setCurrent(null)
     setAgentOpen(false)
     setAgentResult(null)
-    setBossResult(null)
     setImpostorIndex(null)
     setImpostorDone(false)
+    setAllianceDone(false)
+    setAllianceTarget('')
     setNextReaderIdx(0)
     setLastReaderIdx(null)
     setRecentTypes([])
+    setRecentDeckIds([])
     recentPublicTextsRef.current = []
   }, [deckSessionId, activeDeck])
 
@@ -191,38 +280,40 @@ function CardDeck({
   const draw = () => {
     if (!deck.length) return
     if (current?.type === 'impostor' && !impostorDone) return
+    if (current?.type === 'alliance' && !allianceDone) return
     const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
-    const safeIdx = drinkSpam ? deck.findIndex(card => card.type !== 'beber') : -1
-    const canInjectAgent =
-      agentPublicPool.length > 0 &&
-      agentMissionPool.length > 0 &&
-      recentTypes.length >= 2 &&
-      Math.random() < 0.12
-    const injectImpostor = players.length >= 3 && recentTypes.length >= 3 && Math.random() < 0.1
-    const idx = safeIdx > 0 ? safeIdx : 0
-    let card = canInjectAgent
-      ? agentMissionPool[Math.floor(Math.random() * agentMissionPool.length)]
-      : injectImpostor
-      ? impostorPairs[Math.floor(Math.random()*impostorPairs.length)]
-      : deck[idx]
-    const rest = canInjectAgent || injectImpostor ? deck : deck.filter((_, i) => i !== idx)
+    const repeatedDeck = recentDeckIds.length >= 2 && recentDeckIds.slice(-2).every((id) => id && id === recentDeckIds[recentDeckIds.length - 1])
+    let pool = deck
+    if (drinkSpam) {
+      const filtered = deck.filter((card) => card.type !== 'beber')
+      if (filtered.length) pool = filtered
+    }
+    const avoidDeckIds = repeatedDeck ? [recentDeckIds[recentDeckIds.length - 1]] : []
+    const { card: picked, rest } = pickBalancedDeckCard(pool, { avoidDeckIds })
+    if (!picked) return
+    let card = picked
     if (card?.type === 'agent') card = finalizeAgent(card)
+    if (card?.type === 'impostor') {
+      setImpostorIndex(Math.floor(Math.random() * players.length))
+      if (!card.text?.trim()) {
+        card = { ...card, text: IMPOSTOR_PENALTY_TEXT }
+      }
+    } else {
+      setImpostorIndex(null)
+    }
     const reader = nextReaderIdx % players.length
     setLastReaderIdx(reader)
     setCurrent(card)
     setAgentOpen(false)
     setAgentResult(null)
-    setBossResult(null)
     setImpostorDone(false)
-    setImpostorIndex(card.type === 'impostor' ? Math.floor(Math.random() * players.length) : null)
+    setAllianceDone(card?.type !== 'alliance')
+    setAllianceTarget('')
     setDeck(rest)
     setRecentTypes(types => [...types.slice(-2), card.type])
+    setRecentDeckIds((ids) => [...ids.slice(-2), card.deckId || 'outros'])
     setNextReaderIdx((reader + 1) % players.length)
     onCardDrawn?.(card, reader)
-    const hint = penaltyHint(card.text || card.publicText || '')
-    if (hint && onAutoPenalty && !['agent', 'impostor', 'miniboss', 'alliance', 'preferencia'].includes(card.type)) {
-      onAutoPenalty(parseCardPenalty(card.text || ''), reader, hint)
-    }
   }
 
   const n = players.length || 1
@@ -236,12 +327,13 @@ function CardDeck({
     sorte: 'from-emerald-600 to-teal-700',
     azar: 'from-slate-600 to-slate-800',
     caos: 'from-red-600 to-rose-700',
-    ai: 'from-violet-700 to-purple-800',
     agent: 'from-slate-800 to-zinc-950',
     alliance: 'from-pink-600 to-rose-700',
     miniboss: 'from-red-700 to-orange-700',
     impostor: 'from-fuchsia-700 to-purple-900',
-    preferencia: 'from-indigo-600 to-violet-700',
+    preferencia: 'from-slate-800 to-slate-900',
+    maldicao: 'from-cyan-700 to-teal-900',
+    historia: 'from-amber-700 to-orange-800',
   }
   const TYPE_LABELS = {
     beber: 'Beber',
@@ -251,15 +343,17 @@ function CardDeck({
     sorte: 'Sorte',
     azar: 'Azar',
     caos: 'Caos',
-    ai: 'Surpresa IA',
     agent: 'Agente Secreto',
     alliance: 'Aliança',
     miniboss: 'Mini Boss',
     impostor: 'Impostor',
     preferencia: 'Preferias?',
+    maldicao: 'Maldição',
+    historia: 'História',
   }
 
   const impostorLocked = current?.type === 'impostor' && !impostorDone
+  const allianceLocked = current?.type === 'alliance' && !allianceDone
   const cardImageSrc = current ? drinkCardImageSrc(current.image) : ''
   const readerName = whoReads?.name || ''
   const px = (s) => substitutePlayerTokens(s, players, {
@@ -276,14 +370,17 @@ function CardDeck({
     onAgentResult?.(outcome, lastReaderIdx ?? nextReaderIdx)
   }
 
-  const resolveBoss = (outcome) => {
-    setBossResult(outcome)
-    onMiniBossResult?.(outcome)
+  const chooseAlliance = () => {
+    const targetIndex = Number(allianceTarget)
+    const readerIndex = lastReaderIdx ?? nextReaderIdx
+    if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= players.length || targetIndex === readerIndex) return
+    setAllianceDone(true)
+    onAllianceChosen?.(current, readerIndex, targetIndex)
   }
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
-      <div className="flex items-center gap-3 w-full rounded-2xl border border-white/[0.08] bg-white/[0.04] p-3">
+      <div className="flex items-center gap-3 w-full rounded-2xl border border-white/[0.12] bg-white/[0.07] p-3">
         <div
           className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${whoReads?.color || 'from-slate-500 to-slate-700'} flex items-center justify-center text-white font-black text-lg flex-shrink-0`}
         >
@@ -302,20 +399,34 @@ function CardDeck({
         {current ? (
           <motion.div
             key={`${current.title}-${current.text || current.publicText || current.secretMission}`}
-            initial={{ scale: 0.85, opacity: 0, y: -16 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            className={`relative w-full overflow-hidden bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] p-8 text-center shadow-2xl min-h-[20rem] flex flex-col justify-center`}
+            initial={{ scale: 0.82, opacity: 0, y: -18, rotate: -3 }}
+            animate={{ scale: 1, opacity: 1, y: 0, rotate: current.type === 'caos' ? [0, -1.5, 1.5, 0] : 0 }}
+            exit={{ scale: 0.9, opacity: 0, rotate: 2 }}
+            transition={{ type: 'spring', damping: 18, stiffness: 240 }}
+            className={`relative w-full overflow-hidden ${
+              current.type === 'preferencia'
+                ? 'bg-transparent p-4 shadow-none min-h-0'
+                : `bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] border border-amber-200/20 p-8 shadow-[0_24px_80px_rgba(245,158,11,0.20)] min-h-[20rem]`
+            } text-center flex flex-col justify-center`}
           >
             <DrinkCardBackdrop image={current.image} />
+            {current.type !== 'preferencia' && (
+              <>
+                <div className="absolute inset-x-8 top-0 z-20 h-px bg-gradient-to-r from-transparent via-amber-200/80 to-transparent" />
+                <div className="absolute -right-12 top-10 z-0 h-36 w-36 rounded-full bg-amber-300/20 blur-3xl" />
+                <div className="absolute bottom-4 right-5 z-20 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+                  PartyMix Bar
+                </div>
+              </>
+            )}
             <div className="absolute left-5 top-5 z-20 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/90">
               {TYPE_LABELS[current.type] || 'Carta'}
             </div>
             <div className={`relative z-10 flex flex-col justify-center ${cardImageSrc ? 'min-h-[12rem]' : ''}`}>
-            {!cardImageSrc && (
+            {!cardImageSrc && current.type !== 'preferencia' && (
               <div className="absolute -right-8 -top-10 text-9xl opacity-15 pointer-events-none">{current.emoji}</div>
             )}
-            {!cardImageSrc && (
+            {!cardImageSrc && current.type !== 'preferencia' && (
               <div className="mx-auto mb-4 grid h-24 w-24 place-items-center rounded-3xl border border-white/20 bg-white/15 text-6xl shadow-inner">
                 {current.emoji}
               </div>
@@ -323,7 +434,9 @@ function CardDeck({
             {cardImageSrc && (
               <div className="mx-auto mb-3 text-4xl drop-shadow-md" aria-hidden>{current.emoji}</div>
             )}
-            <h3 className="text-white font-black text-3xl mb-4 drop-shadow-sm">{cardTitle}</h3>
+            {current.type !== 'preferencia' && (
+              <h3 className="text-white font-black text-3xl mb-4 drop-shadow-sm">{cardTitle}</h3>
+            )}
             {current.type === 'agent' ? (
               <div className="space-y-3">
                 {current.publicText ? (
@@ -350,85 +463,93 @@ function CardDeck({
                     {!agentResult ? (
                       <div className="grid grid-cols-1 gap-2 pt-1">
                         <button type="button" onClick={() => resolveAgent('success')} className="rounded-2xl bg-emerald-500 text-black py-3 font-black">
-                          Consegui a missão · distribui 3
+                          Consegui a missão
                         </button>
                         <button type="button" onClick={() => resolveAgent('fail')} className="rounded-2xl bg-white/[0.12] border border-white/15 text-white py-3 font-bold">
-                          Falhei · bebe 2
+                          Falhei
                         </button>
                         <button type="button" onClick={() => resolveAgent('caught')} className="rounded-2xl bg-red-500 text-white py-3 font-black">
-                          Fui apanhado · bebe 4
+                          Fui apanhado
                         </button>
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-emerald-100 font-black">
-                        {agentResult === 'success' && `Missão cumprida: distribui ${formatGoles(3)}.`}
-                        {agentResult === 'fail' && `Missão falhada: bebe ${formatGoles(2)}.`}
-                        {agentResult === 'caught' && `Foste apanhado: bebe ${formatGoles(4)}.`}
+                        {agentResult === 'success' && 'Missão cumprida!'}
+                        {agentResult === 'fail' && 'Missão falhada.'}
+                        {agentResult === 'caught' && 'Foste apanhado.'}
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            ) : current.type === 'miniboss' ? (
+            ) : current.type === 'alliance' ? (
               <div className="space-y-4">
                 <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
-                {!bossResult ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button type="button" onClick={() => resolveBoss('success')} className="rounded-2xl bg-emerald-500 text-black py-3 font-black">
-                      Grupo ganhou
-                    </button>
-                    <button type="button" onClick={() => resolveBoss('fail')} className="rounded-2xl bg-red-500 text-white py-3 font-black">
-                      Grupo falhou
-                    </button>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-white/20 bg-white/15 p-3 text-white font-black">
-                    {bossResult === 'success' ? `Vitória: todos distribuem ${formatGoles(2)}.` : `Falha: todos bebem ${formatGoles(2)}.`}
-                  </div>
-                )}
-              </div>
-            ) : current.type === 'preferencia' && Array.isArray(current.choices) && current.choices.length >= 2 ? (
-              <div className="space-y-4 text-left">
-                <p className="text-white/70 text-xs font-black uppercase tracking-[0.18em] text-center">Would you rather</p>
-                <div className="grid gap-3">
-                  {current.choices.slice(0, 2).map((choice, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-white font-bold leading-snug"
+                {players.length > 1 && !allianceDone && (
+                  <div className="rounded-2xl border border-pink-300/25 bg-black/20 p-4 space-y-3">
+                    <p className="text-pink-100 text-xs font-black uppercase tracking-[0.16em]">
+                      {whoReads?.name} escolhe o parceiro da aliança
+                    </p>
+                    <select
+                      value={allianceTarget}
+                      onChange={(e) => setAllianceTarget(e.target.value)}
+                      className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-white outline-none focus:border-pink-300/60"
                     >
-                      <span className="text-white/50 text-sm font-black mr-2">{String.fromCharCode(65 + idx)}.</span>
-                      {px(choice)}
-                    </div>
-                  ))}
-                </div>
-                {cardText && (
-                  <p className="text-white/85 text-sm font-medium text-center leading-relaxed rounded-2xl border border-white/15 bg-black/10 px-3 py-2">
-                    {cardText}
-                  </p>
+                      <option value="">Escolher jogador...</option>
+                      {players.map((p, idx) => (
+                        idx === (lastReaderIdx ?? nextReaderIdx) ? null : (
+                          <option key={p.name} value={idx}>{p.name}</option>
+                        )
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={chooseAlliance}
+                      disabled={allianceTarget === ''}
+                      className="w-full rounded-2xl bg-pink-500 py-3 font-black text-white disabled:opacity-40"
+                    >
+                      Confirmar aliança
+                    </button>
+                  </div>
                 )}
-                <p className="text-white/50 text-xs text-center">Conta dedos — minoritários bebem (não entra no contador automático).</p>
+                {allianceDone && (
+                  <div className="rounded-2xl border border-pink-300/25 bg-pink-500/10 p-3 text-pink-100 font-black">
+                    Aliança registada.
+                  </div>
+                )}
               </div>
-            ) : current.type === 'impostor' && impostorIndex !== null ? (
-              <ImpostorCard
-                players={players}
-                correctQuestion={current.correctQuestion}
-                wrongQuestion={current.wrongQuestion}
-                impostorIndex={impostorIndex}
-                mode="drink"
-                onComplete={({ guessedCorrect, impostorIndex: impIdx }) => {
-                  setImpostorDone(true)
-                  onImpostorResult?.(guessedCorrect, impIdx)
-                }}
+            ) : current.type === 'miniboss' ? (
+              <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
+            ) : current.type === 'maldicao' ? (
+              <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
+            ) : current.type === 'historia' ? (
+              <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
+            ) : current.type === 'preferencia' && Array.isArray(current.choices) && current.choices.length >= 2 ? (
+              <PreferenciaCard
+                choices={current.choices.slice(0, 2).map((choice) => px(choice))}
+                ruleText={cardText}
               />
-            ) : (
-              <div className="space-y-2">
-                <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
-                {penaltyHint(current.text) && (
-                  <p className="text-amber-200 text-sm font-bold rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2">
-                    {penaltyHint(current.text)} (registado no contador)
-                  </p>
+            ) : current.type === 'impostor' && impostorIndex !== null ? (
+              <div className="space-y-3">
+                {cardText && (
+                  <p className="text-white/90 font-medium leading-relaxed text-base">{cardText}</p>
                 )}
+                <ImpostorCard
+                  players={players}
+                  correctQuestion={current.correctQuestion}
+                  wrongQuestion={current.wrongQuestion}
+                  impostorIndex={impostorIndex}
+                  onComplete={(result) => {
+                    setImpostorDone(true)
+                    onImpostorResult?.(result)
+                    requestAnimationFrame(() => {
+                      document.getElementById('drink-next-card-btn')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                    })
+                  }}
+                />
               </div>
+            ) : (
+              <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
             )}
             </div>
           </motion.div>
@@ -437,7 +558,7 @@ function CardDeck({
             key="placeholder"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="w-full min-h-[14rem] bg-white/[0.04] border-2 border-dashed border-amber-500/25 rounded-[2rem] flex flex-col items-center justify-center gap-4 px-6 py-8"
+            className="w-full min-h-[14rem] surface border-2 border-dashed border-amber-500/30 rounded-[2rem] flex flex-col items-center justify-center gap-4 px-6 py-8"
           >
             <span className="text-5xl">🃏</span>
             <p className="text-white font-bold text-center text-lg">Próxima carta é tua, {whoReads?.name}!</p>
@@ -449,15 +570,18 @@ function CardDeck({
       </AnimatePresence>
 
       {deck.length > 0 ? (
+        <div className="sticky-cta -mx-4 px-4 mt-2">
         <motion.button
-          whileHover={{ scale: impostorLocked ? 1 : 1.02 }}
-          whileTap={{ scale: impostorLocked ? 1 : 0.97 }}
+          id="drink-next-card-btn"
+          whileHover={{ scale: (impostorLocked || allianceLocked) ? 1 : 1.02 }}
+          whileTap={{ scale: (impostorLocked || allianceLocked) ? 1 : 0.97 }}
           onClick={draw}
-          disabled={impostorLocked}
-          className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-4 text-lg disabled:opacity-40"
+          disabled={impostorLocked || allianceLocked}
+          className="btn-primary bg-gradient-to-r from-amber-400 via-orange-500 to-rose-600 text-lg text-black shadow-[0_16px_40px_rgba(245,158,11,0.22)] disabled:opacity-40"
         >
-          {impostorLocked ? 'Termina a ronda Impostor' : current ? 'Próxima carta →' : 'Ver carta'}
+          {impostorLocked ? 'Termina a ronda Impostor' : allianceLocked ? 'Escolhe a aliança' : current ? 'Próxima carta →' : 'Ver carta'}
         </motion.button>
+        </div>
       ) : (
         <div className="text-center space-y-3 w-full">
           <p className="text-emerald-400 font-bold text-lg">🏆 Baralho esgotado!</p>
@@ -486,13 +610,13 @@ export default function DrinkGame(){
   const [phase,setPhase]=useState('setup')
   const [setupStep, setSetupStep] = useState(0)
   const [playerNames,setPlayerNames]=useState(['','',''])
-  const [playerDrinks,setPlayerDrinks]=useState(['','',''])
   const [playerGenders,setPlayerGenders]=useState([null, null, null])
   const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','cadeia','especiais'])
-  const [tab,setTab]=useState('deck')
+  const [showMesaPanel, setShowMesaPanel] = useState(false)
   const [deckSessionId, setDeckSessionId] = useState(0)
   const [drinkStats,setDrinkStats]=useState([])
   const [activeRules,setActiveRules]=useState([])
+  const [activeCurses,setActiveCurses]=useState([])
   const [activeAlliances,setActiveAlliances]=useState([])
   const [turnCount,setTurnCount]=useState(0)
   const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
@@ -501,12 +625,6 @@ export default function DrinkGame(){
   const [includeCommunity, setIncludeCommunity] = useState(true)
   const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
   const [decksLoading, setDecksLoading] = useState(true)
-  const [lastPenaltyHint, setLastPenaltyHint] = useState(null)
-  const [surpriseCue, setSurpriseCue] = useState(false)
-  const [surpriseOpen,setSurpriseOpen]=useState(false)
-  const [surpriseLoading,setSurpriseLoading]=useState(false)
-  const [surpriseText,setSurpriseText]=useState('')
-  const [surpriseErr,setSurpriseErr]=useState(null)
 
   const toggleCat=id=>{
     const cat=deckCategories.find(c=>c.id===id)
@@ -517,7 +635,6 @@ export default function DrinkGame(){
   const players=playerNames
     .map((name,i)=>({
       name:name.trim(),
-      drink:(playerDrinks[i]??'').trim(),
       gender: playerGenders[i] ?? null,
       color:['from-pink-400 to-rose-500','from-cyan-400 to-blue-500','from-emerald-400 to-teal-500','from-amber-400 to-orange-500','from-violet-400 to-purple-500','from-fuchsia-400 to-pink-500','from-rose-400 to-red-500','from-sky-400 to-blue-500'][i%8]
     }))
@@ -537,16 +654,6 @@ export default function DrinkGame(){
     [deckCategories, selectedCats, includeCommunity]
   )
 
-  const agentMissionPool = useMemo(
-    () => activeDeck.filter((c) => c.type === 'agent'),
-    [activeDeck]
-  )
-
-  const agentNeedsOtherDeck =
-    selectedCats.includes('especiais') && agentPublicPool.length === 0
-
-  const cardsUntilSurpriseRef = useRef(3)
-
   const freshStats = (count) => Array.from({ length: count }, () => ({
     drinks: 0,
     distributed: 0,
@@ -559,6 +666,7 @@ export default function DrinkGame(){
     if (!playersSetupReady) return
     setDrinkStats(freshStats(players.length))
     setActiveRules([])
+    setActiveCurses([])
     setActiveAlliances([])
     setTurnCount(0)
     setDeckSessionId((k) => k + 1)
@@ -572,7 +680,19 @@ export default function DrinkGame(){
     })
   }
 
-  const activeAllianceList = activeAlliances.filter((alliance) => alliance.expiresAt > turnCount)
+  const activeAllianceList = activeAlliances.filter((alliance) => alliance.untilReplaced || (alliance.expiresAt && alliance.expiresAt > turnCount))
+  const visibleRules = activeRules.filter((rule) => rule.untilReplaced || (rule.expiresAt && rule.expiresAt > turnCount))
+  const mesaBadgeCount = visibleRules.length + activeCurses.length + activeAllianceList.length
+
+  useEffect(() => {
+    setActiveRules((rules) => rules.filter((rule) => rule.untilReplaced || (rule.expiresAt && rule.expiresAt > turnCount)))
+    setActiveAlliances((alliances) => alliances.filter((a) => a.untilReplaced || (a.expiresAt && a.expiresAt > turnCount)))
+  }, [turnCount])
+
+  const formatCardTextForReader = (text, readerIndex) => substitutePlayerTokens(text, players, {
+    reader: players[readerIndex]?.name || '',
+    readerGender: players[readerIndex]?.gender ?? null,
+  })
 
   const registerDrink = (playerIndex, amount = 1, options = {}) => {
     if (playerIndex == null || playerIndex < 0) return
@@ -621,113 +741,107 @@ export default function DrinkGame(){
     })
   }
 
+  const registerOthersDrink = (exceptIndex, amount = 2) => {
+    setDrinkStats((stats) => {
+      const base = stats.length === players.length ? stats : freshStats(players.length)
+      return base.map((stat, idx) => (
+        idx === exceptIndex ? stat : { ...stat, drinks: stat.drinks + amount, unlucky: stat.unlucky + 1 }
+      ))
+    })
+  }
+
   const onCardDrawn = (card, readerIndex) => {
     const nextTurn = turnCount + 1
     setTurnCount(nextTurn)
-
-    cardsUntilSurpriseRef.current -= 1
-    if (cardsUntilSurpriseRef.current <= 0) {
-      setSurpriseCue(true)
-      cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
-    }
 
     if (card?.type === 'regra' || card?.type === 'caos') {
       if (/regras canceladas/i.test(card.title || '') || /canceladas/i.test(card.text || '')) {
         setActiveRules([])
       } else {
+        const activeRule = buildActiveRule(card, readerIndex, nextTurn, players.length)
         setActiveRules((rules) => [
-          ...rules,
-          {
-            id: `${Date.now()}-${Math.random()}`,
-            text: card.text,
-            ownerIndex: readerIndex,
-            type: card.type,
-            expiresAt: card.type === 'caos' ? nextTurn + 3 : null,
-          },
+          ...rules.filter((r) => !r.untilReplaced && r.expiresAt && r.expiresAt > nextTurn),
+          { ...activeRule, text: formatCardTextForReader(activeRule.text, readerIndex) },
         ])
         updatePlayerStat(readerIndex, (stat) => ({ ...stat, rulesCreated: stat.rulesCreated + 1 }))
       }
     }
 
-    if (card?.type === 'alliance' && players.length > 1) {
-      const targetIndex = (readerIndex + 1) % players.length
-      setActiveAlliances((alliances) => [
-        ...alliances.filter((alliance) => alliance.expiresAt > nextTurn),
+    if (card?.type === 'maldicao') {
+      setActiveCurses((curses) => [
+        ...curses,
         {
           id: `${Date.now()}-${Math.random()}`,
-          players: [readerIndex, targetIndex],
-          expiresAt: nextTurn + 2,
+          textTemplate: card.text,
+          text: formatCardTextForReader(card.text, readerIndex),
+          playerIndex: readerIndex,
         },
       ])
     }
 
   }
 
+  const onAllianceChosen = (card, readerIndex, targetIndex) => {
+    const duration = parseAllianceDuration(card)
+    if (!duration) return
+    const untilReplaced = duration.unit === 'untilReplaced'
+    const nextTurn = turnCount
+    setActiveAlliances((alliances) => [
+      ...alliances.filter((alliance) => !alliance.untilReplaced && alliance.expiresAt && alliance.expiresAt > nextTurn),
+      {
+        id: `${Date.now()}-${Math.random()}`,
+        text: formatCardTextForReader(card.text, readerIndex),
+        players: [readerIndex, targetIndex],
+        untilReplaced,
+        durationUnit: untilReplaced ? null : duration.unit,
+        expiresAt: untilReplaced ? null : expiresAfterDuration(nextTurn, duration, players.length),
+      },
+    ])
+  }
+
+  const handleImpostorResult = ({ guessedCorrect, impostorIndex }) => {
+    if (!Number.isInteger(impostorIndex)) return
+    if (guessedCorrect) {
+      registerDrink(impostorIndex, 2, { unlucky: 1 })
+    } else {
+      registerOthersDrink(impostorIndex, 2)
+      registerDistributed(impostorIndex, Math.max(0, players.length - 1) * 2)
+    }
+  }
+
   const handleAgentResult = (outcome, readerIndex) => {
     if (outcome === 'success') {
-      registerDistributed(readerIndex, 3)
       updatePlayerStat(readerIndex, (stat) => ({ ...stat, agentSuccess: stat.agentSuccess + 1 }))
-      return
-    }
-    registerDrink(readerIndex, outcome === 'caught' ? 4 : 2, { unlucky: outcome === 'caught' ? 2 : 1 })
-  }
-
-  const handleMiniBossResult = (outcome) => {
-    if (outcome === 'success') registerGroupDistributed(2)
-    else registerGroupDrink(2)
-  }
-
-  const handleImpostorResult = (guessedCorrect, impostorIdx) => {
-    if (guessedCorrect) registerDrink(impostorIdx, 3, { unlucky: 2 })
-    else registerDistributed(impostorIdx, 3)
-  }
-
-  const fetchSurpriseChallenge = async () => {
-    const roster = players.map((p) => ({
-      name: p.name,
-      drink: p.drink || '',
-      gender: p.gender || '',
-    }))
-    if (roster.length < 1) return
-    setSurpriseLoading(true)
-    setSurpriseErr(null)
-    setSurpriseText('')
-    const run = async () => {
-      const out = await api.generateChallenge(roster, 'drink', 'pt')
-      if (out?.error) throw new Error(out.error)
-      setSurpriseText(String(out?.text || '').trim() || 'Sem texto — tenta outra vez.')
-    }
-    try {
-      await run()
-    } catch (e1) {
-      try {
-        await new Promise((r) => setTimeout(r, 600))
-        await run()
-      } catch (e2) {
-        setSurpriseErr(e2?.message || e1?.message || 'Erro ao gerar desafio')
-      }
-    } finally {
-      setSurpriseLoading(false)
     }
   }
 
-  useEffect(() => {
-    cardsUntilSurpriseRef.current = 2 + Math.floor(Math.random() * 5)
-    setSurpriseCue(false)
-    setSurpriseOpen(false)
-  }, [deckSessionId])
+  const passCurse = (curseId, toPlayerIndex) => {
+    setActiveCurses((curses) => curses.map((c) => (
+      c.id === curseId
+        ? {
+            ...c,
+            playerIndex: toPlayerIndex,
+            text: formatCardTextForReader(c.textTemplate || c.text, toPlayerIndex),
+          }
+        : c
+    )))
+  }
+
+  const failCurse = (curseId) => {
+    setActiveCurses((curses) => curses.filter((c) => c.id !== curseId))
+  }
 
   useEffect(() => {
     let cancelled = false
     setDecksLoading(true)
     Promise.all([
-      api.getDrinkPacks().catch(() => []),
-      api.getDrinkDecks(contentPack).catch(() => null),
-      api.getChallenges({
+      fetchDrinkPacks(),
+      fetchDrinkDecks(contentPack),
+      fetchChallenges({
         category: 'impostor',
         mode_type: 'friends',
         ...challengePackParams(contentPack, includeCommunity),
-      }).catch(() => []),
+      }),
     ]).then(([packs, decks, impostorRows]) => {
       if (cancelled) return
       if (Array.isArray(packs) && packs.length) {
@@ -740,13 +854,6 @@ export default function DrinkGame(){
     }).finally(() => { if (!cancelled) setDecksLoading(false) })
     return () => { cancelled = true }
   }, [contentPack, includeCommunity])
-
-  const handleAutoPenalty = (parsed, readerIndex, hint) => {
-    if (!parsed) return
-    setLastPenaltyHint(hint)
-    if (parsed.action === 'distribute') registerDistributed(readerIndex, parsed.amount)
-    else registerDrink(readerIndex, parsed.amount)
-  }
 
   const topBy = (field) => {
     if (!players.length) return null
@@ -761,15 +868,12 @@ export default function DrinkGame(){
     const ruleKing = topBy('rulesCreated')
     const unluckiest = topBy('unlucky')
     return(
-      <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
-        <div className="w-full max-w-lg">
-          <div className="flex items-center gap-3 mb-6">
-            <button onClick={()=>setPhase('playing')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
-            <div>
-              <h1 className="text-white font-black text-2xl">🏆 Estatísticas finais</h1>
-              <p className="text-slate-500 text-sm">Resumo desta sessão do Modo Beber</p>
-            </div>
-          </div>
+      <PageShell mode="drink" innerClassName="space-y-5">
+        <ModeHeader
+          onBack={() => setPhase('playing')}
+          title="🏆 Estatísticas finais"
+          subtitle="Resumo desta sessão do Modo Beber"
+        />
 
           <div className="grid grid-cols-2 gap-3 mb-5">
             {[
@@ -818,28 +922,17 @@ export default function DrinkGame(){
               Nova sessão
             </button>
           </div>
-        </div>
-      </div>
+      </PageShell>
     )
   }
 
   if(phase==='setup')return(
-    <div className="min-h-screen flex flex-col items-center px-4 py-8" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
-      <div className="w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-5">
-          <button
-            onClick={() => setupStep > 0 ? setSetupStep(0) : navigate('/')}
-            className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-all"
-          >
-            <ChevronLeft className="w-5 h-5"/>
-          </button>
-          <div className="flex-1">
-            <h1 className="text-white font-black text-2xl">🍺 Modo Beber</h1>
-            <p className="text-slate-500 text-sm">
-              {setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Baralhos'}
-            </p>
-          </div>
-        </div>
+    <PageShell mode="drink" innerClassName="space-y-5">
+        <ModeHeader
+          onBack={() => setupStep > 0 ? setSetupStep(0) : navigate('/')}
+          title="🍺 Modo Beber"
+          subtitle={setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Baralhos'}
+        />
 
         <div className="w-full bg-white/[0.06] rounded-full h-1 mb-6">
           <div
@@ -859,35 +952,39 @@ export default function DrinkGame(){
             >
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
                 <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
-                <p className="text-slate-500 text-xs mb-4">
-                  Nome e género (♂ ♀) obrigatórios — usados nas cartas (ex.: reader_a → ao João / à Maria). Bebida opcional.
+                <p className="text-slate-500 text-sm mb-4">
+                  Preenche o <span className="text-slate-300 font-semibold">nome</span> e escolhe <span className="text-slate-300 font-semibold">♂ ou ♀</span> — usados nas cartas.
                 </p>
                 <div className="space-y-3">
                   {playerNames.map((n, i) => {
                     const needsGender = n.trim() && playerGenders[i] !== 'm' && playerGenders[i] !== 'f'
                     return (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-3 space-y-2">
+                      <p className="text-slate-500 text-xs font-semibold">Jogador {i + 1}</p>
                       <div className="flex items-center gap-2">
                         <input
+                          id={`drink-player-name-${i}`}
                           value={n}
                           onChange={(e) => setPlayerNames((ns) => ns.map((x, j) => (j === i ? e.target.value : x)))}
-                          placeholder={`Jogador ${i + 1}`}
-                          className="flex-1 min-w-0 bg-transparent text-white rounded-xl px-2 py-2 outline-none placeholder-slate-600 text-sm font-medium"
+                          placeholder={`Ex.: ${['Ana', 'João', 'Maria', 'Pedro'][i] || `Jogador ${i + 1}`}`}
+                          autoComplete="off"
+                          aria-label={`Nome do jogador ${i + 1}`}
+                          className="flex-1 min-w-0 bg-white/[0.04] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.1] focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 text-sm font-medium placeholder-slate-600"
                         />
                         {playerNames.length > 2 && (
                           <button
                             type="button"
                             onClick={() => {
                               setPlayerNames((ns) => ns.filter((_, j) => j !== i))
-                              setPlayerDrinks((ds) => ds.filter((_, j) => j !== i))
                               setPlayerGenders((gs) => gs.filter((_, j) => j !== i))
                             }}
-                            className="text-slate-600 hover:text-red-400 p-1 transition-colors flex-shrink-0"
+                            className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors flex-shrink-0"
+                            title="Remover jogador"
                           >
                             <Trash2 className="w-4 h-4"/>
                           </button>
                         )}
-                        <div className={`flex gap-1 flex-shrink-0 ml-auto rounded-xl p-0.5 ${needsGender ? 'ring-1 ring-amber-400/50' : ''}`}>
+                        <div className={`flex gap-1 flex-shrink-0 rounded-xl p-0.5 ${needsGender ? 'ring-1 ring-amber-400/50' : ''}`}>
                           {[
                             { id: 'm', label: '♂', title: 'Masculino' },
                             { id: 'f', label: '♀', title: 'Feminino' },
@@ -910,12 +1007,6 @@ export default function DrinkGame(){
                           ))}
                         </div>
                       </div>
-                      <input
-                        value={playerDrinks[i] ?? ''}
-                        onChange={(e) => setPlayerDrinks((ds) => ds.map((x, j) => (j === i ? e.target.value : x)))}
-                        placeholder="O que está a beber? (opcional)"
-                        className="w-full bg-white/[0.04] text-slate-200 rounded-xl px-3 py-2 outline-none border border-white/[0.06] focus:border-amber-500/40 text-sm placeholder-slate-600"
-                      />
                     </div>
                     )
                   })}
@@ -931,7 +1022,6 @@ export default function DrinkGame(){
                     type="button"
                     onClick={() => {
                       setPlayerNames((n) => [...n, ''])
-                      setPlayerDrinks((d) => [...d, ''])
                       setPlayerGenders((g) => [...g, null])
                     }}
                     className="mt-3 w-full border border-dashed border-white/[0.1] rounded-2xl py-2.5 text-slate-500 hover:text-white hover:border-white/[0.25] transition-all flex items-center justify-center gap-2 text-sm"
@@ -975,7 +1065,6 @@ export default function DrinkGame(){
                         <span className={p.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(p.gender)}</span>
                       )}
                       {p.name}
-                      {p.drink && <span className="text-slate-500 text-xs">· {p.drink}</span>}
                     </span>
                   ))}
                 </div>
@@ -1038,11 +1127,7 @@ export default function DrinkGame(){
                     )
                   })}
                 </div>
-                {agentNeedsOtherDeck && (
-                  <p className="text-amber-400/90 text-xs mt-3 leading-relaxed">
-                    Agente Secreto precisa de outro baralho activo (ex.: Eu Nunca, Regras, Desafios). Só com Especiais, cartas Agente não entram.
-                  </p>
-                )}
+
               </div>
 
               <motion.button
@@ -1058,82 +1143,134 @@ export default function DrinkGame(){
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-    </div>
+    </PageShell>
   )
 
   return(
-    <div className="min-h-screen flex flex-col" style={{background:'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, #080b14 60%)'}}>
-      <div className="p-4 border-b border-white/[0.06]">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => { setSetupStep(1); setPhase('setup') }} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
-          <h1 className="text-white font-bold">🍺 Modo Beber</h1>
-          <button type="button" onClick={()=>setPhase('results')} className="text-amber-300 text-xs font-black rounded-xl border border-amber-400/25 bg-amber-400/10 px-3 py-2">
+    <GameShell
+      mode="drink"
+      header={
+        <div className="flex items-center gap-2">
+          <BackButton onClick={() => { setSetupStep(1); setPhase('setup') }} />
+          <div className="flex-1 min-w-0 text-center">
+            <h1 className="text-white font-black text-lg leading-tight">🍺 Modo Beber</h1>
+            <p className="text-slate-500 text-sm">Turno {turnCount}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowMesaPanel((v) => !v)}
+            className={`shrink-0 text-sm font-black rounded-xl border px-2.5 py-2 flex items-center gap-1.5 ${
+              showMesaPanel
+                ? 'text-black border-amber-400 bg-amber-400'
+                : 'text-amber-300 border-amber-400/25 bg-amber-400/10'
+            }`}
+          >
+            🪑 Mesa
+            {mesaBadgeCount > 0 && !showMesaPanel && (
+              <span className="min-w-[1.1rem] h-4 px-1 rounded-full bg-amber-500 text-black text-[10px] font-black flex items-center justify-center">
+                {mesaBadgeCount}
+              </span>
+            )}
+          </button>
+          <button type="button" onClick={()=>setPhase('results')} className="shrink-0 text-amber-300 text-sm font-black rounded-xl border border-amber-400/25 bg-amber-400/10 px-2.5 py-2">
             Fim
           </button>
         </div>
-      </div>
-      {/* Tabs */}
-      <div className="flex bg-white/[0.04] mx-4 mt-4 rounded-2xl p-1 max-w-lg mx-auto w-full border border-white/[0.06]">
-        {[['deck','🃏 Baralho']].map(([id,label])=>(
-          <button key={id} onClick={()=>setTab(id)}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab===id?'bg-amber-500 text-black':'text-slate-400 hover:text-white'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="flex-1 flex flex-col items-center px-4 py-5 max-w-lg mx-auto w-full">
-        <div className="w-full mb-4 space-y-3">
-          {(activeRules.length > 0 || activeAllianceList.length > 0) && (
-            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-white font-black text-sm">Estado da mesa</p>
-                <p className="text-slate-500 text-xs">Turno {turnCount}</p>
-              </div>
-
-              {activeRules.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-violet-300 text-xs font-black uppercase tracking-[0.16em]">Regras ativas</p>
-                  {activeRules.map((rule)=>(
-                    <div key={rule.id} className="rounded-2xl border border-violet-400/20 bg-violet-400/10 p-3">
-                      <div className="flex gap-2">
+      }
+    >
+      <div className="px-4 py-4 max-w-lg mx-auto w-full space-y-3">
+        {(visibleRules.length > 0 || activeCurses.length > 0 || activeAllianceList.length > 0) && (
+          <div className="surface p-3 space-y-2">
+            {visibleRules.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-violet-300 text-xs font-black uppercase tracking-[0.12em]">Regras ativas</p>
+                {visibleRules.map((rule) => (
+                    <div key={rule.id} className="rounded-xl border border-violet-400/20 bg-violet-400/10 p-2.5">
+                      <div className="flex gap-2 items-start">
                         <p className="text-white text-sm leading-snug flex-1">{rule.text}</p>
-                        <button type="button" onClick={()=>setActiveRules((rules)=>rules.filter((item)=>item.id!==rule.id))} className="text-violet-200 text-xs font-black rounded-xl bg-white/10 px-2 h-8">
-                          remover
+                        <button type="button" onClick={() => setActiveRules((rules) => rules.filter((item) => item.id !== rule.id))} className="text-violet-200 text-xs font-black rounded-lg bg-white/10 px-2 py-1 shrink-0">
+                          ✕
                         </button>
                       </div>
                       <p className="text-violet-200/70 text-xs mt-1">
-                        Criada por {players[rule.ownerIndex]?.name || 'jogador'}
-                        {rule.expiresAt ? ` · ${Math.max(0, rule.expiresAt - turnCount)} rondas` : ''}
+                        {players[rule.ownerIndex]?.name || 'jogador'}
+                        {formatRuleTimeLeft(rule, turnCount, players.length)}
                       </p>
                     </div>
                   ))}
-                </div>
-              )}
+              </div>
+            )}
 
-              {activeAllianceList.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-pink-300 text-xs font-black uppercase tracking-[0.16em]">Alianças</p>
-                  {activeAllianceList.map((alliance)=>(
-                    <div key={alliance.id} className="rounded-2xl border border-pink-400/20 bg-pink-400/10 p-3 text-sm text-white">
-                      🤝 {players[alliance.players[0]]?.name} + {players[alliance.players[1]]?.name}
-                      <span className="text-pink-200/80"> · {Math.max(0, alliance.expiresAt - turnCount)} rondas</span>
+            {activeCurses.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-cyan-300 text-xs font-black uppercase tracking-[0.12em]">Maldições</p>
+                {activeCurses.map((curse) => (
+                  <div key={curse.id} className="rounded-xl border border-cyan-400/20 bg-cyan-400/10 p-2.5 space-y-2">
+                    <p className="text-white text-sm leading-snug">
+                      🔮 <span className="font-bold">{players[curse.playerIndex]?.name || '?'}</span>: {curse.text}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 items-center">
+                      <button type="button" onClick={() => failCurse(curse.id)} className="rounded-lg bg-red-500/20 border border-red-400/30 text-red-200 px-2.5 py-1 text-xs font-black">
+                        Falhou
+                      </button>
+                      {players.length > 1 && (
+                        players.length <= 5 ? players.map((p, idx) => (
+                          idx !== curse.playerIndex ? (
+                            <button key={p.name} type="button" onClick={() => passCurse(curse.id, idx)} className="rounded-lg bg-white/10 border border-white/15 text-white px-2.5 py-1 text-xs font-bold">
+                              → {p.name}
+                            </button>
+                          ) : null
+                        )) : (
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const idx = Number(e.target.value)
+                              if (Number.isFinite(idx) && idx >= 0) passCurse(curse.id, idx)
+                              e.target.value = ''
+                            }}
+                            className="rounded-lg bg-white/10 border border-white/15 text-white px-2.5 py-1 text-xs max-w-full"
+                          >
+                            <option value="">Passar a…</option>
+                            {players.map((p, idx) => (
+                              idx !== curse.playerIndex ? (
+                                <option key={p.name} value={idx}>{p.name}</option>
+                              ) : null
+                            ))}
+                          </select>
+                        )
+                      )}
+                      <button type="button" onClick={() => setActiveCurses((c) => c.filter((x) => x.id !== curse.id))} className="rounded-lg bg-white/5 text-slate-400 px-2.5 py-1 text-xs">
+                        remover
+                      </button>
                     </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-            </div>
-          )}
+            {activeAllianceList.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-pink-300 text-xs font-black uppercase tracking-[0.12em]">Alianças</p>
+                {activeAllianceList.map((alliance) => (
+                  <div key={alliance.id} className="rounded-xl border border-pink-400/20 bg-pink-400/10 px-2.5 py-2 text-sm text-white">
+                    <p className="font-bold">
+                      🤝 {players[alliance.players[0]]?.name} + {players[alliance.players[1]]?.name}
+                      <span className="text-pink-200/80 text-xs">{formatDurationTimeLeft(alliance, turnCount, players.length)}</span>
+                    </p>
+                    {alliance.text && <p className="mt-1 text-xs leading-snug text-pink-100/80">{alliance.text}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
-          {lastPenaltyHint && (
-            <p className="text-amber-300 text-xs font-bold text-center mb-2">{lastPenaltyHint}</p>
-          )}
-          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-3">
-            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.16em] mb-2">Contador (goles)</p>
+        {showMesaPanel && (
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
+            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em] mb-2">Contador (goles)</p>
             <div className="grid grid-cols-2 gap-2">
-              {players.map((player, idx)=>(
-                <div key={player.name} className="rounded-2xl bg-white/[0.04] border border-white/[0.06] p-2">
+              {players.map((player, idx) => (
+                <div key={player.name} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-2">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <p className="text-white text-sm font-bold truncate">
                       {genderSymbol(player.gender) && (
@@ -1141,11 +1278,11 @@ export default function DrinkGame(){
                       )}
                       {player.name}
                     </p>
-                    <p className="text-amber-300 text-xs font-black">{drinkStats[idx]?.drinks || 0}</p>
+                    <p className="text-amber-300 text-sm font-black">{drinkStats[idx]?.drinks || 0}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-1">
-                    {[1,2,3].map((amount)=>(
-                      <button key={amount} type="button" onClick={()=>registerDrink(idx, amount)} className="rounded-xl bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
+                    {[1, 2, 3].map((amount) => (
+                      <button key={amount} type="button" onClick={() => registerDrink(idx, amount)} className="rounded-lg bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
                         +{amount}
                       </button>
                     ))}
@@ -1154,140 +1291,21 @@ export default function DrinkGame(){
               ))}
             </div>
           </div>
-        </div>
-        <AnimatePresence>
-          {surpriseCue && (
-            <motion.div
-              key="surprise-cue"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="w-full mb-4 rounded-2xl border border-cyan-500/40 bg-gradient-to-br from-cyan-950/80 to-slate-900/90 p-4 flex flex-col gap-3"
-            >
-              <div className="flex items-start gap-2">
-                <PartyPopper className="w-5 h-5 text-cyan-300 shrink-0 mt-0.5" />
-                <p className="text-white text-sm font-semibold leading-snug">
-                  Surpresa IA — queres um desafio extra para o grupo? (Não substitui cartas do baralho.)
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSurpriseCue(false)
-                    setSurpriseOpen(true)
-                    setSurpriseText('')
-                    setSurpriseErr(null)
-                    void fetchSurpriseChallenge()
-                  }}
-                  className="flex-1 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-xl py-3 text-sm font-black"
-                >
-                  Abrir desafio
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSurpriseCue(false)}
-                  className="flex-1 bg-white/[0.08] border border-white/10 text-slate-200 rounded-xl py-3 text-sm font-bold hover:bg-white/[0.12]"
-                >
-                  Agora não
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <AnimatePresence mode="wait">
-          <motion.div key={tab} initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="w-full">
-            {tab==='deck'&&(
-              <CardDeck
-                key={deckSessionId}
-                activeDeck={activeDeck}
-                agentPublicPool={agentPublicPool}
-                agentMissionPool={agentMissionPool}
-                players={players}
-                deckSessionId={deckSessionId}
-                impostorPairs={impostorPairs}
-                onCardDrawn={onCardDrawn}
-                onAgentResult={handleAgentResult}
-                onMiniBossResult={handleMiniBossResult}
-                onImpostorResult={handleImpostorResult}
-                onAutoPenalty={handleAutoPenalty}
-              />
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-      <AnimatePresence>
-        {surpriseOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
-            onClick={() => !surpriseLoading && setSurpriseOpen(false)}
-          >
-            <motion.div
-              initial={{ y: 40, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 40, opacity: 0 }}
-              transition={{ type: 'spring', damping: 22 }}
-              className="w-full max-w-lg rounded-3xl overflow-hidden border border-cyan-500/30 bg-[#0f1120] shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="px-5 py-4 flex items-center gap-3 bg-gradient-to-r from-cyan-600 to-teal-700">
-                <PartyPopper className="text-white w-5 h-5 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-white font-black text-lg leading-tight">Desafio surpresa</h3>
-                  <p className="text-cyan-100/90 text-xs">Modo beber · IA (Groq)</p>
-                </div>
-                <button
-                  type="button"
-                  disabled={surpriseLoading}
-                  onClick={() => setSurpriseOpen(false)}
-                  className="text-white/80 hover:text-white font-bold text-xl w-9 h-9 flex items-center justify-center rounded-xl hover:bg-white/10 disabled:opacity-40"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className="p-5 space-y-4">
-                {surpriseLoading && (
-                  <div className="text-center py-8 space-y-3">
-                    <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
-                      <Sparkles className="text-cyan-400 w-10 h-10 mx-auto" />
-                    </motion.div>
-                    <p className="text-slate-400 text-sm">A inventar um desafio para o grupo…</p>
-                  </div>
-                )}
-                {!surpriseLoading && surpriseErr && (
-                  <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{surpriseErr}</p>
-                )}
-                {!surpriseLoading && surpriseText && !surpriseErr && (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                    <p className="text-white text-lg font-semibold leading-relaxed text-center">{surpriseText}</p>
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={surpriseLoading}
-                    onClick={() => void fetchSurpriseChallenge()}
-                    className="flex-1 bg-white/[0.08] border border-white/10 text-white rounded-2xl py-3 text-sm font-bold hover:bg-white/[0.12] disabled:opacity-40"
-                  >
-                    Outro desafio
-                  </button>
-                  <button
-                    type="button"
-                    disabled={surpriseLoading}
-                    onClick={() => setSurpriseOpen(false)}
-                    className="flex-1 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-2xl py-3 text-sm font-black"
-                  >
-                    Fechar
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+
+        <CardDeck
+          key={deckSessionId}
+          activeDeck={activeDeck}
+          agentPublicPool={agentPublicPool}
+          players={players}
+          deckSessionId={deckSessionId}
+          impostorPairs={impostorPairs}
+          onCardDrawn={onCardDrawn}
+          onAgentResult={handleAgentResult}
+          onAllianceChosen={onAllianceChosen}
+          onImpostorResult={handleImpostorResult}
+        />
+      </div>
+    </GameShell>
   )
 }

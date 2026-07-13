@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, Flame, X, Calendar } from 'lucide-react'
+import ModeGlowBackdrop from '../components/layout/ModeGlowBackdrop'
 
 // 31 posições — uma por dia do mês
 const POSITIONS_31 = [
@@ -211,11 +212,12 @@ export default function DailyScratch({ onClose, standalone = false }) {
   const reveal = () => handleScratched()
 
   const wrap = standalone
-    ? 'min-h-screen bg-[#080b14] flex items-center justify-center p-4'
+    ? 'min-h-screen bg-[#080b14] flex items-center justify-center p-4 relative'
     : 'fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4'
 
   return (
     <div className={wrap}>
+      {standalone && <ModeGlowBackdrop mode="couple" />}
       <motion.div initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', damping: 16 }}
         className="w-full max-w-sm flex flex-col gap-4">

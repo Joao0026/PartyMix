@@ -5,7 +5,9 @@ import { loadGame } from '../utils/game'
 import { api } from '../utils/api'
 import DailyScratch from './DailyScratch'
 import CoupleMap from '../components/game/CoupleMap'
-import { ChevronLeft, Dice6, Heart, Film, HelpCircle, Ticket, Map, Lock, Check } from 'lucide-react'
+import { Dice6, Heart, Film, HelpCircle, Ticket, Map, Lock, Check } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import GameShell from '../components/layout/GameShell'
 
 // ── EROTIC DICE ──────────────────────────────────────────────
 const BODY_OPTIONS=['Lábios','Pescoço','Orelhas','Ombros','Costas','Barriga','Pés','Mãos','Pulsos','Clavícula','Joelhos','Tornozelos','Nuca','Cotovelos','Dedos','Testa','Bochechas','Queixo','Peito','Cintura']
@@ -323,9 +325,9 @@ export default function CoupleGame(){
 
   // ── MENU ──────────────────────────────────────────────────
   if(phase==='menu')return(
-    <div className="min-h-screen flex flex-col" style={{background:'radial-gradient(ellipse at 50% -10%, rgba(225,29,72,0.15) 0%, #080b14 55%)'}}>
+    <GameShell mode="couple">
       <div className="p-4 flex items-center gap-3 max-w-lg mx-auto w-full">
-        <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
+        <BackButton onClick={() => navigate('/')} />
         <div><h1 className="text-white font-black text-xl">💕 Modo Casal</h1><p className="text-slate-500 text-sm">Escolhe o que queres jogar</p></div>
       </div>
       <div className="flex-1 px-4 pb-8 max-w-lg mx-auto w-full space-y-2.5">
@@ -426,32 +428,40 @@ export default function CoupleGame(){
         </motion.button>
       </div>
       <AnimatePresence>{showScratch&&<DailyScratch onClose={()=>setShowScratch(false)}/>}</AnimatePresence>
-    </div>
+    </GameShell>
   )
 
   // ── MAP MODE ──────────────────────────────────────────────
   if(phase==='map')return(
-    <div className="min-h-screen flex flex-col" style={{background:'radial-gradient(ellipse at 50% -10%, rgba(225,29,72,0.12) 0%, #080b14 55%)'}}>
-      <div className="p-4 border-b border-white/[0.06] flex items-center justify-between max-w-lg mx-auto w-full">
-        <button onClick={()=>setPhase('menu')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
-        <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
-        <div className="w-5"/>
-      </div>
+    <GameShell
+      mode="couple"
+      header={
+        <div className="flex items-center justify-between">
+          <BackButton onClick={() => setPhase('menu')} />
+          <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
+          <div className="w-5"/>
+        </div>
+      }
+    >
       <CoupleMap players={players} selected={selected} maxDice={maxDice} loopGoal={loopGoal} targetLaps={targetLaps} onExit={()=>setPhase('menu')}/>
-    </div>
+    </GameShell>
   )
 
   // ── PLAYING ───────────────────────────────────────────────
   return(
-    <div className="min-h-screen flex flex-col" style={{background:'radial-gradient(ellipse at 50% -10%, rgba(225,29,72,0.12) 0%, #080b14 55%)'}}>
-      <div className="p-4 border-b border-white/[0.06] flex items-center justify-between max-w-lg mx-auto w-full">
-        <button onClick={()=>setPhase('menu')} className="text-slate-400 hover:text-white"><ChevronLeft className="w-5 h-5"/></button>
-        <div className="text-center">
-          <p className="text-white font-bold text-sm">💕 Modo Casal</p>
-          <p className="text-slate-500 text-xs">Turno {turn+1} · {player?.name}</p>
+    <GameShell
+      mode="couple"
+      header={
+        <div className="flex items-center justify-between">
+          <BackButton onClick={() => setPhase('menu')} />
+          <div className="text-center">
+            <p className="text-white font-bold text-sm">💕 Modo Casal</p>
+            <p className="text-slate-500 text-xs">Turno {turn+1} · {player?.name}</p>
+          </div>
+          <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black`}>{player?.name?.[0]}</div>
         </div>
-        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black`}>{player?.name?.[0]}</div>
-      </div>
+      }
+    >
       {/* Activity indicator */}
       {currentAct&&(
         <div className="px-4 pt-3 max-w-lg mx-auto w-full">
@@ -477,6 +487,6 @@ export default function CoupleGame(){
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
+    </GameShell>
   )
 }

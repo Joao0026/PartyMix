@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Trophy, RotateCcw } from 'lucide-react'
+import { Trophy, RotateCcw } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import GameShell from '../components/layout/GameShell'
+import PlayerScoreChips from '../components/layout/PlayerScoreChips'
 import { loadGame, CATEGORY_CONFIG } from '../utils/game'
-import { api } from '../utils/api'
+import { fetchRandomChallenge } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 
 // Fallback challenges per category if API fails
@@ -67,12 +70,12 @@ export default function ChallengesOnly() {
     setLoading(true); setResult(null); setChallenge(null)
     const cat = cats[Math.floor(Math.random() * cats.length)]
     try {
-      const c = await api.getRandomChallenge({
+      const c = await fetchRandomChallenge({
         category: cat,
         mode_type: game?.mode || 'friends',
         ...challengePackParams(game?.contentPack, game?.includeCommunity !== false),
       })
-      if (c && !c.error) { setChallenge(c); setLoading(false); return }
+      if (c) { setChallenge(c); setLoading(false); return }
     } catch {}
     // Fallback
     const pool = FALLBACK[cat] || FALLBACK.mimica
@@ -137,34 +140,51 @@ export default function ChallengesOnly() {
   const cat      = challenge?.category || cats[0]
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-white/[0.06] flex-shrink-0">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={() => navigate('/')} className="text-slate-400 hover:text-white p-1">
-            <ChevronLeft className="w-5 h-5"/>
-          </button>
+    <GameShell
+      mode="challenges"
+      header={
+        <div className="flex items-center justify-between gap-2">
+          <BackButton onClick={() => navigate('/')} />
           <div className="flex items-center gap-2">
             <Trophy className="text-amber-400 w-4 h-4"/>
             <span className="text-white font-bold text-sm">Ronda {round}</span>
           </div>
-          {/* Score chips */}
-          <div className="flex gap-2">
-            {players.map((p,i) => (
-              <div key={i} className="text-center">
-                <p className={`text-sm font-black ${i===currentPlayer?'text-amber-400':'text-white'}`}>{scores[i]}</p>
-                <p className="text-slate-600 text-xs truncate max-w-10">{p.name.split(' ')[0]}</p>
-              </div>
-            ))}
-          </div>
+          <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} accent="violet" />
         </div>
-      </div>
+      }
+      footer={
+        !loading && challenge ? (
+          <div className="space-y-3">
+            {!result ? (
+              <div className="flex gap-3">
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleResult('success')}
+                  className="flex-1 btn-primary bg-gradient-to-r from-green-500 to-emerald-600 text-lg">
+                  ✅ Conseguiu!
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => handleResult('fail')}
+                  className="flex-1 btn-primary bg-gradient-to-r from-red-500 to-rose-600 text-lg">
+                  ❌ Falhou!
+                </motion.button>
+              </div>
+            ) : (
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }} onClick={nextPlayer}
+                className="btn-primary bg-gradient-to-r from-violet-600 to-purple-700 text-lg">
+                {currentPlayer === players.length - 1 ? `Próxima Ronda (R${round + 1}) →` : `${players[(currentPlayer + 1) % players.length]?.name} →`}
+              </motion.button>
+            )}
+            <button type="button" onClick={loadChallenge} className="w-full surface-sm text-slate-400 py-3 text-sm flex items-center justify-center gap-2">
+              <RotateCcw className="w-4 h-4"/> Outro desafio
+            </button>
+          </div>
+        ) : null
+      }
+    >
 
       {/* Player order strip */}
       <div className="px-4 py-2 max-w-lg mx-auto w-full">
         <div className="flex gap-1.5 overflow-x-auto" style={{scrollbarWidth:'none'}}>
           {players.map((p,i) => (
-            <div key={i} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border flex-shrink-0 transition-all ${i===currentPlayer?'bg-violet-600/20 border-violet-500/50':'bg-white/[0.03] border-white/[0.06]'}`}>
+            <div key={i} className={`surface-sm flex items-center gap-1.5 px-2.5 py-1.5 flex-shrink-0 transition-all ${i===currentPlayer?'border-violet-500/50 bg-violet-600/20':'opacity-80'}`}>
               <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${p.color} flex items-center justify-center text-white text-xs font-black`}>{p.name[0]}</div>
               <span className={`text-xs font-semibold ${i===currentPlayer?'text-white':'text-slate-500'}`}>{p.name.split(' ')[0]}</span>
               {i===currentPlayer && <motion.div animate={{scale:[1,1.4,1]}} transition={{repeat:Infinity,duration:0.9}} className="w-1.5 h-1.5 rounded-full bg-violet-400"/>}
@@ -174,11 +194,11 @@ export default function ChallengesOnly() {
       </div>
 
       {/* Challenge card */}
-      <div className="flex-1 flex flex-col items-center px-4 pb-6 gap-4 max-w-lg mx-auto w-full">
+      <div className="flex-1 flex flex-col items-center px-4 pb-4 gap-4 max-w-lg mx-auto w-full">
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div key="loading" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}
-              className="w-full h-52 bg-white/[0.04] border border-white/[0.07] rounded-3xl flex items-center justify-center">
+              className="surface w-full h-52 rounded-3xl flex items-center justify-center">
               <motion.div animate={{rotate:360}} transition={{repeat:Infinity,duration:1,ease:'linear'}}
                 className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full"/>
             </motion.div>
@@ -205,8 +225,8 @@ export default function ChallengesOnly() {
               <motion.div
                 animate={result==='success'?{borderColor:'rgba(34,197,94,0.4)',background:'rgba(34,197,94,0.05)'}
                   :result==='fail'?{borderColor:'rgba(239,68,68,0.4)',background:'rgba(239,68,68,0.05)'}
-                  :{borderColor:'rgba(255,255,255,0.07)',background:'rgba(255,255,255,0.04)'}}
-                className="w-full rounded-3xl p-6 border min-h-40 flex items-center justify-center">
+                  :{}}
+                className="surface w-full rounded-3xl p-6 min-h-40 flex items-center justify-center">
                 <p className="text-white font-bold text-xl text-center leading-relaxed">{challenge.text}</p>
               </motion.div>
 
@@ -228,30 +248,6 @@ export default function ChallengesOnly() {
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Action buttons */}
-              <div className="mt-4 space-y-3">
-                {!result ? (
-                  <div className="flex gap-3">
-                    <motion.button whileTap={{scale:0.95}} onClick={()=>handleResult('success')}
-                      className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black rounded-2xl py-4 text-lg">
-                      ✅ Conseguiu!
-                    </motion.button>
-                    <motion.button whileTap={{scale:0.95}} onClick={()=>handleResult('fail')}
-                      className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 text-white font-black rounded-2xl py-4 text-lg">
-                      ❌ Falhou!
-                    </motion.button>
-                  </div>
-                ) : (
-                  <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextPlayer}
-                    className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4 text-lg">
-                    {currentPlayer===players.length-1 ? `Próxima Ronda (R${round+1}) →` : `${players[(currentPlayer+1)%players.length]?.name} →`}
-                  </motion.button>
-                )}
-                <button onClick={loadChallenge} className="w-full bg-white/[0.04] border border-white/[0.07] text-slate-400 rounded-2xl py-3 text-sm flex items-center justify-center gap-2">
-                  <RotateCcw className="w-4 h-4"/> Outro desafio
-                </button>
-              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -272,6 +268,6 @@ export default function ChallengesOnly() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </GameShell>
   )
 }

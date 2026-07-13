@@ -32,7 +32,7 @@ export const IMPOSTOR_PAIRS = [
     emoji: '🎭',
     title: 'Impostor',
     correctQuestion: 'Quem do grupo sobreviveria num apocalipse?',
-    wrongQuestion: 'Quem é o mais medricas?',
+    wrongQuestion: 'Quem é o mais medroso?',
   },
   {
     type: 'impostor',
@@ -73,14 +73,12 @@ export const IMPOSTOR_PAIRS = [
 
 /**
  * Ronda Impostor: o telemóvel passa por todos; 1 jogador vê pergunta errada.
- * Acertam quem era → impostor bebe. Falham → impostor distribui.
  */
 export default function ImpostorCard({
   players,
   correctQuestion,
   wrongQuestion,
   impostorIndex,
-  mode = 'drink',
   onComplete,
 }) {
   const [phase, setPhase] = useState('pass')
@@ -90,22 +88,22 @@ export default function ImpostorCard({
 
   const n = players.length
   const impostor = players[impostorIndex]
-  const drinkAmount = 3
   const guessedCorrect = accusedIdx === impostorIndex
 
   const advancePass = () => {
     setViewed(false)
-    if (passIdx + 1 >= n) setPhase('reveal')
+    if (passIdx + 1 >= n) setPhase('discuss')
     else setPassIdx((i) => i + 1)
   }
 
   const pickAccusation = (idx) => {
     setAccusedIdx(idx)
     setPhase('done')
-  }
-
-  const finish = () => {
-    onComplete?.({ guessedCorrect, impostorIndex, accusedIndex: accusedIdx })
+    onComplete?.({
+      guessedCorrect: idx === impostorIndex,
+      impostorIndex,
+      accusedIndex: idx,
+    })
   }
 
   const currentPlayer = players[passIdx]
@@ -163,6 +161,29 @@ export default function ImpostorCard({
           </motion.div>
         )}
 
+        {phase === 'discuss' && (
+          <motion.div
+            key="discuss"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            <div className="rounded-3xl border border-white/15 bg-black/20 p-5 text-center">
+              <p className="text-white font-black text-xl mb-2">Hora de comparar</p>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                Todos viram a carta? Respondam em voz alta e descubram esse Impostor Mediocre!
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPhase('reveal')}
+              className="w-full rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-700 py-4 text-white font-black"
+            >
+              Ver pergunta certa
+            </button>
+          </motion.div>
+        )}
+
         {phase === 'reveal' && (
           <motion.div
             key="reveal"
@@ -174,9 +195,6 @@ export default function ImpostorCard({
               <p className="text-emerald-200 text-xs font-black uppercase tracking-[0.16em] mb-2">Pergunta certa</p>
               <p className="text-white font-bold text-lg leading-relaxed">{correctQuestion}</p>
             </div>
-            <p className="text-slate-300 text-sm text-center leading-relaxed">
-              Todos responderam? Comparem as respostas e decidam quem tinha a pergunta errada.
-            </p>
             <button
               type="button"
               onClick={() => setPhase('guess')}
@@ -219,49 +237,33 @@ export default function ImpostorCard({
             key="done"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="space-y-4"
+            className={`rounded-2xl border p-4 text-center ${
+              guessedCorrect
+                ? 'border-emerald-400/30 bg-emerald-400/10'
+                : 'border-red-400/30 bg-red-500/10'
+            }`}
           >
-            <div
-              className={`rounded-2xl border p-4 text-center ${
-                guessedCorrect
-                  ? 'border-emerald-400/30 bg-emerald-400/10'
-                  : 'border-amber-400/30 bg-amber-400/10'
-              }`}
-            >
-              <p className="text-white font-black text-xl mb-2">
-                {guessedCorrect ? 'Mesa acertou!' : 'Mesa falhou!'}
-              </p>
-              <p className="text-white/90 text-sm leading-relaxed">
-                O impostor era <span className="font-black">{impostor?.name}</span>.
-                {guessedCorrect ? (
-                  <>
-                    {' '}
-                    {mode === 'drink'
-                      ? `${impostor?.name} bebe ${drinkAmount} gole${drinkAmount === 1 ? '' : 's'}.`
-                      : `${impostor?.name} bebe 2 goles.`}
-                  </>
-                ) : (
-                  <>
-                    {' '}
-                    {mode === 'drink'
-                      ? `${impostor?.name} distribui ${drinkAmount} gole${drinkAmount === 1 ? '' : 's'}.`
-                      : `${impostor?.name} distribui ${drinkAmount} gole${drinkAmount === 1 ? '' : 's'}.`}
-                  </>
-                )}
-              </p>
-              {accusedIdx !== impostorIndex && (
-                <p className="text-slate-400 text-xs mt-2">
-                  Acusaram {players[accusedIdx]?.name}.
-                </p>
+            <p className="text-white font-black text-xl mb-2">
+              {guessedCorrect ? 'Mesa acertou!' : 'Mesa falhou!'}
+            </p>
+            <p className="text-white/90 text-sm leading-relaxed">
+              O impostor era <span className="font-black">{impostor?.name}</span>.
+              {accusedIdx !== impostorIndex && accusedIdx !== null && (
+                <> Acusaram {players[accusedIdx]?.name}.</>
               )}
+            </p>
+            <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+              <p className="text-amber-200 text-xs font-black uppercase tracking-[0.16em] mb-2">Pergunta errada</p>
+              <p className="text-white font-bold leading-relaxed">{wrongQuestion}</p>
             </div>
-            <button
-              type="button"
-              onClick={finish}
-              className="w-full rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-black py-4 font-black"
-            >
-              Continuar
-            </button>
+            <p className={`mt-4 rounded-2xl px-4 py-3 text-sm font-black ${
+              guessedCorrect ? 'bg-emerald-500 text-black' : 'bg-red-500 text-white'
+            }`}>
+              {guessedCorrect
+                ? 'Acertaram: o impostor bebe 2 goles.'
+                : 'Falharam: o impostor distribui 2 goles a todos.'}
+            </p>
+            <p className="text-slate-400 text-xs mt-3">Carrega em «Próxima carta» em baixo.</p>
           </motion.div>
         )}
       </AnimatePresence>

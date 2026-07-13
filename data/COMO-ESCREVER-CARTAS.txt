@@ -144,7 +144,7 @@ O text é só a REGRA (quem bebe), não as opções.
   "emoji": "🤔",
   "title": "Preferias?",
   "choices": ["Nunca mais viajar", "Nunca mais usar redes sociais"],
-  "text": "A opção com menos votos bebe 2. Empate = todos bebem 1."
+  "text": "Minoria bebe 1"
 }
 
 ──────────────────────────────────────────

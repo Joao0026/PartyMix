@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff } from 'lucide-react'
+import { Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { api, clearAdminToken, getAdminToken } from '../utils/api'
 import { PACK_IMPORT_TEMPLATES, SNIPPET_TEMPLATES, COLOCAR_NA_APP } from '../utils/packJsonTemplates'
 
@@ -28,9 +30,9 @@ function PasswordGate({ onUnlock }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex items-center justify-center px-4">
+    <PageShell mode="hub" className="justify-center" innerClassName="w-full max-w-xs">
       <motion.div animate={shake?{x:[-8,8,-6,6,-4,4,0]}:{}} transition={{duration:0.5}}
-        className="w-full max-w-xs bg-white/[0.04] border border-white/[0.08] rounded-3xl p-8 text-center space-y-6">
+        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-3xl p-8 text-center space-y-6">
         <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
           <Lock className="text-white w-8 h-8"/>
         </div>
@@ -49,11 +51,9 @@ function PasswordGate({ onUnlock }) {
           Entrar
         </motion.button>
       </motion.div>
-    </div>
+    </PageShell>
   )
 }
-
-const inp  = 'w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 outline-none focus:border-violet-500 text-sm placeholder-slate-500'
 const card = 'bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4'
 
 function StatsTab() {
@@ -675,10 +675,9 @@ export default function Admin(){
   if(!unlocked)return<PasswordGate onUnlock={()=>setUnlocked(true)}/>
   const ActiveTab={stats:StatsTab,community:CommunityTab,qualidade:QualidadeTab,packs:PacksTab,import:ImportPackTab,challenges:ChallengesTab,cards:CardsTab,dice:DiceTab}[tab]||StatsTab
   return(
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg">
+    <PageShell mode="hub" innerClassName="space-y-0 w-full">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <BackButton onClick={() => navigate('/')} />
           <div className="flex-1"><h1 className="text-white font-bold text-xl">⚙️ Painel Admin</h1><p className="text-slate-500 text-xs">Gestão de conteúdo</p></div>
           <button onClick={logout} className="text-slate-500 hover:text-red-400 text-xs border border-slate-700 hover:border-red-500/40 rounded-xl px-3 py-1.5 transition-all">Sair</button>
         </div>
@@ -692,7 +691,6 @@ export default function Admin(){
             <ActiveTab/>
           </motion.div>
         </AnimatePresence>
-      </div>
-    </div>
+    </PageShell>
   )
 }

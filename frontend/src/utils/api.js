@@ -177,6 +177,8 @@ export const api = {
   deleteCommunity:    (id) => del(`/community/${id}`),
   getMisterPairs:     () => get('/mister/pairs'),
 
+  getMemeMixPacks:    () => get('/mememix/packs'),
+
   uploadMemeMixPhoto: (roomCode, token, imageBase64) =>
     fetch(`${BASE}/mememix/rooms/${encodeURIComponent(roomCode)}/upload`, {
       method: 'POST',

@@ -1,6 +1,9 @@
 /** Extrai penalização de texto de carta: "bebe 3", "distribui 2", etc. */
 export function parseCardPenalty(text = '') {
   const t = String(text || '').toLowerCase()
+  if (/pen[aá]ltis\s+para\s+todos|toda\s+a\s+gente\s+bebe\s+o\s+copo/.test(t)) {
+    return { action: 'group_full_glass', amount: 0, raw: 'copo inteiro' }
+  }
   const drinkMatch = t.match(/bebe(?:m)?\s+(\d+)/) || t.match(/(\d+)\s+gole?s?\b/)
   if (drinkMatch) {
     return { action: 'drink', amount: Math.min(12, parseInt(drinkMatch[1], 10) || 1), raw: drinkMatch[0] }

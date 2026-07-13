@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ThumbsUp, Send, Sparkles, Clock, CheckCircle, Lightbulb } from 'lucide-react'
+import { ThumbsUp, Send, Sparkles, Clock, CheckCircle, Lightbulb } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { api } from '../utils/api'
 import { DRINK_BARALHOS, DRINK_ESPECIAL_TYPES, DRINK_BARALHO_PLACEHOLDERS, drinkBaralhoLabel } from '../utils/drinkBaralhos'
 
@@ -281,9 +283,9 @@ export default function CommunityCards() {
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col">
-      <div className="px-4 pt-8 pb-4 flex items-center gap-3 max-w-lg md:max-w-3xl mx-auto w-full">
-        <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+    <PageShell mode="cards" maxWidth="3xl" innerClassName="space-y-0 w-full flex flex-col">
+      <div className="px-0 pt-0 pb-4 flex items-center gap-3 w-full">
+        <BackButton onClick={() => navigate('/')} />
         <div className="flex-1">
           <h1 className="text-white font-black text-xl flex items-center gap-2"><Sparkles className="text-violet-400 w-5 h-5"/>Cartas da Comunidade</h1>
           <p className="text-slate-500 text-sm">Vota nas melhores ideias — clica outra vez para retirar. Só o admin aprova para entrar no jogo.</p>
@@ -586,7 +588,7 @@ export default function CommunityCards() {
                   <div>
                     <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">4. Quem bebe?</label>
                     <textarea value={cText} onChange={e=>setCText(e.target.value)}
-                      placeholder="Ex: Minoritários bebem 2. Empate = todos bebem 1."
+                      placeholder="Ex: Minoria bebe 1"
                       rows={2} className={inp+' resize-none'}/>
                   </div>
                 )}
@@ -739,6 +741,6 @@ export default function CommunityCards() {
 
         </AnimatePresence>
       </div>
-    </div>
+    </PageShell>
   )
 }

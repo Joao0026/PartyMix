@@ -50,7 +50,7 @@ export default function AICardsGenerator({ players, onAddCards, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
       <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
         transition={{ type: 'spring', damping: 20 }}
         className="w-full max-w-lg rounded-3xl overflow-hidden"

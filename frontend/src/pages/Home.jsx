@@ -2,22 +2,34 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, Users, Home as HomeIcon, Layers, Eye, Beer, ChevronRight, Users2, Moon, Laugh } from 'lucide-react'
 import { useLang } from '../contexts/LangContext'
+import ModeGlowBackdrop from '../components/layout/ModeGlowBackdrop'
+import { getModeGlow } from '../theme/modes'
 
 const MODE_ICONS = { couple: Heart, friends: Users, family: HomeIcon, drink: Beer, cards: Layers, mister: Eye, aldeia: Moon, mememix: Laugh }
 const MODE_COLORS = {
-  couple:  { gradient: 'from-rose-500 to-pink-600',    glow: 'rgba(244,63,94,0.18)',  ring: '#f43f5e' },
-  friends: { gradient: 'from-cyan-400 to-blue-500',    glow: 'rgba(34,211,238,0.15)', ring: '#22d3ee' },
-  family:  { gradient: 'from-sky-400 to-indigo-500',   glow: 'rgba(56,189,248,0.15)', ring: '#38bdf8' },
-  drink:   { gradient: 'from-amber-400 to-orange-500', glow: 'rgba(245,158,11,0.18)', ring: '#f59e0b' },
-  cards:   { gradient: 'from-yellow-400 to-amber-500', glow: 'rgba(234,179,8,0.15)',  ring: '#eab308' },
-  mister:  { gradient: 'from-slate-500 to-slate-700',  glow: 'rgba(148,163,184,0.15)',ring: '#94a3b8' },
-  aldeia:  { gradient: 'from-emerald-500 to-teal-700', glow: 'rgba(16,185,129,0.15)', ring: '#10b981' },
-  mememix: { gradient: 'from-pink-500 to-rose-600',    glow: 'rgba(236,72,153,0.15)', ring: '#ec4899' },
+  couple:  { gradient: 'from-rose-500 to-pink-600',    glow: getModeGlow('couple'),  ring: '#f43f5e' },
+  friends: { gradient: 'from-cyan-400 to-blue-500',    glow: getModeGlow('friends'), ring: '#22d3ee' },
+  family:  { gradient: 'from-sky-400 to-indigo-500',   glow: getModeGlow('family'),  ring: '#38bdf8' },
+  drink:   { gradient: 'from-amber-400 to-orange-500', glow: getModeGlow('drink'),   ring: '#f59e0b' },
+  cards:   { gradient: 'from-yellow-400 to-amber-500', glow: getModeGlow('cards'),   ring: '#eab308' },
+  mister:  { gradient: 'from-slate-500 to-slate-700',  glow: getModeGlow('misterwhite'), ring: '#94a3b8' },
+  aldeia:  { gradient: 'from-emerald-500 to-teal-700', glow: getModeGlow('aldeia'),  ring: '#10b981' },
+  mememix: { gradient: 'from-pink-500 to-rose-600',    glow: getModeGlow('mememix'), ring: '#ec4899' },
 }
 const MODE_PATHS = {
   couple: '/GameSetup?mode=couple', friends: '/GameSetup?mode=friends', family: '/GameSetup?mode=family',
   drink: '/DrinkGame', cards: '/CardsLobby', mister: '/MisterWhite',
   aldeia: '/AldeiaMix', mememix: '/MemeMix',
+}
+const MODE_BADGES = {
+  couple: 'local', friends: 'local', family: 'local', drink: 'local', cards: 'local',
+  mister: 'both', aldeia: 'online', mememix: 'online',
+}
+const BADGE_LABELS = { local: 'Local', online: 'Online', both: 'Local · Online' }
+const BADGE_STYLES = {
+  local: 'text-sky-300/90 bg-sky-500/10 border-sky-400/20',
+  online: 'text-violet-300/90 bg-violet-500/10 border-violet-400/20',
+  both: 'text-slate-300/90 bg-white/[0.06] border-white/[0.12]',
 }
 const MODE_ORDER = ['couple','friends','family','drink','cards','mister','aldeia','mememix']
 
@@ -27,6 +39,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 overflow-x-hidden overflow-y-auto relative">
+      <ModeGlowBackdrop mode="hub" />
       {/* Ambient background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[20%] w-[500px] h-[500px] rounded-full opacity-20"
@@ -87,7 +100,12 @@ export default function Home() {
               </motion.div>
 
               <div className="flex-1 relative z-10">
-                <div className="text-white font-bold text-base leading-tight">{info.label}</div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="text-white font-bold text-base leading-tight">{info.label}</div>
+                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border ${BADGE_STYLES[MODE_BADGES[id]]}`}>
+                    {BADGE_LABELS[MODE_BADGES[id]]}
+                  </span>
+                </div>
                 <div className="text-slate-500 text-sm mt-0.5">{info.desc}</div>
               </div>
 

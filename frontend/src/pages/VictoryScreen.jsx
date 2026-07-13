@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, Home, RotateCcw } from 'lucide-react'
+import GameShell from '../components/layout/GameShell'
 
 // ── WEB AUDIO SOUNDS ─────────────────────────────────────────
 function playVictorySound() {
@@ -107,12 +108,14 @@ export default function VictoryScreen() {
   }, [])
 
   if (!players.length) return (
-    <div className="min-h-screen bg-[#080b14] flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <p className="text-white font-bold text-xl">Nenhum jogo encontrado</p>
-        <button onClick={() => navigate('/')} className="bg-violet-600 text-white px-6 py-3 rounded-2xl font-bold">Início</button>
+    <GameShell mode="victory">
+      <div className="flex flex-1 items-center justify-center px-4 py-8">
+        <div className="text-center space-y-4">
+          <p className="text-white font-bold text-xl">Nenhum jogo encontrado</p>
+          <button onClick={() => navigate('/')} className="bg-violet-600 text-white px-6 py-3 rounded-2xl font-bold">Início</button>
+        </div>
       </div>
-    </div>
+    </GameShell>
   )
 
   const maxScore  = Math.max(...scores, 1)
@@ -124,13 +127,10 @@ export default function VictoryScreen() {
     .sort((a, b) => b.score - a.score)
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8 relative overflow-hidden">
+    <GameShell mode="victory" mainClassName="flex-1 overflow-y-auto relative z-10">
       <Confetti/>
 
-      {/* Background glow */}
-      <div className="fixed inset-0 pointer-events-none" style={{background:'radial-gradient(ellipse at 50% 20%, rgba(245,158,11,0.12) 0%, transparent 60%)'}}/>
-
-      <div className="w-full max-w-lg relative z-20 space-y-6">
+      <div className="w-full max-w-lg mx-auto px-4 py-8 relative z-20 space-y-6">
         {/* Trophy header */}
         <AnimatePresence>
           {show && (
@@ -200,7 +200,7 @@ export default function VictoryScreen() {
         {/* Fun stats */}
         {fails.some(f => f > 0) && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
-            className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4">
+            className="surface p-4">
             <p className="text-slate-500 text-xs text-center mb-2 uppercase tracking-wider">Estatísticas da Noite</p>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div>
@@ -215,6 +215,6 @@ export default function VictoryScreen() {
           </motion.div>
         )}
       </div>
-    </div>
+    </GameShell>
   )
 }

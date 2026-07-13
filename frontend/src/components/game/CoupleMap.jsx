@@ -116,7 +116,7 @@ function TileModal({tile,players,turn,onDone}){
     return null
   })
   return(
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
       <motion.div initial={{y:100,opacity:0}} animate={{y:0,opacity:1}} exit={{y:100,opacity:0}}
         transition={{type:'spring',damping:20}}
         className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl"
@@ -325,7 +325,7 @@ export default function CoupleMap({players,onExit,selected=[],maxDice=6,loopGoal
       <AnimatePresence>
         {activeTile&&<TileModal tile={activeTile} players={players} turn={turn} onDone={nextTurn}/>}
         {lapPrize&&(
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
             <motion.div initial={{y:100,opacity:0}} animate={{y:0,opacity:1}} exit={{y:100,opacity:0}}
               transition={{type:'spring',damping:20}}
               className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl border border-amber-500/40 bg-[#140812]">

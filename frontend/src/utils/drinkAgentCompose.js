@@ -29,9 +29,8 @@ export function buildPlayableDrinkDeck(deckCategories, selectedCats, includeComm
   if (includeCommunity) cats.add('comunidade')
   const cards = (deckCategories || [])
     .filter((c) => cats.has(c.id))
-    .flatMap((c) => c.cards || [])
-  const agentEnabled = buildAgentPublicPool(deckCategories, [...cats]).length > 0
-  if (agentEnabled) return cards
+    .flatMap((c) => (c.cards || []).map((card) => ({ ...card, deckId: c.id })))
+  // Agente Secreto desactivado (arquivo em data/drink/agent-secreto-arquivo.json)
   return cards.filter((c) => c.type !== 'agent')
 }
 
@@ -41,6 +40,28 @@ export function pickAgentPublicText(publicPool, recentTexts = []) {
   if (!pool.length) pool = publicPool
   const picked = pool[Math.floor(Math.random() * pool.length)]
   return drinkCardDisplayText(picked)
+}
+
+/** Escolhe carta com peso igual por baralho (não por número de cartas). */
+export function pickBalancedDeckCard(deck, { avoidDeckIds = [] } = {}) {
+  if (!deck.length) return { card: null, rest: [] }
+  const byDeck = {}
+  deck.forEach((card, index) => {
+    const id = card.deckId || 'outros'
+    if (!byDeck[id]) byDeck[id] = []
+    byDeck[id].push({ card, index })
+  })
+  let deckIds = Object.keys(byDeck)
+  const avoid = new Set(avoidDeckIds.filter(Boolean))
+  const preferredDeckIds = deckIds.filter((id) => !avoid.has(id))
+  if (preferredDeckIds.length) deckIds = preferredDeckIds
+  const pickId = deckIds[Math.floor(Math.random() * deckIds.length)]
+  const group = byDeck[pickId]
+  const chosen = group[Math.floor(Math.random() * group.length)]
+  return {
+    card: chosen.card,
+    rest: deck.filter((_, i) => i !== chosen.index),
+  }
 }
 
 export function composeAgentCard(agentCard, publicPool, recentTexts = []) {

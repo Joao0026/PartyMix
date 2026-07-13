@@ -18,6 +18,10 @@ export function getGlobalSocket() {
 
 export function clearGlobalSocket() {
   if (detachSocketListeners) detachSocketListeners()
+  if (storedSocket?.connected) {
+    storedSocket.removeAllListeners()
+    storedSocket.disconnect()
+  }
   storedSocket = null
   setSocketStatus('idle')
 }

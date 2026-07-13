@@ -1,16 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ChevronLeft, Wifi, Copy, Check, Trash2 } from 'lucide-react'
+import { Wifi, Trash2 } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { io } from 'socket.io-client'
 import { getSocketUrl } from '../utils/api'
-import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff } from '../utils/socketStore'
+import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession } from '../utils/amSession'
+import ShareRoomLink from '../components/layout/ShareRoomLink'
 
 const API_URL = getSocketUrl()
 
 export default function AldeiaMixLobby() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [tab, setTab] = useState('create')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -18,7 +22,6 @@ export default function AldeiaMixLobby() {
   const [room, setRoom] = useState(null)
   const [socket, setSocket] = useState(null)
   const [connecting, setConnecting] = useState(false)
-  const [copied, setCopied] = useState(false)
   const isHostRef = useRef(false)
   const hasNavigatedRef = useRef(false)
 
@@ -125,6 +128,14 @@ export default function AldeiaMixLobby() {
   }, [])
 
   useEffect(() => {
+    const q = searchParams.get('code')
+    if (q) {
+      setCode(q.trim().toUpperCase())
+      setTab('join')
+    }
+  }, [searchParams])
+
+  useEffect(() => {
     if (!socket || !room || !isHostRef.current || room.status !== 'waiting') return
     socket.emit('am_update_settings', {
       code: room.code,
@@ -143,14 +154,6 @@ export default function AldeiaMixLobby() {
     clearAmSession()
     socket.disconnect()
     navigate('/AldeiaMix')
-  }
-
-  const copyCode = () => {
-    if (!room?.code) return
-    navigator.clipboard?.writeText(room.code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
   }
 
   const maxSpec = room ? Math.max(0, (room.players?.length || 0) - 3) : 0
@@ -173,12 +176,9 @@ export default function AldeiaMixLobby() {
 
   if (room) {
     return (
-      <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-        <div className="w-full max-w-lg space-y-4">
+      <PageShell mode="aldeia" innerClassName="space-y-4">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => { socket?.disconnect(); navigate('/AldeiaMix') }} className="text-slate-400 hover:text-white p-1">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            <BackButton onClick={() => { clearAmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/AldeiaMix') }} />
             <div>
               <h1 className="text-white font-black text-xl flex items-center gap-2">
                 <Wifi className="text-emerald-400 w-5 h-5" /> AldeiaMix · {room.code}
@@ -187,13 +187,8 @@ export default function AldeiaMixLobby() {
             </div>
           </div>
 
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6 text-center">
-            <div className="flex items-center justify-center gap-3">
-              <p className="text-white font-black text-4xl tracking-[0.25em]">{room.code}</p>
-              <button type="button" onClick={copyCode} className="p-2 rounded-xl bg-white/[0.06] text-slate-400">
-                {copied ? <Check className="w-5 h-5 text-green-400" /> : <Copy className="w-5 h-5" />}
-              </button>
-            </div>
+          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
+            <ShareRoomLink mode="aldeia" code={room.code} />
           </div>
 
           <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
@@ -247,17 +242,13 @@ export default function AldeiaMixLobby() {
           ) : (
             <p className="text-center text-slate-500 text-sm py-4 animate-pulse">À espera do host…</p>
           )}
-        </div>
-      </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-5">
-        <button type="button" onClick={() => navigate('/AldeiaMix')} className="text-slate-400 flex items-center gap-1">
-          <ChevronLeft className="w-5 h-5" /> Voltar
-        </button>
+    <PageShell mode="aldeia" innerClassName="space-y-5">
+        <BackButton onClick={() => navigate('/AldeiaMix')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
         <div className="grid grid-cols-2 gap-2">
           {['create', 'join'].map((t) => (
             <button key={t} type="button" onClick={() => setTab(t)}
@@ -285,7 +276,6 @@ export default function AldeiaMixLobby() {
           className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black rounded-2xl py-5 disabled:opacity-40">
           {connecting ? 'A ligar…' : tab === 'create' ? 'Criar sala' : 'Entrar'}
         </motion.button>
-      </div>
-    </div>
+    </PageShell>
   )
 }

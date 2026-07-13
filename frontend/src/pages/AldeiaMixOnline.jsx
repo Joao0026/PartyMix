@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, EyeOff, ChevronRight, Trash2, WifiOff } from 'lucide-react'
+import { EyeOff, ChevronRight, Trash2, WifiOff } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
+import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekAmLobbyHandoff, clearAmLobbyHandoff } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession, patchAmSession } from '../utils/amSession'
@@ -225,6 +228,7 @@ export default function AldeiaMixOnline() {
   const [daySkippedNotice, setDaySkippedNotice] = useState(false)
   const [timerLeft, setTimerLeft] = useState(0)
   const [reconnecting, setReconnecting] = useState(false)
+  const [disconnected, setDisconnected] = useState(false)
   const initRef = useRef(false)
   const playerNameRef = useRef('')
 
@@ -239,6 +243,15 @@ export default function AldeiaMixOnline() {
     s.off('am_rejoined')
     s.off('am_session_ended')
     s.off('am_vote_progress')
+
+    s.on('disconnect', () => {
+      setDisconnected(true)
+      setReconnecting(true)
+    })
+    s.on('connect', () => {
+      setDisconnected(false)
+      setReconnecting(false)
+    })
 
     s.on('am_your_role', (data) => setMyRole(data))
     s.on('am_game_started', (r) => {
@@ -293,6 +306,7 @@ export default function AldeiaMixOnline() {
       setIsHost(ih)
       patchAmSession({ isHost: ih })
       setReconnecting(false)
+      setDisconnected(false)
       s.emit('am_request_state', { code: r.code })
     })
     s.on('am_session_ended', () => {
@@ -390,25 +404,53 @@ export default function AldeiaMixOnline() {
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-[#080b14] flex flex-col items-center justify-center gap-3">
+      <PageShell mode="aldeia" className="justify-center" innerClassName="flex flex-col items-center gap-3">
         <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
         {reconnecting && <p className="text-slate-500 text-sm flex items-center gap-2"><WifiOff className="w-4 h-4" /> A reconectar…</p>}
-      </div>
+      </PageShell>
     )
   }
 
   const status = room.status
   const readyCount = revealProgress.total > 0 ? revealProgress.ready : room.revealReady
   const readyTotal = revealProgress.total > 0 ? revealProgress.total : room.revealTotal
+  const phaseVisual = {
+    day: {
+      emoji: '☀️',
+      label: `Dia ${room.dayNum}`,
+      tone: 'from-amber-400/20 via-orange-500/10 to-emerald-500/10',
+      border: 'border-amber-300/25',
+      text: 'text-amber-100',
+      background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.18) 0%, #111827 48%, #080b14 100%)',
+    },
+    night: {
+      emoji: '🌙',
+      label: 'Noite',
+      tone: 'from-indigo-500/20 via-violet-500/10 to-slate-900/30',
+      border: 'border-indigo-300/25',
+      text: 'text-indigo-100',
+      background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.22) 0%, #101426 48%, #050711 100%)',
+    },
+    reveal: {
+      emoji: '🕯️',
+      label: 'Papéis secretos',
+      tone: 'from-emerald-500/15 via-slate-500/10 to-black/20',
+      border: 'border-emerald-300/20',
+      text: 'text-emerald-100',
+      background: 'radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.14) 0%, #111827 48%, #080b14 100%)',
+    },
+  }[status]
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-4">
+    <PageShell mode="aldeia" innerClassName="space-y-4" style={phaseVisual?.background ? { background: phaseVisual.background } : undefined}>
+        <ReconnectBanner
+          reconnecting={reconnecting && !disconnected}
+          disconnected={disconnected}
+          onRetry={() => socket?.connect()}
+        />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate('/AldeiaMix')} className="text-slate-400 p-1">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            <BackButton onClick={() => navigate('/AldeiaMix')} />
             <div>
               <h1 className="text-white font-bold text-xl">🏘️ {room.code}</h1>
               <p className="text-slate-500 text-xs">
@@ -418,8 +460,27 @@ export default function AldeiaMixOnline() {
               </p>
             </div>
           </div>
-          {reconnecting && <WifiOff className="w-4 h-4 text-amber-400" />}
         </div>
+
+        {phaseVisual && (
+          <div className={`rounded-3xl border ${phaseVisual.border} bg-gradient-to-br ${phaseVisual.tone} p-4 shadow-2xl`}>
+            <div className="flex items-center gap-3">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-black/25 text-3xl">
+                {phaseVisual.emoji}
+              </div>
+              <div>
+                <p className={`font-black ${phaseVisual.text}`}>{phaseVisual.label}</p>
+                <p className="text-slate-400 text-sm">
+                  {status === 'day'
+                    ? 'A aldeia discute, acusa e vota.'
+                    : status === 'night'
+                    ? 'Silêncio na mesa. O narrador guia as ações.'
+                    : 'Cada jogador vê o seu papel em segredo.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {amJuiz && (status === 'night' || status === 'day') && (
           <NarratorPanel room={room} socket={socket} narr={narr} onPick={onNarratorPick} timerLeft={timerLeft} />
@@ -442,9 +503,11 @@ export default function AldeiaMixOnline() {
                   </div>
                 )}
                 {showRole && !revealedReady && (
-                  <button type="button" onClick={confirmReveal} className="w-full bg-emerald-600 text-white font-bold rounded-2xl py-4">
-                    Vi o papel — pronto ✓
-                  </button>
+                  <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
+                    <button type="button" onClick={confirmReveal} className="w-full bg-emerald-600 text-white font-bold rounded-2xl py-4">
+                      Vi o papel — pronto ✓
+                    </button>
+                  </div>
                 )}
                 {revealedReady && (
                   <p className="text-center text-slate-500 text-sm animate-pulse">
@@ -502,9 +565,11 @@ export default function AldeiaMixOnline() {
         )}
 
         {amJuiz && status === 'result' && (
-          <button type="button" onClick={playAgain} className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold">
-            Jogar outra vez (narrador seguinte)
-          </button>
+          <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
+            <button type="button" onClick={playAgain} className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold">
+              Jogar outra vez (narrador seguinte)
+            </button>
+          </div>
         )}
 
         {amEliminated && status !== 'result' && (
@@ -517,7 +582,6 @@ export default function AldeiaMixOnline() {
             <Trash2 className="w-3 h-3" /> Fechar sala
           </button>
         )}
-      </div>
-    </div>
+    </PageShell>
   )
 }

@@ -10,7 +10,7 @@ const ORDER = {
   A: 13, K: 12, J: 11, Q: 10,
   10: 9, 9: 8, 8: 7, 7: 6, 6: 5, 5: 4, 4: 3, 3: 2, 2: 1,
 }
-const CARD_LABEL = { A: 'Ás', K: 'Rei', J: 'Valete', Q: 'Dama' }
+const CARD_LABEL = { A: 'Ás', K: 'Rei', J: 'Valete' }
 const isRed = (s) => s === '♥' || s === '♦'
 function cardLabel(v) { return CARD_LABEL[v] || v }
 function buildDeck() { const d = []; for (const s of SUITS) for (const v of VALS) d.push({ s, v }); return shuffle(d) }
@@ -593,7 +593,7 @@ export const MINI_GAME_META={
 export default function MiniGameModal({type,players,currentPlayer,onClose}){
   const meta=MINI_GAME_META[type]||{title:'🎲 Mini-Jogo',color:'from-violet-600 to-purple-700'}
   return(
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
       <motion.div initial={{y:120,opacity:0}} animate={{y:0,opacity:1}} exit={{y:120,opacity:0}}
         transition={{type:'spring',damping:20}}
         className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">

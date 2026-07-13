@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { loadGame } from '../utils/game'
-import { api } from '../utils/api'
+import { fetchChallenges, fetchRandomChallenge } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 import ChallengeCard from '../components/game/ChallengeCard'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 import MiniGameModal from '../components/game/MiniGameModal'
 import { BoardDie } from '../components/game/EroticDie'
-import { Trophy, ChevronLeft } from 'lucide-react'
+import { Trophy } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import GameShell from '../components/layout/GameShell'
+import PlayerScoreChips from '../components/layout/PlayerScoreChips'
 
 const CATEGORY_CONFIG = {
   telepatia:    { emoji:'🧠', color:'#0891b2' },
@@ -60,6 +63,18 @@ function fallbackChallenge(category, mode = 'friends') {
   return shared[category] || { text:'Completa um desafio escolhido pelo grupo.', category:category || 'acao', sips_penalty:2 }
 }
 
+function pickMiniGame(miniGames) {
+  if (!miniGames?.length) return null
+  const weights = miniGames.map((id) => (id === 'maior_menor' ? 1 : 3))
+  const total = weights.reduce((sum, w) => sum + w, 0)
+  let roll = Math.random() * total
+  for (let i = 0; i < miniGames.length; i += 1) {
+    roll -= weights[i]
+    if (roll <= 0) return miniGames[i]
+  }
+  return miniGames[miniGames.length - 1]
+}
+
 function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30) {
   const isMiniOnly = friendsMode === 'map_mini'
   return Array.from({ length: n }, (_, i) => {
@@ -71,12 +86,12 @@ function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30
     }
     if (isMiniOnly) {
       if (!miniGames?.length) return { type:'minigame', mini:{id:'random',label:'Mini-jogo aleatório'}, emoji:'🎮', color:'#6d28d9' }
-      const mg = miniGames[Math.floor(Math.random()*miniGames.length)]
+      const mg = pickMiniGame(miniGames)
       return { type:'minigame', mini:mg, emoji:'🎮', color:'#7c3aed' }
     }
     if (rotation === 'random') {
       if (miniGames?.length && Math.random() < 0.5) {
-        const mg = miniGames[Math.floor(Math.random()*miniGames.length)]
+        const mg = pickMiniGame(miniGames)
         return { type:'minigame', mini:mg, emoji:'🎮', color:'#d97706' }
       }
       const cat = cats[Math.floor(Math.random()*cats.length)]
@@ -84,7 +99,7 @@ function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30
       return { type:'challenge', category:cat, emoji:cfg.emoji, color:cfg.color }
     }
     if (i%5===0 && miniGames?.length) {
-      return { type:'minigame', mini:miniGames[Math.floor(Math.random()*miniGames.length)], emoji:'🎮', color:'#d97706' }
+      return { type:'minigame', mini:pickMiniGame(miniGames), emoji:'🎮', color:'#d97706' }
     }
     const cat = cats[i%cats.length]
     const cfg = CATEGORY_CONFIG[cat] || { emoji:'⭐', color:'#6d28d9' }
@@ -255,7 +270,7 @@ export default function MapGame() {
 
   useEffect(() => {
     let cancelled = false
-    void api.getChallenges({
+    void fetchChallenges({
       category: 'impostor',
       mode_type: 'friends',
       ...challengePackParams(game?.contentPack, game?.includeCommunity !== false),
@@ -284,8 +299,8 @@ export default function MapGame() {
       if(tile.type==='challenge'||tile.type==='start'){
         const category = tile.category || cats[0]
         try{
-          const c=await api.getRandomChallenge({category,mode_type:game?.mode||'friends',...challengePackParams(game?.contentPack, game?.includeCommunity !== false)})
-          if(c&&!c.error){setChallenge(c);setShowChallenge(true);return}
+          const c=await fetchRandomChallenge({category,mode_type:game?.mode||'friends',...challengePackParams(game?.contentPack, game?.includeCommunity !== false)})
+          if(c){setChallenge(c);setShowChallenge(true);return}
         }catch{}
         setChallenge(fallbackChallenge(category, game?.mode || 'friends'))
         setShowChallenge(true)
@@ -317,8 +332,8 @@ export default function MapGame() {
       try{
         const params = {category:effectiveCategory,mode_type:game?.mode||'friends',...challengePackParams(game?.contentPack, game?.includeCommunity !== false)}
         if (tile.special === 'bonus') params.difficulty = 'dificil'
-        const c=await api.getRandomChallenge(params)
-        const base = (c&&!c.error) ? c : fallbackChallenge(effectiveCategory, game?.mode || 'friends')
+        const c=await fetchRandomChallenge(params)
+        const base = c || fallbackChallenge(effectiveCategory, game?.mode || 'friends')
         setChallenge({...base, special:tile.special, text:`${specialPrefix}${base.text}`})
       }catch{
         const base = fallbackChallenge(effectiveCategory, game?.mode || 'friends')
@@ -499,25 +514,33 @@ export default function MapGame() {
   const maxScore=Math.max(...scores,0)
 
   return(
-    <div className="min-h-screen flex flex-col" style={{background:'linear-gradient(160deg,#0f0c1a 0%,#1a0a2e 50%,#0d1a2e 100%)'}}>
-      {/* Header */}
-      <div className="p-4 border-b border-white/[0.06] flex-shrink-0">
-        <div className="flex items-center justify-between max-w-lg mx-auto">
-          <button onClick={()=>navigate('/')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
-          <div className="flex items-center gap-2">
-            <Trophy className="text-amber-400 w-4 h-4"/>
-            <span className="text-white font-bold text-sm">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta: ${WINNING} pts`}</span>
+    <GameShell
+      mode={isFamily ? 'family' : 'friends'}
+      header={
+        <div className="flex items-center justify-between gap-2">
+          <BackButton onClick={() => navigate('/')} />
+          <div className="flex items-center gap-2 min-w-0">
+            <Trophy className="text-amber-400 w-4 h-4 shrink-0"/>
+            <span className="text-white font-bold text-sm truncate">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta: ${WINNING} pts`}</span>
           </div>
-          <div className="flex gap-2">
-            {players.map((p,i)=>(
-              <div key={i} className="text-center">
-                <div className={`text-sm font-black ${i===currentPlayer?'text-amber-400':'text-white'}`}>{scores[i]}</div>
-                <div className="text-slate-600 text-xs truncate max-w-10">{p.name.split(' ')[0]}</div>
-              </div>
-            ))}
-          </div>
+          <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} />
         </div>
-      </div>
+      }
+      footer={
+        rolled && !moving ? (
+          <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={nextPlayer}
+            className="btn-primary bg-gradient-to-r from-violet-600 to-purple-700"
+          >
+            Próximo Jogador →
+          </motion.button>
+        ) : null
+      }
+    >
 
       {ongoings.length>0&&(
         <div className="px-4 pt-2 space-y-1 max-w-lg mx-auto w-full">
@@ -537,7 +560,7 @@ export default function MapGame() {
       {/* Score bars */}
       <div className="px-4 max-w-lg mx-auto w-full mb-2">
         {usesCategoryProgress&&(
-          <div className="mb-3 rounded-2xl border border-white/[0.07] bg-white/[0.04] p-3">
+          <div className="mb-3 surface p-3">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-white text-xs font-black uppercase tracking-[0.18em]">Falta a {player?.name}</p>
               <p className="text-slate-500 text-xs">{scores[currentPlayer]}/{cats.length*3}</p>
@@ -574,7 +597,7 @@ export default function MapGame() {
 
       {/* Player card */}
       <div className="flex-1 flex flex-col items-center px-4 pb-6 max-w-lg mx-auto w-full gap-3">
-        <motion.div layout className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 w-full">
+        <motion.div layout className="surface rounded-3xl p-5 w-full">
           <div className="flex items-center gap-4 mb-4">
             <motion.div layout className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl flex-shrink-0`}>{player?.name?.[0]}</motion.div>
             <div>
@@ -588,10 +611,7 @@ export default function MapGame() {
           {!rolled
             ?<BoardDie onRoll={handleRoll} disabled={moving} color="#7c3aed" whiteDice={true}/>
             :!moving&&(
-              <motion.button initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextPlayer}
-                className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4">
-                Próximo Jogador →
-              </motion.button>
+              <p className="text-slate-500 text-sm text-center">Movimento concluído — avança em baixo.</p>
             )
           }
         </motion.div>
@@ -659,7 +679,7 @@ export default function MapGame() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[55] bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center p-4"
+            className="fixed inset-0 z-[55] bg-black/85 backdrop-blur-sm flex items-end sm:items-center justify-center overlay-safe-pad"
           >
             <div className="w-full max-w-lg rounded-3xl border border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-950 to-slate-950 p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="text-center mb-4">
@@ -679,6 +699,6 @@ export default function MapGame() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </GameShell>
   )
 }

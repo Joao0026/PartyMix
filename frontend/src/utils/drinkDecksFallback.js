@@ -37,7 +37,7 @@ export const FALLBACK_DRINK_DECKS = [
         type: 'preferencia',
         emoji: '🤔',
         title: 'Preferias?',
-        text: 'Minoritários bebem 2. Empate = todos bebem 1.',
+        text: 'Minoria bebe 1',
         choices: ['Ter 10 dedos das mãos nos pés', 'Ter 10 dedos dos pés nas mãos'],
       },
     ],

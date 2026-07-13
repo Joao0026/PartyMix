@@ -1,21 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, Trash2, WifiOff } from 'lucide-react'
+import { Trash2, WifiOff } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
+import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, clearMmLobbyHandoff, peekMmLobbyHandoff } from '../utils/socketStore'
 import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
-import { memeUrlWithToken } from '../utils/mememixImage'
+import { fullMemeUrl } from '../utils/mememixImage'
 import { getSocketUrl } from '../utils/api'
 
 const API_URL = getSocketUrl()
 
-function fullMemeUrl(path, token) {
-  if (!path) return ''
-  if (path.startsWith('http')) return memeUrlWithToken(path, token)
-  const base = getSocketUrl().replace(/\/$/, '')
-  const p = path.startsWith('/') ? path : `/${path}`
-  return memeUrlWithToken(`${base}${p}`, token)
+function memeImgUrl(path, token) {
+  return fullMemeUrl(path, token, API_URL)
 }
 
 const cardVariants = {
@@ -35,8 +34,9 @@ export default function MemeMixOnline() {
   const [socket, setSocket] = useState(null)
   const [uploadToken, setUploadToken] = useState(null)
   const [pickedLegenda, setPickedLegenda] = useState(null)
+  const [typedLegenda, setTypedLegenda] = useState('')
   const [reconnecting, setReconnecting] = useState(false)
-  const initRef = useRef(false)
+  const [disconnected, setDisconnected] = useState(false)
   const playerNameRef = useRef('')
 
   const bindGameSocket = (s) => {
@@ -49,10 +49,26 @@ export default function MemeMixOnline() {
     s.off('mm_rejoined')
     s.off('mm_room_updated')
 
-    s.on('mm_state', (state) => setGame(state))
+    s.on('disconnect', () => {
+      setDisconnected(true)
+      setReconnecting(true)
+    })
+    s.on('connect', () => {
+      setDisconnected(false)
+      setReconnecting(false)
+    })
+
+    s.on('mm_state', (state) => {
+      setGame(state)
+      if (state?.code) setRoom(state)
+    })
     s.on('mm_round_update', (r) => { setRoom(r); setGame((g) => ({ ...g, ...r, pendingSubmissions: r.submissions })) })
     s.on('mm_reveal_submissions', (r) => setRoom(r))
-    s.on('mm_next_round', (r) => { setRoom(r); setPickedLegenda(null) })
+    s.on('mm_next_round', (r) => {
+      setRoom(r)
+      setPickedLegenda(null)
+      setTypedLegenda('')
+    })
     s.on('mm_game_ended', (r) => setRoom(r))
     s.on('mm_session_ended', () => {
       clearMmSession()
@@ -79,13 +95,14 @@ export default function MemeMixOnline() {
       setIsHost(ih)
       patchMmSession({ uploadToken: tok, isHost: ih })
       setReconnecting(false)
+      setDisconnected(false)
       s.emit('mm_request_state', { code: r.code })
     })
   }
 
   useEffect(() => {
-    if (initRef.current) return
-    initRef.current = true
+    let cancelled = false
+    let s = null
 
     const handoff = peekMmLobbyHandoff()
     const saved = loadMmSession()
@@ -103,28 +120,37 @@ export default function MemeMixOnline() {
     playerNameRef.current = pn
     setIsHost(ih)
     setUploadToken(tok)
-    if (handoff?.room) setRoom(handoff.room)
+    if (handoff?.room) {
+      setRoom(handoff.room)
+      if (handoff.game) setGame(handoff.game)
+    }
     saveMmSession({ code, playerName: pn, uploadToken: tok, isHost: ih })
     setTimeout(() => clearMmLobbyHandoff(), 0)
 
-    let s = getGlobalSocket()
     const setup = (sock) => {
+      if (cancelled) return
+      s = sock
       setSocket(sock)
       setGlobalSocket(sock)
       bindGameSocket(sock)
       sock.emit('mm_rejoin_room', { code, playerName: pn, uploadToken: tok })
     }
 
-    if (s?.connected) {
-      setup(s)
+    const existing = getGlobalSocket()
+    if (existing?.connected) {
+      setup(existing)
     } else {
       setReconnecting(true)
       s = io(API_URL, { transports: ['websocket', 'polling'] })
+      setGlobalSocket(s)
       s.once('connect', () => setup(s))
       s.on('connect_error', () => setReconnecting(true))
     }
 
     return () => {
+      cancelled = true
+      s?.off('disconnect')
+      s?.off('connect')
       s?.off('mm_state')
       s?.off('mm_round_update')
       s?.off('mm_reveal_submissions')
@@ -137,9 +163,12 @@ export default function MemeMixOnline() {
   }, [navigate])
 
   const submitLegenda = () => {
-    if (!socket || !room || !pickedLegenda) return
-    socket.emit('mm_submit_legenda', { code: room.code, text: pickedLegenda })
+    if (!socket || !room) return
+    const text = (typedLegenda.trim() || pickedLegenda || '').trim()
+    if (!text) return
+    socket.emit('mm_submit_legenda', { code: room.code, text })
     setPickedLegenda(null)
+    setTypedLegenda('')
   }
 
   const playMeme = (memeId) => {
@@ -161,19 +190,20 @@ export default function MemeMixOnline() {
 
   if (!room) {
     return (
-      <div className="min-h-screen bg-[#080b14] flex flex-col items-center justify-center gap-3">
+      <PageShell mode="mememix" className="justify-center" innerClassName="flex flex-col items-center gap-3">
         <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
         {reconnecting && (
           <p className="text-slate-500 text-sm flex items-center gap-2">
             <WifiOff className="w-4 h-4" /> A reconectar…
           </p>
         )}
-      </div>
+      </PageShell>
     )
   }
 
   const g = game || {}
-  const isJuiz = g.isJuiz
+  const gameReady = typeof g.isJuiz === 'boolean'
+  const isJuiz = gameReady ? g.isJuiz : room.juizName === playerName
   const hand = g.hand || []
   const memeHand = g.memeHand || []
   const currentMeme = room.currentMeme
@@ -181,15 +211,21 @@ export default function MemeMixOnline() {
   const scores = room.players || []
   const pending = g.pendingSubmissions ?? room.submissions ?? 0
   const expected = room.submissionsExpected ?? Math.max(0, scores.filter((p) => !p.disconnected).length - 1)
+  const rawLegendaMode = room.settings?.legendaMode || 'pack'
+  const legendaMode = rawLegendaMode === 'misto' ? 'pack' : rawLegendaMode
+  const canPickFromHand = legendaMode === 'pack' && hand.length > 0
+  const canType = legendaMode === 'escritas'
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-4">
+    <PageShell mode="mememix" innerClassName="space-y-4">
+        <ReconnectBanner
+          reconnecting={reconnecting && !disconnected}
+          disconnected={disconnected}
+          onRetry={() => socket?.connect()}
+        />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigate('/MemeMix')} className="text-slate-400 p-1">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            <BackButton onClick={() => navigate('/MemeMix')} />
             <div>
               <h1 className="text-white font-bold">😂 {room.code}</h1>
               <p className="text-slate-500 text-xs">
@@ -197,7 +233,6 @@ export default function MemeMixOnline() {
               </p>
             </div>
           </div>
-          {reconnecting && <WifiOff className="w-4 h-4 text-amber-400 animate-pulse" />}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -234,11 +269,24 @@ export default function MemeMixOnline() {
 
         {room.status === 'playing' && (
           <AnimatePresence mode="wait">
-            {currentMeme ? (
+            {!gameReady ? (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-slate-500 text-sm">A carregar a tua mão…</p>
+              </div>
+            ) : currentMeme ? (
               <motion.div key={`round-${room.round}-${currentMeme.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className="rounded-2xl overflow-hidden bg-black/30 border border-white/10">
-                  <img src={fullMemeUrl(currentMeme.url, uploadToken)} alt="Meme" className="w-full max-h-72 object-contain mx-auto" />
+                <motion.div
+                  initial={{ rotate: -1.5, scale: 0.92, opacity: 0 }}
+                  animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                  className="rounded-[2rem] bg-white p-3 pb-8 shadow-2xl"
+                >
+                  <div className="overflow-hidden rounded-2xl bg-black">
+                    <img src={memeImgUrl(currentMeme.url, uploadToken)} alt="Meme" className="w-full max-h-72 object-contain mx-auto" />
+                  </div>
+                  <p className="mt-3 text-center text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                    Meme da ronda #{room.round}
+                  </p>
                 </motion.div>
                 {!room.revealed && (
                   <p className="text-center text-slate-500 text-xs">Legendas: {pending}/{expected}</p>
@@ -252,15 +300,17 @@ export default function MemeMixOnline() {
                       isJuiz ? (
                         <motion.button key={s.playerId} custom={i} variants={cardVariants} initial="hidden" animate="visible"
                           type="button" onClick={() => pickWinner(s.playerId)}
-                          className="w-full text-left bg-white/[0.06] hover:bg-pink-600/25 border border-white/10 rounded-xl p-4">
+                          className="relative w-full text-left bg-white text-slate-950 hover:bg-pink-50 border border-pink-200/80 rounded-[1.4rem] p-4 shadow-lg">
+                          <span className="absolute -top-2 left-6 h-4 w-4 rotate-45 bg-white border-l border-t border-pink-200/80" />
                           <p className="text-slate-400 text-xs">{s.playerName}</p>
-                          <p className="text-white font-medium">{s.text}</p>
+                          <p className="text-slate-950 font-bold">{s.text}</p>
                         </motion.button>
                       ) : (
                         <motion.div key={s.playerId} custom={i} variants={cardVariants} initial="hidden" animate="visible"
-                          className="bg-white/[0.04] rounded-xl p-3">
+                          className="relative bg-white/[0.08] border border-white/10 rounded-[1.4rem] p-3">
+                          <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-[#24172f] border-l border-t border-white/10" />
                           <p className="text-slate-500 text-xs">{s.playerName}</p>
-                          <p className="text-white">{s.text}</p>
+                          <p className="text-white font-medium">{s.text}</p>
                         </motion.div>
                       )
                     ))}
@@ -268,17 +318,33 @@ export default function MemeMixOnline() {
                 )}
                 {!isJuiz && !g.mySubmission && !room.revealed && (
                   <div className="space-y-2">
-                    <p className="text-slate-400 text-sm">Escolhe uma legenda:</p>
-                    {hand.map((leg) => (
-                      <button key={leg} type="button" onClick={() => setPickedLegenda(leg)}
-                        className={`w-full text-left rounded-xl p-3 text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-200'}`}>
-                        {leg}
+                    {canPickFromHand && (
+                      <>
+                        <p className="text-slate-400 text-sm">Escolhe uma legenda:</p>
+                        {hand.map((leg) => (
+                          <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
+                            className={`relative w-full text-left rounded-[1.35rem] p-3 text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white ring-2 ring-pink-300/70' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                            <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
+                            {leg}
+                          </button>
+                        ))}
+                      </>
+                    )}
+                    {canType && (
+                      <>
+                        <p className="text-slate-400 text-sm">Escreve a tua legenda:</p>
+                        <textarea value={typedLegenda} maxLength={200} rows={2}
+                          onChange={(e) => { setTypedLegenda(e.target.value); if (e.target.value) setPickedLegenda(null) }}
+                          placeholder="A tua legenda…"
+                          className="w-full bg-white/[0.05] border border-white/10 text-white rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-pink-500/50" />
+                      </>
+                    )}
+                    <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
+                      <button type="button" disabled={!pickedLegenda && !typedLegenda.trim()} onClick={submitLegenda}
+                        className="w-full bg-pink-600 text-white rounded-2xl py-4 font-black disabled:opacity-40">
+                        Jogar legenda
                       </button>
-                    ))}
-                    <button type="button" disabled={!pickedLegenda} onClick={submitLegenda}
-                      className="w-full bg-pink-600 text-white rounded-xl py-3 font-bold disabled:opacity-40">
-                      Jogar legenda
-                    </button>
+                    </div>
                   </div>
                 )}
                 {g.mySubmission && !room.revealed && (
@@ -293,13 +359,36 @@ export default function MemeMixOnline() {
                 <p className="text-white font-semibold">Escolhe um meme:</p>
                 {memeHand.map((m) => (
                   <button key={m.id} type="button" onClick={() => playMeme(m.id)}
-                    className="w-full rounded-xl overflow-hidden border border-white/10">
-                    <img src={fullMemeUrl(m.url, uploadToken)} alt="" className="w-full h-32 object-cover" />
+                    className="w-full rounded-xl overflow-hidden border border-white/10 bg-black/30">
+                    <img src={memeImgUrl(m.url, uploadToken)} alt="" className="w-full max-h-52 object-contain mx-auto" />
                   </button>
                 ))}
               </motion.div>
             ) : (
-              <p className="text-center text-slate-500 animate-pulse">Juiz a escolher meme…</p>
+              <motion.div key="waiting-meme" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+                <p className="text-center text-slate-500 text-sm">Juiz a escolher meme…</p>
+                {canPickFromHand && (
+                  <>
+                    <p className="text-slate-400 text-sm">As tuas legendas — podes ir escolhendo:</p>
+                    {hand.map((leg) => (
+                      <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
+                        className={`relative w-full text-left rounded-[1.35rem] p-3 text-sm ${pickedLegenda === leg ? 'bg-pink-600/80 text-white ring-1 ring-pink-400/50' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                        <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
+                        {leg}
+                      </button>
+                    ))}
+                  </>
+                )}
+                {canType && (
+                  <>
+                    <p className="text-slate-400 text-sm">Prepara a tua legenda:</p>
+                    <textarea value={typedLegenda} maxLength={200} rows={2}
+                      onChange={(e) => { setTypedLegenda(e.target.value); if (e.target.value) setPickedLegenda(null) }}
+                      placeholder="A tua legenda…"
+                      className="w-full bg-white/[0.05] border border-white/10 text-white rounded-xl p-3 text-sm resize-none focus:outline-none focus:border-pink-500/50" />
+                  </>
+                )}
+              </motion.div>
             )}
           </AnimatePresence>
         )}
@@ -309,7 +398,6 @@ export default function MemeMixOnline() {
             <Trash2 className="w-3 h-3" /> Fechar sala
           </button>
         )}
-      </div>
-    </div>
+    </PageShell>
   )
 }

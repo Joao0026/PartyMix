@@ -18,6 +18,17 @@ function clampMaxMemesPerPlayer(n) {
   return Math.min(MAX_MEMES_PER_PLAYER, Math.max(1, Number(n) || 10))
 }
 
+const LEGENDA_MODES = ['pack', 'escritas']
+function normalizeLegendaMode(m) {
+  if (m === 'misto') return 'pack'
+  return LEGENDA_MODES.includes(m) ? m : 'pack'
+}
+function normalizeLegendaPack(p) {
+  const clean = String(p || 'todas').trim().slice(0, 60)
+  return clean || 'todas'
+}
+const MAX_LEGENDA_LEN = 200
+
 function removeMemeFromRoom(code, memeId, { playerName, socketId } = {}) {
   const c = String(code || '').toUpperCase()
   const room = mmRooms[c]
@@ -216,8 +227,42 @@ function restoreLegendasFromStash(room, playerId) {
   room.stash[playerId] = []
 }
 
+// Garante que um jogador (não-juiz) tem mão de legendas.
+// Necessário para o 1.º juiz, que arranca sem mão nem stash.
+function ensureLegendaHand(room, playerId) {
+  if (normalizeLegendaMode(room.settings.legendaMode) === 'escritas') return
+  room.hands[playerId] = room.hands[playerId] || []
+  while (room.hands[playerId].length < 5 && room.legendasDeck.length) {
+    room.hands[playerId].push(room.legendasDeck.shift())
+  }
+}
+
+function discardMemeFromPool(room, memeId) {
+  const id = String(memeId || '').trim()
+  if (!id) return
+  if (!room.usedMemeIds) room.usedMemeIds = new Set()
+  room.usedMemeIds.add(id)
+  room.memeDeck = (room.memeDeck || []).filter((m) => m.id !== id)
+  for (const pid of Object.keys(room.memeHands || {})) {
+    room.memeHands[pid] = (room.memeHands[pid] || []).filter((m) => m.id !== id)
+  }
+}
+
+function drawMemesFromDeck(room, count) {
+  const out = []
+  room.memeDeck = room.memeDeck || []
+  while (out.length < count && room.memeDeck.length) {
+    const next = room.memeDeck.shift()
+    if (room.usedMemeIds?.has(next.id)) continue
+    out.push(next)
+  }
+  return out
+}
+
 function returnMemesToDeck(room, playerId) {
-  const unused = room.memeHands[playerId] || []
+  const unused = (room.memeHands[playerId] || []).filter(
+    (m) => !room.usedMemeIds?.has(m.id),
+  )
   if (unused.length) {
     room.memeDeck.push(...shuffle(unused))
     room.memeHands[playerId] = []
@@ -227,13 +272,20 @@ function returnMemesToDeck(room, playerId) {
 function dealMemesToJuiz(room, playerId) {
   room.memeHands[playerId] = room.memeHands[playerId] || []
   while (room.memeHands[playerId].length < 5 && room.memeDeck.length) {
-    room.memeHands[playerId].push(room.memeDeck.shift())
+    const next = room.memeDeck.shift()
+    if (room.usedMemeIds?.has(next.id)) continue
+    room.memeHands[playerId].push(next)
   }
 }
 
-async function loadLegendas(includeCommunity) {
+async function loadLegendas(includeCommunity, pack) {
   const filter = { mode_type: 'mememix', category: 'legenda' }
-  if (!includeCommunity) filter.pack = { $ne: 'community' }
+  const p = String(pack || 'todas')
+  if (p && p !== 'todas' && p !== 'all') {
+    filter.pack = includeCommunity ? { $in: [p, 'community'] } : p
+  } else if (!includeCommunity) {
+    filter.pack = { $ne: 'community' }
+  }
   const rows = await Card.find(filter).lean()
   return rows.map((r) => r.text).filter(Boolean)
 }
@@ -282,6 +334,8 @@ function registerMemeMixHandlers(io, socket) {
         includeOfficialMemes: cfg.includeOfficialMemes !== false,
         uploads: cfg.uploads === 'host' ? 'host' : 'all',
         maxMemesPerPlayer: clampMaxMemesPerPlayer(cfg.maxMemesPerPlayer),
+        legendaMode: normalizeLegendaMode(cfg.legendaMode),
+        legendaPack: normalizeLegendaPack(cfg.legendaPack),
       },
       status: 'waiting',
       memes: [],
@@ -291,6 +345,7 @@ function registerMemeMixHandlers(io, socket) {
       stash: {},
       legendasDeck: [],
       memeDeck: [],
+      usedMemeIds: new Set(),
       submissions: {},
       revealed: false,
       roundWinner: null,
@@ -388,6 +443,12 @@ function registerMemeMixHandlers(io, socket) {
     if (settings?.maxMemesPerPlayer != null) {
       room.settings.maxMemesPerPlayer = clampMaxMemesPerPlayer(settings.maxMemesPerPlayer)
     }
+    if (settings?.legendaMode != null) {
+      room.settings.legendaMode = normalizeLegendaMode(settings.legendaMode)
+    }
+    if (settings?.legendaPack != null) {
+      room.settings.legendaPack = normalizeLegendaPack(settings.legendaPack)
+    }
     io.to(room.code).emit('mm_room_updated', sanitizeMm(room))
   })
 
@@ -437,11 +498,15 @@ function registerMemeMixHandlers(io, socket) {
       return
     }
 
-    const legendas = await loadLegendas(room.settings.includeCommunity)
-    const legendasNeeded = Math.max(10, (active.length - 1) * 5)
-    if (legendas.length < legendasNeeded) {
-      socket.emit('error', `Poucas legendas (${legendas.length}/${legendasNeeded}) — corre npm run seed:packs`)
-      return
+    const legendaMode = normalizeLegendaMode(room.settings.legendaMode)
+    let legendas = []
+    if (legendaMode !== 'escritas') {
+      legendas = await loadLegendas(room.settings.includeCommunity, room.settings.legendaPack)
+      const legendasNeeded = Math.max(10, (active.length - 1) * 5)
+      if (legendas.length < legendasNeeded) {
+        socket.emit('error', `Poucas legendas (${legendas.length}/${legendasNeeded}) — corre npm run seed:packs`)
+        return
+      }
     }
 
     let memePool = [...room.memes]
@@ -452,6 +517,7 @@ function registerMemeMixHandlers(io, socket) {
 
     room.legendasDeck = shuffle([...legendas])
     room.memeDeck = memePool
+    room.usedMemeIds = new Set()
     room.uploadsLocked = true
     room.status = 'playing'
     room.round = 1
@@ -463,10 +529,10 @@ function registerMemeMixHandlers(io, socket) {
     room.memeHands = {}
 
     dealMemeMixHands(room)
-    io.to(code).emit('mm_game_started', sanitizeMm(room))
     room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
       io.to(p.id).emit('mm_state', buildGameView(room, p.id))
     })
+    io.to(code).emit('mm_game_started', sanitizeMm(room))
   })
 
   socket.on('mm_play_meme', ({ code, memeId }) => {
@@ -482,6 +548,7 @@ function registerMemeMixHandlers(io, socket) {
 
     room.currentMeme = meme
     room.memeHands[socket.id] = hand.filter((m) => m.id !== memeId)
+    discardMemeFromPool(room, memeId)
     room.submissions = {}
     room.revealed = false
     io.to(code).emit('mm_round_update', sanitizeMm(room))
@@ -497,15 +564,21 @@ function registerMemeMixHandlers(io, socket) {
     if (juiz?.id === socket.id) return
     if (room.submissions[socket.id]) return
 
-    const legenda = String(text || '').trim()
+    const legenda = String(text || '').trim().slice(0, MAX_LEGENDA_LEN)
     if (!legenda) return
-    const hand = room.hands[socket.id] || []
-    if (!hand.includes(legenda)) return
 
-    room.hands[socket.id] = hand.filter((c) => c !== legenda)
+    const mode = normalizeLegendaMode(room.settings.legendaMode)
+    const hand = room.hands[socket.id] || []
+    const fromHand = hand.includes(legenda)
+    if (mode === 'pack' && !fromHand) return
+    if (mode === 'escritas' && fromHand) return
+
+    if (fromHand) {
+      room.hands[socket.id] = hand.filter((c) => c !== legenda)
+      const newCard = room.legendasDeck.shift()
+      if (newCard) room.hands[socket.id].push(newCard)
+    }
     room.submissions[socket.id] = legenda
-    const newCard = room.legendasDeck.shift()
-    if (newCard) room.hands[socket.id].push(newCard)
 
     io.to(code).emit('mm_round_update', sanitizeMm(room))
     room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
@@ -538,12 +611,6 @@ function registerMemeMixHandlers(io, socket) {
 
     winner.score = (winner.score || 0) + 1
     room.roundWinner = winner.name
-
-    const newMeme = room.memeDeck.shift()
-    if (newMeme) {
-      room.memeHands[juiz.id] = room.memeHands[juiz.id] || []
-      room.memeHands[juiz.id].push(newMeme)
-    }
 
     if (winner.score >= room.settings.maxPoints) {
       room.gameWinner = winner.name
@@ -617,6 +684,7 @@ function rotateJuizHands(room, prevJuizIdx) {
   if (prev?.id) {
     returnMemesToDeck(room, prev.id)
     restoreLegendasFromStash(room, prev.id)
+    ensureLegendaHand(room, prev.id)
   }
   if (next?.id) {
     stashLegendasForJuiz(room, next.id)
@@ -626,14 +694,16 @@ function rotateJuizHands(room, prevJuizIdx) {
 
 function dealMemeMixHands(room) {
   const juiz = room.players[room.juizIdx]
+  const legendaMode = normalizeLegendaMode(room.settings.legendaMode)
+  const dealLegendas = legendaMode !== 'escritas'
   room.players.forEach((p) => {
     if (!p.id) return
     if (p.id === juiz?.id) {
-      room.memeHands[p.id] = room.memeDeck.splice(0, 5)
+      room.memeHands[p.id] = drawMemesFromDeck(room, 5)
       room.stash[p.id] = []
       room.hands[p.id] = []
     } else {
-      room.hands[p.id] = room.legendasDeck.splice(0, 5)
+      room.hands[p.id] = dealLegendas ? room.legendasDeck.splice(0, 5) : []
       room.memeHands[p.id] = []
       room.stash[p.id] = []
     }

@@ -1,18 +1,33 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ChevronLeft, Copy, Check, ImagePlus, Trash2, Users, X } from 'lucide-react'
+import { ImagePlus, Trash2, Users, X } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
-import { getGlobalSocket, setGlobalSocket } from '../utils/socketStore'
+import { getGlobalSocket, setGlobalSocket, clearGlobalSocket, setMmLobbyHandoff } from '../utils/socketStore'
 import { saveMmSession, loadMmSession, clearMmSession } from '../utils/mmSession'
-import { compressImageFile, memeUrlWithToken } from '../utils/mememixImage'
+import { compressImageFile, fullMemeUrl } from '../utils/mememixImage'
+import ShareRoomLink from '../components/layout/ShareRoomLink'
 
 const API_URL = getSocketUrl()
+
+const LEGENDA_PACK_LABELS = {
+  todas: 'Todas',
+  base: 'Portugal (PT)',
+  br: 'Brasil (BR)',
+  picante: 'Picante 18+',
+  trabalho: 'Trabalho/Escola',
+  relacionamentos: 'Relacionamentos',
+  nostalgia: 'Nostalgia',
+  community: 'Comunidade',
+}
 
 export default function MemeMixLobby() {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [tab, setTab] = useState('create')
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -23,24 +38,30 @@ export default function MemeMixLobby() {
   const [connecting, setConnecting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState(null)
-  const [copied, setCopied] = useState(false)
   const [maxPoints, setMaxPoints] = useState(5)
   const [maxMemesPerPlayer, setMaxMemesPerPlayer] = useState(30)
   const [uploadsMode, setUploadsMode] = useState('all')
   const [includeOfficialMemes, setIncludeOfficialMemes] = useState(false)
+  const [legendaMode, setLegendaMode] = useState('pack')
+  const [legendaPack, setLegendaPack] = useState('todas')
+  const [availablePacks, setAvailablePacks] = useState([])
   const [consent, setConsent] = useState(false)
   const [removingId, setRemovingId] = useState(null)
+  const [starting, setStarting] = useState(false)
   const isHostRef = useRef(false)
   const creatingRoomRef = useRef(false)
   const hasNavigatedRef = useRef(false)
   const fileRef = useRef(null)
   const uploadTokenRef = useRef(null)
   const playerNameRef = useRef('')
+  const lastGameStateRef = useRef(null)
 
-  const goToGame = (incomingRoom, playerName, isHost, token) => {
+  const goToGame = (incomingRoom, playerName, isHost, token, gameState = null) => {
     if (hasNavigatedRef.current) return
     hasNavigatedRef.current = true
+    setStarting(false)
     saveMmSession({ code: incomingRoom.code, playerName, uploadToken: token, isHost })
+    setMmLobbyHandoff({ room: incomingRoom, game: gameState, playerName, uploadToken: token, isHost })
     navigate('/MemeMixOnline', { replace: true, state: { online: true } })
   }
 
@@ -54,6 +75,7 @@ export default function MemeMixLobby() {
     s.off('mm_room_updated')
     s.off('mm_memes_updated')
     s.off('mm_game_started')
+    s.off('mm_state')
     s.off('mm_session_ended')
     s.off('error')
     s.off('connect')
@@ -91,7 +113,25 @@ export default function MemeMixLobby() {
       hasNavigatedRef.current = false
       saveMmSession({ code: c, playerName: pn, uploadToken: tok, isHost: ih })
       setConnecting(false)
-      if (r.status === 'playing' || r.status === 'ended') goToGame(r, pn, ih, tok)
+      if (r.status === 'playing' || r.status === 'ended') {
+        const buffered = lastGameStateRef.current
+        if (buffered) {
+          lastGameStateRef.current = null
+          goToGame(r, pn, ih, tok, buffered)
+          return
+        }
+        let done = false
+        const enter = (gameState) => {
+          if (done || hasNavigatedRef.current) return
+          done = true
+          s.off('mm_state', onState)
+          lastGameStateRef.current = null
+          goToGame(r, pn, ih, tok, gameState)
+        }
+        const onState = (state) => enter(state)
+        s.on('mm_state', onState)
+        setTimeout(() => enter(null), 2500)
+      }
     })
     s.on('mm_room_updated', (r) => {
       setRoom(r)
@@ -100,13 +140,34 @@ export default function MemeMixLobby() {
       setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
     })
     s.on('mm_memes_updated', (r) => setRoom(r))
-    s.on('mm_game_started', (r) => goToGame(r, playerNameRef.current, isHostRef.current, uploadTokenRef.current))
+    s.on('mm_state', (state) => {
+      lastGameStateRef.current = state
+    })
+    s.on('mm_game_started', (r) => {
+      const buffered = lastGameStateRef.current
+      if (buffered) {
+        lastGameStateRef.current = null
+        goToGame(r, playerNameRef.current, isHostRef.current, uploadTokenRef.current, buffered)
+        return
+      }
+      let done = false
+      const enter = (gameState) => {
+        if (done || hasNavigatedRef.current) return
+        done = true
+        s.off('mm_state', onState)
+        lastGameStateRef.current = null
+        goToGame(r, playerNameRef.current, isHostRef.current, uploadTokenRef.current, gameState)
+      }
+      const onState = (state) => enter(state)
+      s.on('mm_state', onState)
+      setTimeout(() => enter(null), 2500)
+    })
     s.on('mm_session_ended', () => {
       clearMmSession()
       setError('A sala foi fechada')
       setRoom(null)
     })
-    s.on('error', (msg) => { setError(msg); setConnecting(false); setUploading(false) })
+    s.on('error', (msg) => { setError(msg); setConnecting(false); setUploading(false); setStarting(false) })
     s.on('connect_error', () => { setError('Sem ligação ao servidor'); setConnecting(false) })
     s.on('connect', () => {
       if (creatingRoomRef.current) return
@@ -144,7 +205,7 @@ export default function MemeMixLobby() {
       bindSocket(s, name.trim(), true)
       s.emit('mm_create_room', {
         playerName: name.trim(),
-        settings: { maxPoints, uploads: uploadsMode, maxMemesPerPlayer, includeOfficialMemes },
+        settings: { maxPoints, uploads: uploadsMode, maxMemesPerPlayer, includeOfficialMemes, legendaMode, legendaPack },
       })
     })
   }
@@ -186,7 +247,47 @@ export default function MemeMixLobby() {
         })
       })
     }
+    return () => {
+      const s = getGlobalSocket()
+      if (!s) return
+      s.off('mm_room_created')
+      s.off('mm_room_joined')
+      s.off('mm_rejoined')
+      s.off('mm_room_updated')
+      s.off('mm_memes_updated')
+      s.off('mm_game_started')
+      s.off('mm_state')
+      s.off('mm_session_ended')
+      s.off('error')
+      s.off('connect')
+      s.off('connect_error')
+    }
   }, [])
+
+  useEffect(() => {
+    if (room?.settings?.legendaMode) {
+      const mode = room.settings.legendaMode === 'misto' ? 'pack' : room.settings.legendaMode
+      setLegendaMode(mode)
+    }
+  }, [room?.settings?.legendaMode])
+
+  useEffect(() => {
+    if (room?.settings?.legendaPack) setLegendaPack(room.settings.legendaPack)
+  }, [room?.settings?.legendaPack])
+
+  useEffect(() => {
+    api.getMemeMixPacks().then((rows) => {
+      if (Array.isArray(rows)) setAvailablePacks(rows.map((r) => r.pack).filter(Boolean))
+    }).catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    const q = searchParams.get('code')
+    if (q) {
+      setCode(q.trim().toUpperCase())
+      setTab('join')
+    }
+  }, [searchParams])
 
   const pushSettings = (overrides = {}) => {
     if (!socket || !room || !isHostRef.current || room.status !== 'waiting') return
@@ -195,6 +296,8 @@ export default function MemeMixLobby() {
       uploads: overrides.uploads ?? uploadsMode,
       maxMemesPerPlayer: overrides.maxMemesPerPlayer ?? maxMemesPerPlayer,
       includeOfficialMemes: overrides.includeOfficialMemes ?? includeOfficialMemes,
+      legendaMode: overrides.legendaMode ?? legendaMode,
+      legendaPack: overrides.legendaPack ?? legendaPack,
     }
     socket.emit('mm_update_settings', {
       code: room.code,
@@ -308,7 +411,9 @@ export default function MemeMixLobby() {
   }
 
   const startGame = () => {
-    if (!socket || !room) return
+    if (!socket || !room || starting) return
+    setStarting(true)
+    setError(null)
     socket.emit('mm_start_game', { code: room.code })
   }
 
@@ -319,13 +424,6 @@ export default function MemeMixLobby() {
     clearMmSession()
     socket.disconnect()
     navigate('/MemeMix')
-  }
-
-  const copyCode = () => {
-    navigator.clipboard?.writeText(room.code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
   }
 
   const playerName = playerNameRef.current || name.trim() || loadMmSession()?.playerName || ''
@@ -348,9 +446,9 @@ export default function MemeMixLobby() {
     const memeId = meme.id || (meme.url || '').match(/\/memes\/([a-f0-9]+)/i)?.[1]
     const isRemoving = removingId === memeId
     return (
-    <div className="relative aspect-square overflow-visible">
+    <div className="relative aspect-square overflow-visible rounded-xl bg-white p-1 shadow-lg rotate-[-1deg] even:rotate-[1deg]">
       <img
-        src={memeUrlWithToken(meme.url, uploadTokenRef.current || uploadToken)}
+        src={fullMemeUrl(meme.url, uploadTokenRef.current || uploadToken, API_URL)}
         alt=""
         className="rounded-lg w-full h-full object-cover bg-black/20 pointer-events-none select-none"
         draggable={false}
@@ -381,42 +479,31 @@ export default function MemeMixLobby() {
 
   if (room) {
     return (
-      <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-        <div className="w-full max-w-lg space-y-4">
+      <PageShell mode="mememix" innerClassName="space-y-4">
           <div className="flex items-center gap-3">
-            <button type="button" onClick={() => { socket?.disconnect(); navigate('/MemeMix') }} className="text-slate-400 hover:text-white p-1">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+            <BackButton onClick={() => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/MemeMix') }} />
             <h1 className="text-white font-black text-xl">MemeMix · {room.code}</h1>
           </div>
 
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5 text-center">
-            <div className="flex justify-center gap-2 items-center">
-              <span className="text-white font-black text-3xl tracking-widest">{room.code}</span>
-              <button type="button" onClick={copyCode} className="p-2 text-slate-400">{copied ? <Check className="text-green-400" /> : <Copy />}</button>
-            </div>
-            <p className="text-slate-500 text-sm mt-2">
+          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5">
+            <ShareRoomLink mode="mememix" code={room.code} />
+            <p className="text-slate-600 text-sm mt-4 text-center">
               {room.memeCount || 0} fotos na sala · Tu: {myMemes}/{maxPer}
             </p>
             <p className="text-slate-600 text-xs mt-1 flex items-center justify-center gap-1">
               <Users className="w-3 h-3" /> {room.players?.length || 0}/15 jogadores
             </p>
-            <p className="text-slate-600 text-xs mt-1">
-              {(room.settings?.includeOfficialMemes !== false)
-                ? 'Baralho: fotos da sala + memes oficiais'
-                : 'Baralho: só fotos da sala'}
-            </p>
           </div>
 
           <div className="bg-white/[0.03] rounded-2xl p-3 space-y-1">
-            <p className="text-slate-500 text-xs font-semibold uppercase tracking-wide">Quem enviou</p>
+            <p className="text-slate-600 text-xs font-semibold uppercase tracking-wide">Quem enviou</p>
             {(room.memeUploadSummary || []).length === 0 ? (
               <p className="text-slate-600 text-xs">Ainda sem fotos</p>
             ) : (
               room.memeUploadSummary.map(({ name: n, count }) => (
                 <div key={n} className="flex justify-between text-sm">
                   <span className={n === playerName ? 'text-pink-300' : 'text-slate-400'}>{n}</span>
-                  <span className="text-slate-500">{count}/{maxPer}</span>
+                  <span className="text-slate-600">{count}/{maxPer}</span>
                 </div>
               ))
             )}
@@ -473,6 +560,49 @@ export default function MemeMixLobby() {
                 </p>
               </div>
               <div>
+                <p className="text-slate-400 text-xs mb-2">Legendas</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'pack', label: 'Do pack' },
+                    { id: 'escritas', label: 'Escritas na hora' },
+                  ].map(({ id, label }) => (
+                    <button key={id} type="button" onClick={() => {
+                      setLegendaMode(id)
+                      pushSettings({ legendaMode: id })
+                    }}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold leading-tight ${legendaMode === id ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-slate-600 text-[10px] mt-1.5">
+                  {legendaMode === 'escritas'
+                    ? 'Cada jogador escreve a própria legenda na hora.'
+                    : 'Cada jogador recebe uma mão de legendas do pack.'}
+                </p>
+              </div>
+              {legendaMode !== 'escritas' && (
+                <div>
+                  <p className="text-slate-400 text-xs mb-2">Pack de legendas</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {['todas', ...availablePacks.filter((p) => p !== 'community')].map((p) => (
+                      <button key={p} type="button" onClick={() => {
+                        setLegendaPack(p)
+                        pushSettings({ legendaPack: p })
+                      }}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold ${legendaPack === p ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                        {LEGENDA_PACK_LABELS[p] || p}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-slate-600 text-[10px] mt-1.5">
+                    {legendaPack === 'todas'
+                      ? 'Mistura todos os packs de legendas disponíveis.'
+                      : `Só legendas do pack «${LEGENDA_PACK_LABELS[legendaPack] || legendaPack}».`}
+                  </p>
+                </div>
+              )}
+              <div>
                 <p className="text-slate-400 text-xs mb-2">Quem envia fotos</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
@@ -495,7 +625,7 @@ export default function MemeMixLobby() {
           {canRemoveMemes && (
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
               <p className="text-slate-300 text-sm font-semibold">As tuas fotos ({myMemes}/{maxPer})</p>
-              <p className="text-slate-500 text-xs">Toca no ✕ vermelho para remover</p>
+              <p className="text-slate-600 text-xs">Toca no ✕ vermelho para remover</p>
               <div className="grid grid-cols-4 gap-3 pt-2">
                 {myMemesList.map((m) => (
                   <MemeThumb key={m.id || m.url} meme={m} removable />
@@ -507,7 +637,7 @@ export default function MemeMixLobby() {
           {canUpload ? (
             <div className="bg-pink-900/10 border border-pink-500/20 rounded-2xl p-4 space-y-3">
               <p className="text-pink-200 text-sm font-semibold">Memes da festa</p>
-              <p className="text-slate-500 text-xs">
+              <p className="text-slate-600 text-xs">
                 {uploadsSetting === 'host'
                   ? 'Só tu (host) podes enviar fotos nesta sala.'
                   : `Cada jogador pode enviar até ${maxPer} fotos.`}
@@ -526,7 +656,7 @@ export default function MemeMixLobby() {
               {uploadStatus && <p className="text-green-400 text-xs text-center">{uploadStatus}</p>}
               {otherMemesList.length > 0 && (
                 <div>
-                  <p className="text-slate-500 text-xs mb-2">Outras fotos na sala</p>
+                  <p className="text-slate-600 text-xs mb-2">Outras fotos na sala</p>
                   <div className="grid grid-cols-4 gap-2">
                     {otherMemesList.slice(0, 8).map((m) => (
                       <MemeThumb key={m.id} meme={m} label={m.uploadedBy} />
@@ -537,7 +667,7 @@ export default function MemeMixLobby() {
             </div>
           ) : (
             <div className="bg-white/[0.03] rounded-2xl p-4 text-center">
-              <p className="text-slate-500 text-sm">
+              <p className="text-slate-600 text-sm">
                 {room.uploadsLocked ? 'Uploads fechados — jogo em curso.' : 'Só o host envia fotos nesta sala.'}
               </p>
               {(room.memes?.length || 0) > 0 && (
@@ -551,9 +681,9 @@ export default function MemeMixLobby() {
           {isHost ? (
             <>
               <button type="button" onClick={startGame}
-                disabled={(room.players?.filter((p) => !p.disconnected)?.length || 0) < 2 || (room.memeCount || 0) < 3}
+                disabled={starting || (room.players?.filter((p) => !p.disconnected)?.length || 0) < 2 || (room.memeCount || 0) < 3}
                 className="w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-black rounded-2xl py-4 disabled:opacity-40">
-                Começar ({room.players?.length} jog., {room.memeCount} fotos)
+                {starting ? 'A iniciar…' : `Começar (${room.players?.length} jog., ${room.memeCount} fotos)`}
               </button>
               <button type="button" onClick={closeRoom}
                 className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/30 text-red-300 rounded-2xl py-3 text-sm font-semibold">
@@ -561,19 +691,15 @@ export default function MemeMixLobby() {
               </button>
             </>
           ) : (
-            <p className="text-center text-slate-500 text-sm animate-pulse">À espera do host…</p>
+            <p className="text-center text-slate-600 text-sm animate-pulse">À espera do host…</p>
           )}
-        </div>
-      </div>
+      </PageShell>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-lg space-y-5">
-        <button type="button" onClick={() => navigate('/MemeMix')} className="text-slate-400 flex items-center gap-1">
-          <ChevronLeft className="w-5 h-5" /> Voltar
-        </button>
+    <PageShell mode="mememix" innerClassName="space-y-5">
+        <BackButton onClick={() => navigate('/MemeMix')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
         <div className="grid grid-cols-2 gap-2">
           {['create', 'join'].map((t) => (
             <button key={t} type="button" onClick={() => setTab(t)}
@@ -600,7 +726,6 @@ export default function MemeMixLobby() {
           className="w-full bg-pink-600 text-white font-black rounded-2xl py-5 disabled:opacity-40">
           {connecting ? 'A ligar…' : tab === 'create' ? 'Criar sala' : 'Entrar'}
         </motion.button>
-      </div>
-    </div>
+    </PageShell>
   )
 }

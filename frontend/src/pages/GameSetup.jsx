@@ -1,16 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2, ChevronRight, ChevronLeft, Users, Map, Zap, Gamepad2, Target } from 'lucide-react'
+import { Plus, Trash2, ChevronRight, Users, Map, Zap, Gamepad2, Target } from 'lucide-react'
 import { PLAYER_COLORS, TEAM_COLORS, saveGame } from '../utils/game'
-import { api } from '../utils/api'
-import { NumericDie } from '../components/game/EroticDie'
-import { challengePackParams } from '../utils/packParams'
+import PageShell from '../components/layout/PageShell'
+import ModeHeader from '../components/layout/ModeHeader'
 
 const MODE_CONFIG = {
   couple:  { label:'Modo Casal',   color:'from-rose-500 to-pink-600',  min:2, max:2,  cats:['romantico','picante','verdade','acao','roleplay','casal_pergunta'], hasTeams:false, hasMini:false },
   friends: { label:'Modo Amigos',  color:'from-cyan-400 to-blue-500',  min:2, max:20, cats:['telepatia','perguntas','desenho','mimica','proibido','caos'],           hasTeams:true,  hasMini:true  },
   family:  { label:'Modo Família', color:'from-sky-400 to-indigo-500', min:2, max:20, cats:['telepatia','perguntas','desenho','mimica','proibido'],           hasTeams:true,  hasMini:false },
+}
+
+const ACCENT = {
+  couple: { sel: 'bg-rose-600/15 border-rose-500/40 text-white', idle: 'bg-white/[0.03] border-white/[0.07] text-slate-400 hover:border-white/[0.18]', icon: 'text-rose-400', toggle: 'bg-rose-500' },
+  friends: { sel: 'bg-cyan-600/15 border-cyan-500/40 text-white', idle: 'bg-white/[0.03] border-white/[0.07] text-slate-400 hover:border-white/[0.18]', icon: 'text-cyan-400', toggle: 'bg-cyan-500' },
+  family: { sel: 'bg-sky-600/15 border-sky-500/40 text-white', idle: 'bg-white/[0.03] border-white/[0.07] text-slate-400 hover:border-white/[0.18]', icon: 'text-sky-400', toggle: 'bg-sky-500' },
 }
 
 const CAT_LABELS = {
@@ -35,42 +40,11 @@ const FRIENDS_MODES = [
   { id:'challenges', icon:Zap,      label:'Só Desafios',         desc:'Sem mapa, desafios contínuos' },
 ]
 
-// Die preview - no framer motion, no transforms
-function DiePreview() {
-  const [val, setVal] = useState(6)
-  const [rolling, setRolling] = useState(false)
-  const [showing, setShowing] = useState(false)
-
-  const roll = async () => {
-    if (rolling) return
-    setRolling(true); setShowing(false)
-    let c = 0
-    const iv = setInterval(() => { setVal(Math.floor(Math.random()*6)+1); if(++c>14) clearInterval(iv) }, 70)
-    await new Promise(r => setTimeout(r, 1100))
-    const v = Math.floor(Math.random()*6)+1
-    setVal(v); setRolling(false); setShowing(true)
-  }
-
+function SetupSection({ title, children }) {
   return (
-    <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
-      <p className="text-slate-400 text-sm font-semibold">🎲 Dado do jogo — toca para testar</p>
-      <div className="flex items-center gap-6">
-        <div onClick={roll} style={{ cursor:'pointer' }}>
-          <NumericDie value={val} size={70} dotColor="#7c3aed"/>
-        </div>
-        <div className="flex-1">
-          {rolling && <p className="text-violet-400 text-sm font-semibold">A rolar...</p>}
-          {showing && !rolling && (
-            <div>
-              <p className="text-white font-black text-4xl leading-none">{val}</p>
-              <p className="text-slate-500 text-sm">{val===1?'casa':'casas'}</p>
-            </div>
-          )}
-          {!rolling && !showing && (
-            <p className="text-slate-500 text-sm">O resultado aparece aqui antes de avançar no jogo</p>
-          )}
-        </div>
-      </div>
+    <div className="rounded-2xl border border-white/[0.07] bg-white/[0.03] p-4 space-y-3">
+      {title && <h3 className="text-white font-semibold text-sm">{title}</h3>}
+      {children}
     </div>
   )
 }
@@ -80,6 +54,7 @@ export default function GameSetup() {
   const navigate  = useNavigate()
   const mode      = params.get('mode') || 'friends'
   const cfg       = MODE_CONFIG[mode] || MODE_CONFIG.friends
+  const accent    = ACCENT[mode] || ACCENT.friends
   const isFamily  = mode === 'family'
 
   const [step,        setStep]        = useState(0)
@@ -90,30 +65,14 @@ export default function GameSetup() {
   const [teamsOn,    setTeamsOn]    = useState(false)
   const [teams,      setTeams]      = useState([{name:'Equipa A',color:TEAM_COLORS[0]},{name:'Equipa B',color:TEAM_COLORS[1]}])
   const [categories, setCategories] = useState(cfg.cats.slice(0,3))
-  const [miniGames,  setMiniGames]  = useState(['maior_menor','grupo','batalha','sync'])
+  const [miniGames,  setMiniGames]  = useState(['grupo','batalha','sync','10_segundos'])
   const [penalty,    setPenalty]    = useState('sips')
   const [friendsMode,setFriendsMode]= useState('map_cats')
   const [mapRotation,setMapRotation]= useState('random')
   const [mapStyle,   setMapStyle]   = useState('classic')
-
-  // Score mode for friends: '3_per_cat' (like Party & Co) or 'max_points'
   const [scoreMode,  setScoreMode]  = useState('max_points')
   const [maxPoints,  setMaxPoints]  = useState(5)
-  const [contentPack, setContentPack] = useState('base')
-  const [includeCommunity, setIncludeCommunity] = useState(true)
-  const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
 
-  useEffect(() => {
-    void api.getChallengePacks({ mode_type: mode }).then((rows) => {
-      if (!Array.isArray(rows) || !rows.length) return
-      setPackOptions(rows.map((pack) => ({ pack, name: pack })))
-    }).catch(() => {})
-  }, [mode])
-
-  // Computed winning scores
-  // Family: always 3 × categories (mandatory, like Party & Co)
-  // Friends '3_per_cat': 3 × selected categories
-  // Friends 'max_points': custom number
   const winningScore = isFamily
     ? categories.length * 3
     : scoreMode === '3_per_cat'
@@ -135,8 +94,8 @@ export default function GameSetup() {
       mapRotation,
       mapStyle,
       winningScore,
-      contentPack,
-      includeCommunity,
+      contentPack: 'base',
+      includeCommunity: true,
     })
     if (mode==='couple')                 navigate('/CoupleGame')
     else if (friendsMode==='challenges') navigate('/ChallengesOnly')
@@ -144,279 +103,261 @@ export default function GameSetup() {
   }
 
   const totalSteps = cfg.hasTeams ? 2 : 1
-  const inp = 'bg-slate-800 border border-slate-600 rounded-xl px-3 py-2.5 text-white outline-none focus:border-violet-500/60 text-sm w-full'
+  const inp = 'bg-slate-800 border border-slate-600 rounded-xl px-3 py-2.5 text-white outline-none focus:border-white/30 text-sm w-full'
+  const optBtn = (active) => `p-3 rounded-xl border text-left text-sm transition-all ${active ? accent.sel : accent.idle}`
 
-  const packToggle = (
-    <div className="space-y-2">
-      <select value={contentPack} onChange={(e) => setContentPack(e.target.value)} className={inp}>
-        {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
-      </select>
-      <label className="flex items-center gap-3 cursor-pointer">
-        <button type="button" onClick={() => setIncludeCommunity((v) => !v)}
-          className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-violet-500' : 'bg-white/[0.12]'}`}>
-          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
-        </button>
-        <span className="text-slate-300 text-sm">Incluir cartas da comunidade</span>
-      </label>
-    </div>
-  )
+  const setupSummary = [
+    mode === 'friends' && FRIENDS_MODES.find((f) => f.id === friendsMode)?.label,
+    (mode !== 'friends' || friendsMode !== 'map_mini') && `${categories.length} categorias`,
+    `${winningScore} pts`,
+    mode === 'friends' && { sips: 'Goles', penalty: 'Penáltis', both: 'Goles + penáltis' }[penalty],
+  ].filter(Boolean).join(' · ')
 
   return (
-    <div className="min-h-screen bg-[#080b14] px-4 py-8 flex flex-col items-center">
-      <div className="w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-5">
-          <button onClick={()=>step>0?setStep(s=>s-1):navigate('/')} className="text-slate-400 hover:text-white p-2 rounded-xl hover:bg-white/[0.05] transition-all"><ChevronLeft className="w-5 h-5"/></button>
-          <div><h2 className="text-white font-bold text-xl">{cfg.label}</h2><p className="text-slate-500 text-sm">Passo {step+1} de {totalSteps}</p></div>
-        </div>
-        <div className="w-full bg-white/[0.06] rounded-full h-1 mb-6">
-          <div className={`bg-gradient-to-r ${cfg.color} h-1 rounded-full transition-all`} style={{width:`${((step+1)/totalSteps)*100}%`}}/>
-        </div>
+    <PageShell mode={mode} innerClassName="space-y-5">
+      <ModeHeader
+        onBack={() => (step > 0 ? setStep((s) => s - 1) : navigate('/'))}
+        title={cfg.label}
+        subtitle={`Passo ${step + 1} de ${totalSteps}`}
+      />
 
-        <AnimatePresence mode="wait">
-          {/* ── STEP 0: Players ── */}
-          {step===0 && (
-            <motion.div key="s0" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-3">
-              <h3 className="text-white font-semibold text-lg mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-slate-500"/>Jogadores</h3>
-              {players.map((p,i)=>(
-                <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3 flex items-center gap-3">
-                  <div className={`bg-gradient-to-br ${p.color} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>{p.name[0]?.toUpperCase()}</div>
-                  <input value={p.name} onChange={e=>setPlayers(ps=>ps.map((pl,j)=>j===i?{...pl,name:e.target.value}:pl))} className="flex-1 bg-transparent text-white font-medium outline-none placeholder-slate-600" placeholder="Nome"/>
-                  {players.length>cfg.min&&<button onClick={()=>removePlayer(i)} className="text-slate-600 hover:text-red-400 p-1 transition-colors"><Trash2 className="w-4 h-4"/></button>}
-                </div>
-              ))}
-              {players.length<cfg.max&&(
-                <button onClick={addPlayer} className="w-full border border-dashed border-white/[0.1] rounded-2xl p-3 text-slate-500 hover:text-white hover:border-white/[0.25] transition-all flex items-center justify-center gap-2 text-sm">
-                  <Plus className="w-4 h-4"/>Adicionar jogador
-                </button>
-              )}
-              {!cfg.hasTeams && (
-                <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3">
-                  <p className="text-white font-semibold text-sm mb-2">📦 Pack de conteúdo</p>
-                  {packToggle}
-                </div>
-              )}
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={()=>cfg.hasTeams?setStep(1):startGame()}
-                className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 mt-4 flex items-center justify-center gap-2`}>
-                {cfg.hasTeams?'Continuar':'Começar Jogo'}<ChevronRight className="w-5 h-5"/>
-              </motion.button>
-            </motion.div>
-          )}
+      <div className="w-full bg-white/[0.06] rounded-full h-1">
+        <div className={`bg-gradient-to-r ${cfg.color} h-1 rounded-full transition-all`} style={{ width: `${((step + 1) / totalSteps) * 100}%` }} />
+      </div>
 
-          {/* ── STEP 1: Options ── */}
-          {step===1 && cfg.hasTeams && (
-            <motion.div key="s1" initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}} className="space-y-5">
-
-              {/* Die preview */}
-              <DiePreview/>
-
-              <div>
-                <h3 className="text-white font-semibold mb-2">📦 Pack de conteúdo</h3>
-                <p className="text-slate-500 text-xs mb-2">Só saem desafios deste pack (importa com npm run seed:packs).</p>
-                {packToggle}
+      <AnimatePresence mode="wait">
+        {step === 0 && (
+          <motion.div key="s0" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-white font-semibold text-lg flex items-center gap-2">
+                <Users className={`w-5 h-5 ${accent.icon}`} />
+                Jogadores
+              </h3>
+              <span className="text-slate-500 text-xs">{players.length} / {cfg.max}</span>
+            </div>
+            {players.map((p, i) => (
+              <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3 flex items-center gap-3">
+                <div className={`bg-gradient-to-br ${p.color} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>{p.name[0]?.toUpperCase()}</div>
+                <input
+                  value={p.name}
+                  onChange={(e) => setPlayers((ps) => ps.map((pl, j) => (j === i ? { ...pl, name: e.target.value } : pl)))}
+                  className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-white font-medium outline-none focus:border-white/20 placeholder-slate-600"
+                  placeholder="Nome"
+                />
+                {players.length > cfg.min && (
+                  <button type="button" onClick={() => removePlayer(i)} className="text-slate-600 hover:text-red-400 p-2 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
+            ))}
+            {players.length < cfg.max && (
+              <button type="button" onClick={addPlayer} className="w-full border border-dashed border-white/[0.1] rounded-xl py-2.5 text-slate-500 hover:text-white hover:border-white/[0.25] transition-all flex items-center justify-center gap-2 text-sm">
+                <Plus className="w-4 h-4" />
+                Adicionar jogador
+              </button>
+            )}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => (cfg.hasTeams ? setStep(1) : startGame())}
+              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 mt-2 flex items-center justify-center gap-2`}
+            >
+              {cfg.hasTeams ? 'Continuar' : 'Começar Jogo'}
+              <ChevronRight className="w-5 h-5" />
+            </motion.button>
+          </motion.div>
+        )}
 
-              {/* Friends mode */}
-              {mode==='friends'&&(
-                <div>
-                  <h3 className="text-white font-semibold mb-2">🎮 Modo de Jogo</h3>
-                  <div className="space-y-2">
-                    {FRIENDS_MODES.map(fm=>(
-                      <button key={fm.id} onClick={()=>setFriendsMode(fm.id)}
-                        className={`w-full p-4 rounded-2xl border flex items-center gap-3 text-left transition-all ${friendsMode===fm.id?'bg-cyan-600/15 border-cyan-500/40':'bg-white/[0.03] border-white/[0.07] hover:border-white/[0.18]'}`}>
-                        <fm.icon className={`w-5 h-5 flex-shrink-0 ${friendsMode===fm.id?'text-cyan-400':'text-slate-500'}`}/>
-                        <div>
-                          <p className={`font-bold text-sm ${friendsMode===fm.id?'text-white':'text-slate-400'}`}>{fm.label}</p>
-                          <p className="text-slate-600 text-xs">{fm.desc}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+        {step === 1 && cfg.hasTeams && (
+          <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+            {mode === 'friends' && (
+              <SetupSection title="Como jogar">
+                <div className="space-y-2">
+                  {FRIENDS_MODES.map((fm) => (
+                    <button key={fm.id} type="button" onClick={() => setFriendsMode(fm.id)}
+                      className={`w-full p-3 rounded-xl border flex items-center gap-3 text-left transition-all ${friendsMode === fm.id ? accent.sel : accent.idle}`}>
+                      <fm.icon className={`w-5 h-5 flex-shrink-0 ${friendsMode === fm.id ? accent.icon : 'text-slate-500'}`} />
+                      <div>
+                        <p className={`font-bold text-sm ${friendsMode === fm.id ? 'text-white' : 'text-slate-400'}`}>{fm.label}</p>
+                        <p className="text-slate-600 text-xs">{fm.desc}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-              )}
 
-              {/* Map rotation */}
-              {mode==='friends'&&(friendsMode==='map_cats'||friendsMode==='map_mini')&&(
-                <div>
-                  <h3 className="text-white font-semibold mb-2">🗺️ Casas do Mapa</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[{id:'random',label:'🎲 Aleatório',desc:'50% desafios, 50% mini-jogos'},{id:'fixed',label:'🔄 Fixo',desc:'Segue ordem das categorias'}].map(opt=>(
-                      <button key={opt.id} onClick={()=>setMapRotation(opt.id)}
-                        className={`p-3 rounded-xl border text-left text-sm transition-all ${mapRotation===opt.id?'bg-violet-600/15 border-violet-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                        <p className="font-bold">{opt.label}</p><p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {(mode==='family'||(mode==='friends'&&(friendsMode==='map_cats'||friendsMode==='map_mini')))&&(
-                <div>
-                  <h3 className="text-white font-semibold mb-2">🧩 Modo de Regras</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      {id:'classic',label:'Clássico',desc:'Só categorias e mini-jogos no tabuleiro'},
-                      {id:'special',label:'Especial',desc:mode==='family'?'Adiciona duelos, bónus, risco e todos jogam':'Adiciona caos, duelos, roubo e proteção'},
-                    ].map(opt=>(
-                      <button key={opt.id} onClick={()=>setMapStyle(opt.id)}
-                        className={`p-3 rounded-xl border text-left text-sm transition-all ${mapStyle===opt.id?'bg-emerald-600/15 border-emerald-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                {(friendsMode === 'map_cats' || friendsMode === 'map_mini') && (
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {[{ id: 'random', label: '🎲 Aleatório', desc: '50% desafios, 50% mini-jogos' }, { id: 'fixed', label: '🔄 Fixo', desc: 'Ordem das categorias' }].map((opt) => (
+                      <button key={opt.id} type="button" onClick={() => setMapRotation(opt.id)} className={optBtn(mapRotation === opt.id)}>
                         <p className="font-bold">{opt.label}</p>
                         <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                       </button>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Teams */}
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-white font-semibold">Equipas</span>
-                  <button onClick={()=>setTeamsOn(t=>!t)} className={`w-12 h-6 rounded-full transition-all ${teamsOn?'bg-violet-500':'bg-white/[0.1]'} relative`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${teamsOn?'left-7':'left-1'}`}/>
-                  </button>
-                </div>
-                {teamsOn&&(
-                  <div className="space-y-2">
-                    {teams.map((t,i)=>(
-                      <div key={i} className="flex items-center gap-2">
-                        <div className={`bg-gradient-to-br ${t.color} w-8 h-8 rounded-lg flex-shrink-0`}/>
-                        <input value={t.name} onChange={e=>setTeams(ts=>ts.map((tm,j)=>j===i?{...tm,name:e.target.value}:tm))} className={inp}/>
-                      </div>
+                {(mode === 'family' || friendsMode === 'map_cats' || friendsMode === 'map_mini') && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'classic', label: 'Clássico', desc: 'Categorias e mini-jogos' },
+                      { id: 'special', label: 'Especial', desc: mode === 'family' ? 'Duelos, bónus e risco' : 'Caos, duelos e roubo' },
+                    ].map((opt) => (
+                      <button key={opt.id} type="button" onClick={() => setMapStyle(opt.id)} className={optBtn(mapStyle === opt.id)}>
+                        <p className="font-bold">{opt.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      </button>
                     ))}
-                    <div className="mt-2 space-y-1">
-                      {players.map((p,i)=>(
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <span className="text-slate-400">{p.name}</span>
-                          <div className="flex gap-1">
-                            {teams.map((_,ti)=>(
-                              <button key={ti} onClick={()=>setPlayers(ps=>ps.map((pl,j)=>j===i?{...pl,team:ti}:pl))}
-                                className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${p.team===ti?'bg-violet-600 text-white':'bg-white/[0.08] text-slate-500'}`}>E{ti+1}</button>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 )}
-              </div>
+              </SetupSection>
+            )}
 
-              {/* Categories */}
+            {mode === 'family' && (
+              <SetupSection title="Como jogar">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'classic', label: 'Clássico', desc: 'Categorias e mini-jogos' },
+                    { id: 'special', label: 'Especial', desc: 'Duelos, bónus e risco' },
+                  ].map((opt) => (
+                    <button key={opt.id} type="button" onClick={() => setMapStyle(opt.id)} className={optBtn(mapStyle === opt.id)}>
+                      <p className="font-bold">{opt.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </SetupSection>
+            )}
+
+            <SetupSection title="Conteúdo">
               {(mode !== 'friends' || friendsMode !== 'map_mini') && (
-                <div>
-                  <h3 className="text-white font-semibold mb-2">Categorias</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {cfg.cats.map(c=>(
-                      <button key={c} onClick={()=>toggleCat(c)}
-                        className={`p-3 rounded-xl border text-left text-sm font-medium transition-all ${categories.includes(c)?'bg-violet-600/15 border-violet-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                        {CAT_LABELS[c]}
-                      </button>
+                <div className="grid grid-cols-2 gap-2">
+                  {cfg.cats.map((c) => (
+                    <button key={c} type="button" onClick={() => toggleCat(c)} className={`${optBtn(categories.includes(c))} font-medium`}>
+                      {CAT_LABELS[c]}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {mode === 'friends' && friendsMode === 'map_mini' && (
+                <p className="text-slate-400 text-sm">No modo <strong className="text-white">Só Mini-jogos</strong>, as categorias não entram no tabuleiro.</p>
+              )}
+
+              {cfg.hasMini && (friendsMode === 'map_cats' || friendsMode === 'map_mini') && (
+                <div className="grid grid-cols-2 gap-2">
+                  {MINI_GAMES.map((m) => (
+                    <button key={m.id} type="button" onClick={() => toggleMini(m.id)} className={`${optBtn(miniGames.includes(m.id))} font-medium`}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </SetupSection>
+
+            <SetupSection title="Competição">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-300 text-sm">Equipas</span>
+                <button type="button" onClick={() => setTeamsOn((t) => !t)} className={`w-12 h-6 rounded-full transition-all ${teamsOn ? accent.toggle : 'bg-white/[0.1]'} relative`}>
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${teamsOn ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
+              {teamsOn && (
+                <div className="space-y-2">
+                  {teams.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className={`bg-gradient-to-br ${t.color} w-8 h-8 rounded-lg flex-shrink-0`} />
+                      <input value={t.name} onChange={(e) => setTeams((ts) => ts.map((tm, j) => (j === i ? { ...tm, name: e.target.value } : tm)))} className={inp} />
+                    </div>
+                  ))}
+                  <div className="mt-2 space-y-1">
+                    {players.map((p, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm">
+                        <span className="text-slate-400">{p.name}</span>
+                        <div className="flex gap-1">
+                          {teams.map((_, ti) => (
+                            <button key={ti} type="button" onClick={() => setPlayers((ps) => ps.map((pl, j) => (j === i ? { ...pl, team: ti } : pl)))}
+                              className={`px-2 py-0.5 rounded text-xs font-medium transition-all ${p.team === ti ? `${accent.toggle} text-white` : 'bg-white/[0.08] text-slate-500'}`}>
+                              E{ti + 1}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
-              {mode==='friends' && friendsMode==='map_mini' && (
-                <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-slate-400 text-sm">
-                  No modo <strong>Só Mini-jogos</strong>, as categorias não são usadas no tabuleiro.
-                </div>
-              )}
 
-              {/* Mini-games — friends only */}
-              {cfg.hasMini&&(friendsMode==='map_cats'||friendsMode==='map_mini')&&(
-                <div>
-                  <h3 className="text-white font-semibold mb-2">Mini-jogos</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MINI_GAMES.map(m=>(
-                      <button key={m.id} onClick={()=>toggleMini(m.id)}
-                        className={`p-3 rounded-xl border text-left text-sm font-medium transition-all ${miniGames.includes(m.id)?'bg-violet-600/15 border-violet-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                        {m.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* ── SCORING ── */}
-              <div>
-                <h3 className="text-white font-semibold mb-2 flex items-center gap-2"><Target className="w-4 h-4 text-amber-400"/>Objetivo de Pontos</h3>
-
+              <div className="pt-1">
+                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Target className={`w-3.5 h-3.5 ${accent.icon}`} />
+                  Objetivo de pontos
+                </p>
                 {isFamily ? (
-                  // Family: always 3 per category, mandatory
-                  <div className="bg-sky-500/8 border border-sky-500/20 rounded-2xl p-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sky-300 text-sm font-bold">🏡 3 pontos por categoria (obrigatório)</span>
-                    </div>
-                    <p className="text-slate-400 text-xs">Cada tipo de desafio vale 3 pontos.</p>
-                    <div className="bg-sky-900/30 rounded-xl p-3 flex items-center justify-between">
-                      <span className="text-slate-300 text-sm">{categories.length} categori{categories.length===1?'a':'as'} × 3 pontos</span>
-                      <span className="text-white font-black text-2xl">= {winningScore} pts</span>
-                    </div>
-                    <p className="text-slate-500 text-xs">Adiciona ou remove categorias acima para ajustar a duração.</p>
+                  <div className={`rounded-xl border p-3 flex items-center justify-between ${accent.sel}`}>
+                    <span className="text-slate-300 text-sm">{categories.length} categorias × 3</span>
+                    <span className="text-white font-black text-2xl">{winningScore} pts</span>
                   </div>
                 ) : (
-                  // Friends: choose between 3/cat or custom max
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className="grid grid-cols-2 gap-2">
                       {[
-                        {id:'3_per_cat', label:'📦 3 por tipo', desc:'Cada tipo vale 3 pontos'},
-                        {id:'max_points', label:'🎯 Pontuação máxima', desc:'Escolhes o número'},
-                      ].map(opt=>(
-                        <button key={opt.id} onClick={()=>setScoreMode(opt.id)}
-                          className={`p-3 rounded-xl border text-left text-sm transition-all ${scoreMode===opt.id?'bg-amber-500/20 border-amber-500/50 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                        { id: '3_per_cat', label: '📦 3 por tipo', desc: 'Cada tipo vale 3' },
+                        { id: 'max_points', label: '🎯 Máximo', desc: 'Escolhes o número' },
+                      ].map((opt) => (
+                        <button key={opt.id} type="button" onClick={() => setScoreMode(opt.id)} className={optBtn(scoreMode === opt.id)}>
                           <p className="font-bold">{opt.label}</p>
                           <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
                         </button>
                       ))}
                     </div>
-
                     {scoreMode === '3_per_cat' && (
-                      <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-3 flex items-center justify-between">
-                        <span className="text-slate-300 text-sm">{categories.length} categori{categories.length===1?'a':'as'} × 3 pontos</span>
-                        <span className="text-white font-black text-2xl">= {winningScore} pts</span>
+                      <div className={`rounded-xl border p-3 flex items-center justify-between ${accent.sel}`}>
+                        <span className="text-slate-300 text-sm">{categories.length} categorias × 3</span>
+                        <span className="text-white font-black text-2xl">{winningScore} pts</span>
                       </div>
                     )}
-
                     {scoreMode === 'max_points' && (
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          {[3,5,7,10,15,20].map(n=>(
-                            <button key={n} onClick={()=>setMaxPoints(n)}
-                              className={`flex-1 py-3 rounded-xl border text-sm font-bold transition-all ${maxPoints===n?'bg-amber-500/20 border-amber-500/50 text-amber-300':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                              {n}
-                            </button>
-                          ))}
-                        </div>
-                        <p className="text-slate-500 text-xs text-center">Objetivo: {maxPoints} pontos para vencer</p>
+                      <div className="flex gap-2 flex-wrap">
+                        {[3, 5, 7, 10, 15, 20].map((n) => (
+                          <button key={n} type="button" onClick={() => setMaxPoints(n)}
+                            className={`flex-1 min-w-[2.5rem] py-3 rounded-xl border text-sm font-bold transition-all ${maxPoints === n ? accent.sel : accent.idle}`}>
+                            {n}
+                          </button>
+                        ))}
                       </div>
                     )}
                   </div>
                 )}
               </div>
+            </SetupSection>
 
-              {/* Penalty — friends only */}
-              {mode==='friends'&&(
-                <div>
-                  <h3 className="text-white font-semibold mb-2">Penalização</h3>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[{id:'sips',label:'🍺 Goles',desc:'Sempre 1-3 goles'},{id:'penalty',label:'⚽ Penáltis',desc:'Sempre penálti'},{id:'both',label:'🎲 Ambos',desc:'90% goles, 10% penálti'}].map(o=>(
-                      <button key={o.id} onClick={()=>setPenalty(o.id)}
-                        className={`p-3 rounded-xl border text-left text-sm transition-all ${penalty===o.id?'bg-violet-600/15 border-violet-500/40 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                        <p className="font-bold">{o.label}</p>
-                        <p className="text-xs text-slate-500 mt-0.5 leading-tight">{o.desc}</p>
-                      </button>
-                    ))}
-                  </div>
+            {mode === 'friends' && (
+              <SetupSection title="Penalização">
+                <div className="grid grid-cols-3 gap-2">
+                  {[{ id: 'sips', label: '🍺 Goles', desc: '1–3 goles' }, { id: 'penalty', label: '⚽ Penáltis', desc: 'Sempre penálti' }, { id: 'both', label: '🎲 Ambos', desc: '90% goles' }].map((o) => (
+                    <button key={o.id} type="button" onClick={() => setPenalty(o.id)} className={optBtn(penalty === o.id)}>
+                      <p className="font-bold">{o.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-tight">{o.desc}</p>
+                    </button>
+                  ))}
                 </div>
-              )}
+              </SetupSection>
+            )}
 
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame}
-                className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 flex items-center justify-center gap-2`}>
-                Começar Jogo 🎉
-                <span className="text-sm opacity-70">(Objetivo: {winningScore} pts)</span>
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
+            {setupSummary && <p className="text-slate-500 text-xs text-center">{setupSummary}</p>}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={startGame}
+              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 flex flex-col items-center justify-center gap-0.5`}
+            >
+              <span>Começar Jogo 🎉</span>
+              <span className="text-sm opacity-70 font-medium">Objetivo: {winningScore} pts</span>
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </PageShell>
   )
 }

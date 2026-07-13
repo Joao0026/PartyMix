@@ -31,3 +31,15 @@ export function memeUrlWithToken(url, token) {
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}token=${encodeURIComponent(token)}`
 }
+
+/** URL absoluta para `<img>` (evita pedir ao dev server em vez da API). */
+export function fullMemeUrl(path, token, baseUrl) {
+  if (!path) return ''
+  let url = path
+  if (!path.startsWith('http')) {
+    const base = String(baseUrl || '').replace(/\/$/, '') || ''
+    const p = path.startsWith('/') ? path : `/${path}`
+    url = `${base}${p}`
+  }
+  return memeUrlWithToken(url, token)
+}

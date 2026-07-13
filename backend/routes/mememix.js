@@ -14,6 +14,15 @@ const MAX_BYTES = 5 * 1024 * 1024
 
 router.use(express.json({ limit: '6mb' }))
 
+router.get('/packs', asyncRoute(async (req, res) => {
+  const rows = await Card.aggregate([
+    { $match: { mode_type: 'mememix', category: 'legenda' } },
+    { $group: { _id: '$pack', count: { $sum: 1 } } },
+    { $sort: { _id: 1 } },
+  ])
+  res.json(rows.map((r) => ({ pack: r._id || 'base', count: r.count })))
+}))
+
 router.get('/legendas', asyncRoute(async (req, res) => {
   const pack = cleanString(req.query.pack, { defaultValue: 'base', max: 60 }) || 'base'
   const rows = await Card.find({

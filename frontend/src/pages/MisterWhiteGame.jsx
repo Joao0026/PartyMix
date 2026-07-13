@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus, ChevronLeft, Eye, EyeOff, Users } from 'lucide-react'
+import { Plus, Minus, Eye, EyeOff, Users } from 'lucide-react'
+import BackButton from '../components/layout/BackButton'
+import PageShell from '../components/layout/PageShell'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import {
@@ -160,10 +162,14 @@ export default function MisterWhiteGame() {
   const remainingActive = roles.filter((_, i) => !eliminated.includes(i))
 
   return (
-    <div className="min-h-screen bg-[#080b14] flex flex-col items-center px-4 py-8">
+    <PageShell
+      mode="misterwhite"
+      innerClassName="space-y-0 w-full"
+      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.20) 0%, #111827 45%, #050711 100%)' }}
+    >
       <div className="w-full max-w-lg">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => step === 'setup' ? navigate('/MisterWhite') : setStep('setup')} className="text-slate-400 hover:text-white p-1"><ChevronLeft className="w-5 h-5"/></button>
+          <BackButton onClick={() => (step === 'setup' ? navigate('/MisterWhite') : setStep('setup'))} />
           <div>
             <h1 className="text-white font-bold text-xl">👁️ Mister White</h1>
             {step !== 'setup' && <p className="text-slate-500 text-xs">Ronda {roundNum} · {remainingActive.length} jogadores activos</p>}
@@ -189,7 +195,7 @@ export default function MisterWhiteGame() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {[{label:'Undercoveres',val:numUndercover,set:setNumUndercover},{label:'Mister Whites',val:numMW,set:setNumMW}].map(({label,val,set})=>(
+                {[{label:'Infiltrados',val:numUndercover,set:setNumUndercover},{label:'Mister Whites',val:numMW,set:setNumMW}].map(({label,val,set})=>(
                   <div key={label} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
                     <p className="text-slate-400 text-xs mb-2">{label}</p>
                     <div className="flex items-center justify-center gap-3">
@@ -228,7 +234,7 @@ export default function MisterWhiteGame() {
                 </div>
               </div>
               <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-4 text-sm text-slate-400 space-y-1">
-                <p>📖 <span className="text-white">Civis</span> conhecem a palavra. <span className="text-blue-400">Undercoveres</span> têm palavra similar. <span className="text-red-400">Mister White</span> não tem palavra.</p>
+                <p>📖 <span className="text-white">Civis</span> conhecem a palavra. <span className="text-blue-400">Infiltrados</span> têm palavra similar. <span className="text-red-400">Mister White</span> não tem palavra.</p>
                 <p>🗳️ Grupo discute, vota num suspeito, e o dono do telemóvel confirma a eliminação.</p>
                 <p>⏱️ Usa o timer para limitar a discussão antes da votação.</p>
                 <p>🔄 Após a primeira ronda, o turno de revelar avança um para a direita.</p>
@@ -249,13 +255,23 @@ export default function MisterWhiteGame() {
               <h2 className="text-white font-bold text-xl">Vez de <span className="font-black">{roles[revealCursor].name}</span></h2>
               <p className="text-slate-500 text-sm">Mostra só a ti próprio!</p>
               {!showRole ? (
-                <motion.button whileTap={{scale:0.96}} onClick={()=>setShowRole(true)}
-                  className="w-full h-36 bg-white/[0.04] border border-white/[0.08] rounded-3xl flex flex-col items-center justify-center gap-2 text-slate-400 hover:bg-white/[0.07] transition-all">
-                  <EyeOff className="w-8 h-8"/><span>Toca para ver o teu papel</span>
+                <motion.button
+                  whileTap={{scale:0.96}}
+                  onClick={()=>setShowRole(true)}
+                  className="group relative w-full h-48 overflow-hidden rounded-[2rem] border border-violet-300/20 bg-gradient-to-br from-slate-950 via-violet-950/50 to-black shadow-2xl flex flex-col items-center justify-center gap-3 text-slate-300"
+                >
+                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
+                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-violet-500/20 blur-2xl transition group-active:scale-125" />
+                  <div className="grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-white/[0.06]">
+                    <EyeOff className="w-8 h-8 text-violet-200"/>
+                  </div>
+                  <span className="font-black text-white">Toca para revelar</span>
+                  <span className="text-xs text-slate-500">Mantém o ecrã virado só para ti</span>
                 </motion.button>
               ) : (
                 <motion.div initial={{scale:0.85,opacity:0}} animate={{scale:1,opacity:1}}
-                  className={`w-full h-36 rounded-3xl flex flex-col items-center justify-center gap-2 border ${roles[revealCursor].role==='civil'?'bg-green-900/25 border-green-500/30':roles[revealCursor].role==='undercover'?'bg-blue-900/25 border-blue-500/30':'bg-red-900/25 border-red-500/30'}`}>
+                  className={`relative w-full min-h-44 overflow-hidden rounded-[2rem] flex flex-col items-center justify-center gap-2 border p-6 shadow-2xl ${roles[revealCursor].role==='civil'?'bg-green-900/25 border-green-500/30':roles[revealCursor].role==='undercover'?'bg-blue-900/25 border-blue-500/30':'bg-red-900/25 border-red-500/30'}`}>
+                  <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
                   <span className="text-slate-300 text-sm">{roles[revealCursor].role==='civil'?'✅ Civil':roles[revealCursor].role==='undercover'?'🕵️ Undercover':'👁️ Mister White'}</span>
                   <span className="text-white font-black text-3xl">{roles[revealCursor].word||'Sem palavra'}</span>
                   {roles[revealCursor].role==='undercover'&&<span className="text-blue-300 text-xs">A tua palavra é parecida mas diferente!</span>}
@@ -371,7 +387,7 @@ export default function MisterWhiteGame() {
             <motion.div key="result" initial={{opacity:0,scale:0.92}} animate={{opacity:1,scale:1}} exit={{opacity:0}} className="text-center space-y-5">
               <div className="text-6xl">{gameResult==='civils_win'?'✅':gameResult==='mw_wins'?'🕵️':'🔵'}</div>
               <h2 className="text-white font-black text-2xl">
-                {gameResult==='civils_win'?'Os Civis Venceram!':gameResult==='mw_wins'?'Mister White Venceu!':'Undercoveres Venceram!'}
+                {gameResult==='civils_win'?'Os Civis Venceram!':gameResult==='mw_wins'?'Mister White Venceu!':'Infiltrados Venceram!'}
               </h2>
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-left space-y-1">
                 <div className="flex gap-4 mb-3 text-sm">
@@ -398,6 +414,6 @@ export default function MisterWhiteGame() {
 
         </AnimatePresence>
       </div>
-    </div>
+    </PageShell>
   )
 }

@@ -2,13 +2,13 @@ const KEY = 'partymix_mm_session'
 
 export function saveMmSession({ code, playerName, uploadToken, isHost }) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ code, playerName, uploadToken, isHost }))
+    sessionStorage.setItem(KEY, JSON.stringify({ code, playerName, uploadToken, isHost }))
   } catch { /* ignore */ }
 }
 
 export function loadMmSession() {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = sessionStorage.getItem(KEY)
     return raw ? JSON.parse(raw) : null
   } catch {
     return null
@@ -17,7 +17,7 @@ export function loadMmSession() {
 
 export function clearMmSession() {
   try {
-    localStorage.removeItem(KEY)
+    sessionStorage.removeItem(KEY)
   } catch { /* ignore */ }
 }
 

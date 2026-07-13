@@ -90,7 +90,7 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
       <motion.div initial={{y:120,opacity:0}} animate={{y:0,opacity:1}} exit={{y:120,opacity:0}}
         transition={{type:'spring',damping:20}}
         className="w-full max-w-lg bg-[#0d0f1c] border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl">

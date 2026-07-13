@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Wifi, WifiOff } from 'lucide-react'
-import { clearGlobalSocket, getSocketStatus, subscribeSocketStatus } from '../utils/socketStore'
+import { clearGlobalSocket, getSocketStatus, subscribeSocketStatus, clearMmLobbyHandoff, clearMwLobbyHandoff, clearAmLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 
 const ONLINE_SOCKET_ROUTES = new Set([
   '/CardsLobby', '/CardsGame',
@@ -31,7 +31,13 @@ export default function ConnectionStatus() {
   }, [])
 
   useEffect(() => {
-    if (!onOnlineRoute) clearGlobalSocket()
+    if (!onOnlineRoute) {
+      clearGlobalSocket()
+      clearMmLobbyHandoff()
+      clearMwLobbyHandoff()
+      clearAmLobbyHandoff()
+      clearCardsLobbyHandoff()
+    }
   }, [onOnlineRoute])
 
   if (!online) {
@@ -69,7 +75,10 @@ function StatusBanner({ children, icon, tone }) {
     : 'border-amber-500/40 bg-amber-950/90 text-amber-100'
 
   return (
-    <div className={`fixed left-3 right-3 top-3 z-[100] mx-auto max-w-lg rounded-2xl border px-4 py-3 shadow-xl backdrop-blur ${color}`}>
+    <div
+      className={`fixed left-3 right-3 z-[100] mx-auto max-w-lg rounded-2xl border px-4 py-3 shadow-xl backdrop-blur ${color}`}
+      style={{ top: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
+    >
       <div className="flex items-center justify-center gap-2 text-center text-sm font-bold">
         {icon}
         <span>{children}</span>
