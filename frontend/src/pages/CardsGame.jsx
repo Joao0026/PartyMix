@@ -285,7 +285,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setSubmissions(map)
     }
     const onRoundEnded = (d) => {
-      setRoundWinner(d.winnerId)
+      setRoundWinner(d.winnerId || d.winnerName || null)
       setScores(Object.fromEntries(d.scores.map((s) => [s.name, s.score])))
     }
     const onNewRound = (d) => {
@@ -561,7 +561,17 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         {/* Revealed submissions */}
         {revealed&&(
           <div className="space-y-3">
-            <p className="text-white font-bold text-center">{czarName}, escolhe a melhor carta!</p>
+            {roundWinner && (
+              <div className="rounded-2xl border border-amber-400/35 bg-amber-500/15 px-4 py-3 text-center">
+                <p className="text-amber-200 text-xs font-black uppercase tracking-[0.16em]">Vencedor da ronda</p>
+                <p className="text-white font-black text-lg mt-0.5">👑 {roundWinner}</p>
+              </div>
+            )}
+            {roundWinner ? (
+              <p className="text-slate-400 text-sm text-center">Ronda decidida — {imCzar ? 'carrega em «Próxima Ronda»' : 'à espera do host'}</p>
+            ) : (
+              <p className="text-white font-bold text-center">{czarName}, escolhe a melhor carta!</p>
+            )}
             {Object.entries(submissions).map(([pid,card])=>(
               <motion.button key={pid} whileHover={{scale:1.02}} whileTap={{scale:0.97}}
                 onClick={()=>{
@@ -591,8 +601,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
                 Próxima Ronda →
               </motion.button>
             )}
-            {roundWinner&&mode==='online'&&!isHost&&(
-              <p className="text-slate-500 text-center text-sm">O host vai avançar para a próxima ronda.</p>
+            {roundWinner && mode === 'online' && !imCzar && (
+              <p className="text-slate-500 text-center text-sm">À espera do host avançar a ronda…</p>
             )}
           </div>
         )}

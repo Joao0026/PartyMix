@@ -434,6 +434,45 @@
       "miniboss": "Botões Grupo ganhou / Grupo falhou",
       "impostor": "Fluxo passar telemóvel",
       "alliance": "Texto normal"
+    },
+    "momento_caos": {
+      "_descricao": "Secção opcional «caos» em qualquer carta (não confundir com type «caos» = regra da mesa).",
+      "campo": "caos",
+      "quando_aparece": "Só se caos.text estiver preenchido E o jogo activar aleatoriamente (~30% das vezes que essa carta sai).",
+      "se_vazio": "Omitir o campo caos ou deixar text vazio — a carta nunca entra no Momento Caos.",
+      "fluxo": "1) Carta normal → 2) Sorteio aleatório → 3) Se activar: painel «Momento Caos» → 4) Manter ou evoluir → 5) Próxima carta.",
+      "campos": {
+        "activator": "«reader» (quem tirou, predefinido) ou «subject» (quem cumpre a carta)",
+        "activatorLabel": "Com subject: quem pode evoluir, ex.: «Quem tiver o cabelo mais comprido»",
+        "prompt": "Texto do painel (opcional; senão gera-se automaticamente)",
+        "buttonLabel": "Texto do botão de evoluir (opcional)",
+        "cost": "Preço, ex.: «Bebes 3 goles em vez de 2.»",
+        "preview": "Dica do upgrade (opcional)",
+        "title": "Título da carta evoluída (opcional)",
+        "text": "Texto da carta evoluída (obrigatório para activar caos)",
+        "emoji": "Emoji da evolução (opcional)",
+        "readerDrinks": "Goles no contador de quem tirou (opcional)",
+        "readerDistributes": "Goles distribuídos no contador (opcional)",
+        "groupDrinks": "Todos bebem X (opcional)",
+        "othersDrink": "Todos menos quem tirou bebem X (opcional)"
+      },
+      "carta_exemplo": {
+        "type": "beber",
+        "emoji": "🍺",
+        "title": "Bebe 2!",
+        "text": "Quem tirou a carta bebe 2 golos.",
+        "caos": {
+          "activator": "reader",
+          "buttonLabel": "Evoluir carta!",
+          "cost": "Bebes 3 goles em vez de 2.",
+          "preview": "Passa a distribuir 5 goles como quiseres.",
+          "title": "Distribuição Épica!",
+          "text": "Distribui 5 goles como quiseres à mesa.",
+          "emoji": "⚡",
+          "readerDrinks": 3,
+          "readerDistributes": 5
+        }
+      }
     }
   },
 
@@ -475,6 +514,21 @@
         "emoji": "🍀",
         "title": "Sorte!",
         "text": "Não bebes durante 2 rondas. Imune a tudo!"
+      },
+      "carta_caos_upgrade": {
+        "type": "poder",
+        "emoji": "👑",
+        "title": "Distribui 2!",
+        "text": "Distribui 2 goles como quiseres.",
+        "caos": {
+          "buttonLabel": "Evoluir!",
+          "cost": "Bebes 2 goles extra.",
+          "title": "Rei da Mesa!",
+          "text": "Distribui 6 goles como quiseres.",
+          "emoji": "⚡",
+          "readerDrinks": 2,
+          "readerDistributes": 6
+        }
       }
     }
   },

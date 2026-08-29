@@ -12,6 +12,8 @@ import PreferenciaCard from '../components/game/PreferenciaCard'
 import { FALLBACK_DRINK_DECKS } from '../utils/drinkDecksFallback'
 import { formatGoles } from '../utils/penalties'
 import { drinkCardImageSrc } from '../utils/drinkCardImage'
+import { pickImpostorForRound, enrichImpostorCard } from '../utils/drinkImpostorGhost'
+import { getCardCaos, rollCaosMoment, applyCaosUpgrade, caosActivatorIsSubject, getCaosPrompt } from '../utils/drinkChaosUpgrade'
 import {
   buildAgentPublicPool,
   buildPlayableDrinkDeck,
@@ -26,6 +28,82 @@ import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
 
 const MAX_DRINK_PLAYERS = 15
+
+function PlayerRosterPanel({
+  players,
+  playerNames,
+  genderSymbol,
+  drinkStats,
+  registerDrink,
+  removeActivePlayer,
+  midGameName,
+  setMidGameName,
+  midGameGender,
+  setMidGameGender,
+  addActivePlayer,
+  showDrinkStats = true,
+  title = 'Jogadores',
+}) {
+  return (
+    <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
+      <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em] mb-2">{title}</p>
+      <div className="grid grid-cols-2 gap-2">
+        {players.map((player, idx) => (
+          <div key={player.name} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-2">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <p className="text-white text-sm font-bold truncate">
+                {genderSymbol(player.gender) && (
+                  <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
+                )}
+                {player.name}
+              </p>
+              {showDrinkStats && <p className="text-amber-300 text-sm font-black">{drinkStats[idx]?.drinks || 0}</p>}
+            </div>
+            {showDrinkStats && (
+              <div className="grid grid-cols-3 gap-1">
+                {[1, 2, 3].map((amount) => (
+                  <button key={amount} type="button" onClick={() => registerDrink(idx, amount)} className="rounded-lg bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
+                    +{amount}
+                  </button>
+                ))}
+              </div>
+            )}
+            {players.length > 2 && (
+              <button type="button" onClick={() => removeActivePlayer(idx)} className={`${showDrinkStats ? 'mt-2' : ''} w-full rounded-lg bg-red-500/10 border border-red-400/20 text-red-200 py-1.5 text-xs font-bold`}>
+                Remover
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      {playerNames.length < MAX_DRINK_PLAYERS && (
+        <div className="mt-3 rounded-xl border border-white/[0.06] bg-white/[0.04] p-2">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.12em] text-slate-500">Adicionar jogador</p>
+          <div className="flex gap-2">
+            <input
+              value={midGameName}
+              onChange={(e) => setMidGameName(e.target.value)}
+              placeholder="Nome"
+              maxLength={20}
+              className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-black/20 px-3 py-2 text-sm text-white outline-none"
+            />
+            <select
+              value={midGameGender}
+              onChange={(e) => setMidGameGender(e.target.value)}
+              className="rounded-xl border border-white/[0.08] bg-black/20 px-2 py-2 text-sm text-white"
+            >
+              <option value="m">♂</option>
+              <option value="f">♀</option>
+            </select>
+            <button type="button" onClick={addActivePlayer} disabled={!midGameName.trim()} className="rounded-xl bg-amber-500 px-3 py-2 text-sm font-black text-black disabled:opacity-40">
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const IMPOSTOR_PENALTY_TEXT =
   'Se a mesa descobrir o impostor, ele bebe 2 goles. Se falhar, distribui 2 goles.'
@@ -229,40 +307,71 @@ function CardDeck({
   activeDeck,
   agentPublicPool,
   players,
+  departedPlayers,
   deckSessionId,
   impostorPairs,
   onCardDrawn,
   onAgentResult,
   onAllianceChosen,
   onImpostorResult,
+  onChaosResolved,
 }) {
   const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
   const [current, setCurrent] = useState(null)
+  const [baseCard, setBaseCard] = useState(null)
+  const [chaosMomentActive, setChaosMomentActive] = useState(false)
+  const [chaosResolved, setChaosResolved] = useState(true)
+  const [chaosActivatorIdx, setChaosActivatorIdx] = useState('')
+  const [cardDrawId, setCardDrawId] = useState(0)
   const [agentOpen, setAgentOpen] = useState(false)
   const [agentResult, setAgentResult] = useState(null)
-  const [impostorIndex, setImpostorIndex] = useState(null)
+  const [impostorName, setImpostorName] = useState(null)
   const [impostorDone, setImpostorDone] = useState(false)
   const [allianceDone, setAllianceDone] = useState(false)
   const [allianceTarget, setAllianceTarget] = useState('')
   const [recentTypes, setRecentTypes] = useState([])
   const [recentDeckIds, setRecentDeckIds] = useState([])
   const recentPublicTextsRef = useRef([])
-  /** Índice do jogador que deve tirar a próxima carta (ou que acabou de tirar, conforme ecrã) */
-  const [nextReaderIdx, setNextReaderIdx] = useState(0)
-  /** Quem tirou a carta atualmente visível */
-  const [lastReaderIdx, setLastReaderIdx] = useState(null)
+  const [nextReaderName, setNextReaderName] = useState(null)
+  const [lastReaderName, setLastReaderName] = useState(null)
+
+  const resolveReaderByName = (name) => {
+    if (!players.length) return null
+    return players.find((p) => p.name === name) || players[0]
+  }
+
+  const readerIndexByName = (name) => {
+    const idx = players.findIndex((p) => p.name === name)
+    return idx >= 0 ? idx : 0
+  }
+
+  const impostorIndex = impostorName != null ? players.findIndex((p) => p.name === impostorName) : null
+
+  useEffect(() => {
+    setNextReaderName((name) => (name && players.some((p) => p.name === name) ? name : players[0]?.name ?? null))
+    setLastReaderName((name) => (name && players.some((p) => p.name === name) ? name : null))
+    setImpostorName((name) => {
+      if (name == null || players.some((p) => p.name === name)) return name
+      return players.length ? players[Math.floor(Math.random() * players.length)]?.name ?? null : null
+    })
+  }, [players])
 
   useEffect(() => {
     setDeck(shuffle([...activeDeck]))
     setCurrent(null)
+    setBaseCard(null)
+    setChaosMomentActive(false)
+    setChaosResolved(true)
+    setChaosActivatorIdx('')
+    setCardDrawId(0)
     setAgentOpen(false)
     setAgentResult(null)
-    setImpostorIndex(null)
+    setImpostorName(null)
     setImpostorDone(false)
     setAllianceDone(false)
     setAllianceTarget('')
-    setNextReaderIdx(0)
-    setLastReaderIdx(null)
+    setNextReaderName(players[0]?.name ?? null)
+    setLastReaderName(null)
     setRecentTypes([])
     setRecentDeckIds([])
     recentPublicTextsRef.current = []
@@ -281,6 +390,7 @@ function CardDeck({
     if (!deck.length) return
     if (current?.type === 'impostor' && !impostorDone) return
     if (current?.type === 'alliance' && !allianceDone) return
+    if (chaosMomentActive && !chaosResolved) return
     const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
     const repeatedDeck = recentDeckIds.length >= 2 && recentDeckIds.slice(-2).every((id) => id && id === recentDeckIds[recentDeckIds.length - 1])
     let pool = deck
@@ -288,36 +398,81 @@ function CardDeck({
       const filtered = deck.filter((card) => card.type !== 'beber')
       if (filtered.length) pool = filtered
     }
+    const canAvoidImpostor = pool.some((card) => card.type !== 'impostor')
+    if (canAvoidImpostor && (recentTypes.includes('impostor') || Math.random() < 0.6)) {
+      pool = pool.filter((card) => card.type !== 'impostor')
+    }
     const avoidDeckIds = repeatedDeck ? [recentDeckIds[recentDeckIds.length - 1]] : []
     const { card: picked, rest } = pickBalancedDeckCard(pool, { avoidDeckIds })
     if (!picked) return
     let card = picked
     if (card?.type === 'agent') card = finalizeAgent(card)
     if (card?.type === 'impostor') {
-      setImpostorIndex(Math.floor(Math.random() * players.length))
+      const pick = pickImpostorForRound({ players, departedPlayers })
+      setImpostorName(pick.carrierName)
+      card = enrichImpostorCard(card, {
+        impostorPairs,
+        ghostName: pick.ghostName,
+        penaltyText: IMPOSTOR_PENALTY_TEXT,
+      })
       if (!card.text?.trim()) {
         card = { ...card, text: IMPOSTOR_PENALTY_TEXT }
       }
     } else {
-      setImpostorIndex(null)
+      setImpostorName(null)
     }
-    const reader = nextReaderIdx % players.length
-    setLastReaderIdx(reader)
+    const reader = readerIndexByName(nextReaderName || players[0]?.name)
+    const readerPlayer = players[reader]
+    setLastReaderName(readerPlayer?.name ?? null)
+    setBaseCard(card)
     setCurrent(card)
+    setCardDrawId((id) => id + 1)
+    const moment = rollCaosMoment(card)
+    setChaosMomentActive(moment)
+    setChaosResolved(!moment)
+    setChaosActivatorIdx('')
     setAgentOpen(false)
     setAgentResult(null)
     setImpostorDone(false)
     setAllianceDone(card?.type !== 'alliance')
     setAllianceTarget('')
     setDeck(rest)
-    setRecentTypes(types => [...types.slice(-2), card.type])
+    setRecentTypes(types => [...types.slice(-7), card.type])
     setRecentDeckIds((ids) => [...ids.slice(-2), card.deckId || 'outros'])
-    setNextReaderIdx((reader + 1) % players.length)
+    const nextIdx = (reader + 1) % Math.max(players.length, 1)
+    setNextReaderName(players[nextIdx]?.name ?? null)
     onCardDrawn?.(card, reader)
   }
 
-  const n = players.length || 1
-  const whoReads = current == null ? players[nextReaderIdx % n] : players[(lastReaderIdx ?? nextReaderIdx) % n]
+  const lastReaderIdx = lastReaderName ? readerIndexByName(lastReaderName) : null
+  const whoReads = current == null
+    ? resolveReaderByName(nextReaderName)
+    : resolveReaderByName(lastReaderName ?? nextReaderName)
+
+  const acceptChaosNormal = () => {
+    if (!baseCard || chaosResolved) return
+    setChaosResolved(true)
+    onChaosResolved?.({ mode: 'normal', readerIndex: lastReaderIdx, baseCard })
+  }
+
+  const acceptChaosUpgrade = () => {
+    const caos = getCardCaos(baseCard)
+    if (!baseCard || chaosResolved || !caos) return
+    const activatorIndex = caosActivatorIsSubject(caos)
+      ? Number(chaosActivatorIdx)
+      : lastReaderIdx
+    if (activatorIndex == null || activatorIndex < 0 || !Number.isInteger(activatorIndex)) return
+    const upgraded = applyCaosUpgrade(baseCard)
+    setCurrent(upgraded)
+    setChaosResolved(true)
+    onChaosResolved?.({
+      mode: 'upgrade',
+      activatorIndex,
+      readerIndex: lastReaderIdx,
+      baseCard,
+      upgrade: caos,
+    })
+  }
 
   const TYPE_COLORS = {
     beber: 'from-amber-500 to-orange-600',
@@ -354,6 +509,8 @@ function CardDeck({
 
   const impostorLocked = current?.type === 'impostor' && !impostorDone
   const allianceLocked = current?.type === 'alliance' && !allianceDone
+  const chaosLocked = chaosMomentActive && !chaosResolved
+  const actionLocked = impostorLocked || allianceLocked || chaosLocked
   const cardImageSrc = current ? drinkCardImageSrc(current.image) : ''
   const readerName = whoReads?.name || ''
   const px = (s) => substitutePlayerTokens(s, players, {
@@ -367,16 +524,21 @@ function CardDeck({
 
   const resolveAgent = (outcome) => {
     setAgentResult(outcome)
-    onAgentResult?.(outcome, lastReaderIdx ?? nextReaderIdx)
+    onAgentResult?.(outcome, lastReaderIdx ?? readerIndexByName(nextReaderName))
   }
 
   const chooseAlliance = () => {
     const targetIndex = Number(allianceTarget)
-    const readerIndex = lastReaderIdx ?? nextReaderIdx
+    const readerIndex = lastReaderIdx ?? readerIndexByName(nextReaderName)
     if (!Number.isInteger(targetIndex) || targetIndex < 0 || targetIndex >= players.length || targetIndex === readerIndex) return
     setAllianceDone(true)
     onAllianceChosen?.(current, readerIndex, targetIndex)
   }
+
+  const cardCaos = baseCard ? getCardCaos(baseCard) : null
+  const showCaosPanel = chaosMomentActive && cardCaos && !chaosResolved
+  const caosNeedsSubjectPick = showCaosPanel && caosActivatorIsSubject(cardCaos)
+  const caosCanUpgrade = !caosNeedsSubjectPick || chaosActivatorIdx !== ''
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
@@ -398,7 +560,7 @@ function CardDeck({
       <AnimatePresence mode="wait">
         {current ? (
           <motion.div
-            key={`${current.title}-${current.text || current.publicText || current.secretMission}`}
+            key={`card-${cardDrawId}`}
             initial={{ scale: 0.82, opacity: 0, y: -18, rotate: -3 }}
             animate={{ scale: 1, opacity: 1, y: 0, rotate: current.type === 'caos' ? [0, -1.5, 1.5, 0] : 0 }}
             exit={{ scale: 0.9, opacity: 0, rotate: 2 }}
@@ -406,7 +568,7 @@ function CardDeck({
             className={`relative w-full overflow-hidden ${
               current.type === 'preferencia'
                 ? 'bg-transparent p-4 shadow-none min-h-0'
-                : `bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] border border-amber-200/20 p-8 shadow-[0_24px_80px_rgba(245,158,11,0.20)] min-h-[20rem]`
+                : `bg-gradient-to-br ${TYPE_COLORS[current.type] || 'from-violet-600 to-purple-700'} rounded-[2rem] border ${current._chaosActive ? 'border-amber-300/70 ring-2 ring-amber-300/40' : 'border-amber-200/20'} p-8 shadow-[0_24px_80px_rgba(245,158,11,0.20)] min-h-[20rem]`
             } text-center flex flex-col justify-center`}
           >
             <DrinkCardBackdrop image={current.image} />
@@ -420,7 +582,7 @@ function CardDeck({
               </>
             )}
             <div className="absolute left-5 top-5 z-20 rounded-full border border-white/20 bg-black/40 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white/90">
-              {TYPE_LABELS[current.type] || 'Carta'}
+              {current._chaosActive ? '⚡ Caos' : (TYPE_LABELS[current.type] || 'Carta')}
             </div>
             <div className={`relative z-10 flex flex-col justify-center ${cardImageSrc ? 'min-h-[12rem]' : ''}`}>
             {!cardImageSrc && current.type !== 'preferencia' && (
@@ -497,7 +659,7 @@ function CardDeck({
                     >
                       <option value="">Escolher jogador...</option>
                       {players.map((p, idx) => (
-                        idx === (lastReaderIdx ?? nextReaderIdx) ? null : (
+                        idx === (lastReaderIdx ?? readerIndexByName(nextReaderName)) ? null : (
                           <option key={p.name} value={idx}>{p.name}</option>
                         )
                       ))}
@@ -529,7 +691,7 @@ function CardDeck({
                 choices={current.choices.slice(0, 2).map((choice) => px(choice))}
                 ruleText={cardText}
               />
-            ) : current.type === 'impostor' && impostorIndex !== null ? (
+            ) : current.type === 'impostor' && impostorIndex != null && impostorIndex >= 0 ? (
               <div className="space-y-3">
                 {cardText && (
                   <p className="text-white/90 font-medium leading-relaxed text-base">{cardText}</p>
@@ -539,6 +701,7 @@ function CardDeck({
                   correctQuestion={current.correctQuestion}
                   wrongQuestion={current.wrongQuestion}
                   impostorIndex={impostorIndex}
+                  ghostImpostorName={current._ghostImpostor || null}
                   onComplete={(result) => {
                     setImpostorDone(true)
                     onImpostorResult?.(result)
@@ -547,9 +710,69 @@ function CardDeck({
                     })
                   }}
                 />
+                {!impostorDone && (
+                  <button
+                    type="button"
+                    onClick={() => setImpostorDone(true)}
+                    className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 text-sm font-bold text-white/85"
+                  >
+                    Saltar carta Impostor
+                  </button>
+                )}
               </div>
             ) : (
               <p className="text-white/90 font-medium leading-relaxed text-lg">{cardText}</p>
+            )}
+            {showCaosPanel && (
+              <div className="relative z-10 mt-5 rounded-2xl border-2 border-amber-300/50 bg-black/35 p-4 space-y-3 text-left">
+                <p className="text-amber-200 text-xs font-black uppercase tracking-[0.2em] text-center">⚡ Momento Caos</p>
+                <p className="text-white/85 text-sm text-center leading-relaxed">
+                  {px(getCaosPrompt(cardCaos, { readerName: whoReads?.name || '' }))}
+                </p>
+                {caosNeedsSubjectPick && (
+                  <div className="space-y-1.5">
+                    <p className="text-amber-100/80 text-xs font-bold text-center">
+                      {px(cardCaos.activatorLabel || 'Quem cumpre a carta?')}
+                    </p>
+                    <select
+                      value={chaosActivatorIdx}
+                      onChange={(e) => setChaosActivatorIdx(e.target.value)}
+                      className="w-full rounded-2xl border border-white/15 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none focus:border-amber-300/60"
+                    >
+                      <option value="">Escolher jogador...</option>
+                      {players.map((p, idx) => (
+                        <option key={p.name} value={idx}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    type="button"
+                    onClick={acceptChaosNormal}
+                    className="rounded-2xl border border-white/20 bg-white/10 py-3 text-sm font-bold text-white"
+                  >
+                    Manter carta normal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={acceptChaosUpgrade}
+                    disabled={!caosCanUpgrade}
+                    className="rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 py-3 text-sm font-black text-black shadow-lg disabled:opacity-40"
+                  >
+                    {px(cardCaos.buttonLabel || 'Evoluir carta!')}
+                    {cardCaos.cost && (
+                      <span className="block text-xs font-bold text-black/75 mt-0.5">{px(cardCaos.cost)}</span>
+                    )}
+                  </button>
+                </div>
+                {cardCaos.preview && (
+                  <p className="text-amber-100/70 text-xs text-center">{px(cardCaos.preview)}</p>
+                )}
+              </div>
+            )}
+            {current?._chaosActive && current._chaosCost && (
+              <p className="relative z-10 mt-3 text-amber-100/80 text-xs font-bold">{px(current._chaosCost)}</p>
             )}
             </div>
           </motion.div>
@@ -570,16 +793,16 @@ function CardDeck({
       </AnimatePresence>
 
       {deck.length > 0 ? (
-        <div className="sticky-cta -mx-4 px-4 mt-2">
+        <div className="sticky-cta -mx-4 px-4 mt-2 !bg-transparent">
         <motion.button
           id="drink-next-card-btn"
-          whileHover={{ scale: (impostorLocked || allianceLocked) ? 1 : 1.02 }}
-          whileTap={{ scale: (impostorLocked || allianceLocked) ? 1 : 0.97 }}
+          whileHover={{ scale: actionLocked ? 1 : 1.02 }}
+          whileTap={{ scale: actionLocked ? 1 : 0.97 }}
           onClick={draw}
-          disabled={impostorLocked || allianceLocked}
+          disabled={actionLocked}
           className="btn-primary bg-gradient-to-r from-amber-400 via-orange-500 to-rose-600 text-lg text-black shadow-[0_16px_40px_rgba(245,158,11,0.22)] disabled:opacity-40"
         >
-          {impostorLocked ? 'Termina a ronda Impostor' : allianceLocked ? 'Escolhe a aliança' : current ? 'Próxima carta →' : 'Ver carta'}
+          {impostorLocked ? 'Termina a ronda Impostor' : allianceLocked ? 'Escolhe a aliança' : chaosLocked ? 'Escolhe: normal ou Caos' : current ? 'Próxima carta →' : 'Ver carta'}
         </motion.button>
         </div>
       ) : (
@@ -590,8 +813,13 @@ function CardDeck({
             onClick={() => {
               setDeck(shuffle([...activeDeck]))
               setCurrent(null)
-              setNextReaderIdx(0)
-              setLastReaderIdx(null)
+              setBaseCard(null)
+              setChaosMomentActive(false)
+              setChaosResolved(true)
+              setChaosActivatorIdx('')
+    setCardDrawId(0)
+              setNextReaderName(players[0]?.name ?? null)
+              setLastReaderName(null)
               setRecentTypes([])
             }}
             className="w-full bg-white/[0.07] text-white rounded-2xl py-3 flex items-center justify-center gap-2 font-medium"
@@ -613,6 +841,7 @@ export default function DrinkGame(){
   const [playerGenders,setPlayerGenders]=useState([null, null, null])
   const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','cadeia','especiais'])
   const [showMesaPanel, setShowMesaPanel] = useState(false)
+  const [showPlayersPanel, setShowPlayersPanel] = useState(false)
   const [deckSessionId, setDeckSessionId] = useState(0)
   const [drinkStats,setDrinkStats]=useState([])
   const [activeRules,setActiveRules]=useState([])
@@ -625,6 +854,9 @@ export default function DrinkGame(){
   const [includeCommunity, setIncludeCommunity] = useState(true)
   const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
   const [decksLoading, setDecksLoading] = useState(true)
+  const [midGameName, setMidGameName] = useState('')
+  const [midGameGender, setMidGameGender] = useState('m')
+  const [departedPlayers, setDepartedPlayers] = useState([])
 
   const toggleCat=id=>{
     const cat=deckCategories.find(c=>c.id===id)
@@ -669,8 +901,40 @@ export default function DrinkGame(){
     setActiveCurses([])
     setActiveAlliances([])
     setTurnCount(0)
+    setDepartedPlayers([])
     setDeckSessionId((k) => k + 1)
     setPhase('playing')
+  }
+
+  const removeActivePlayer = (playerIndex) => {
+    if (players.length <= 2) return
+    const removed = players[playerIndex]
+    if (removed?.name) {
+      setDepartedPlayers((list) => [...list, { name: removed.name, gender: removed.gender ?? null }])
+    }
+    setPlayerNames((names) => names.filter((_, i) => i !== playerIndex))
+    setPlayerGenders((genders) => genders.filter((_, i) => i !== playerIndex))
+    setDrinkStats((stats) => stats.filter((_, idx) => idx !== playerIndex))
+    const shift = (idx) => (idx > playerIndex ? idx - 1 : idx)
+    setActiveRules((rules) => rules
+      .filter((rule) => rule.ownerIndex !== playerIndex)
+      .map((rule) => ({ ...rule, ownerIndex: shift(rule.ownerIndex) })))
+    setActiveCurses((curses) => curses
+      .filter((curse) => curse.playerIndex !== playerIndex)
+      .map((curse) => ({ ...curse, playerIndex: shift(curse.playerIndex) })))
+    setActiveAlliances((alliances) => alliances
+      .filter((alliance) => !alliance.players.includes(playerIndex))
+      .map((alliance) => ({ ...alliance, players: alliance.players.map(shift) })))
+  }
+
+  const addActivePlayer = () => {
+    const clean = midGameName.trim()
+    if (!clean || playerNames.length >= MAX_DRINK_PLAYERS) return
+    if (players.some((p) => p.name.toLowerCase() === clean.toLowerCase())) return
+    setPlayerNames((names) => [...names, clean])
+    setPlayerGenders((genders) => [...genders, midGameGender])
+    setDrinkStats((stats) => [...stats, freshStats(1)[0]])
+    setMidGameName('')
   }
 
   const updatePlayerStat = (playerIndex, patcher) => {
@@ -813,6 +1077,30 @@ export default function DrinkGame(){
     if (outcome === 'success') {
       updatePlayerStat(readerIndex, (stat) => ({ ...stat, agentSuccess: stat.agentSuccess + 1 }))
     }
+  }
+
+  const handleChaosResolved = ({ mode, activatorIndex, readerIndex, upgrade }) => {
+    if (mode !== 'upgrade' || !upgrade) return
+    const idx = activatorIndex ?? readerIndex
+    if (idx == null || idx < 0) return
+    if (upgrade.readerDrinks) registerDrink(idx, upgrade.readerDrinks)
+    if (upgrade.readerDistributes) registerDistributed(idx, upgrade.readerDistributes)
+    if (upgrade.groupDrinks) registerGroupDrink(upgrade.groupDrinks)
+    if (upgrade.othersDrink) registerOthersDrink(idx, upgrade.othersDrink)
+  }
+
+  const rosterPanelProps = {
+    players,
+    playerNames,
+    genderSymbol,
+    drinkStats,
+    registerDrink,
+    removeActivePlayer,
+    midGameName,
+    setMidGameName,
+    midGameGender,
+    setMidGameGender,
+    addActivePlayer,
   }
 
   const passCurse = (curseId, toPlayerIndex) => {
@@ -1158,6 +1446,17 @@ export default function DrinkGame(){
           </div>
           <button
             type="button"
+            onClick={() => setShowPlayersPanel((v) => !v)}
+            className={`shrink-0 text-sm font-black rounded-xl border px-2.5 py-2 ${
+              showPlayersPanel
+                ? 'text-black border-emerald-400 bg-emerald-400'
+                : 'text-emerald-300 border-emerald-400/25 bg-emerald-400/10'
+            }`}
+          >
+            👥
+          </button>
+          <button
+            type="button"
             onClick={() => setShowMesaPanel((v) => !v)}
             className={`shrink-0 text-sm font-black rounded-xl border px-2.5 py-2 flex items-center gap-1.5 ${
               showMesaPanel
@@ -1265,32 +1564,20 @@ export default function DrinkGame(){
           </div>
         )}
 
+        {showPlayersPanel && (
+          <PlayerRosterPanel
+            {...rosterPanelProps}
+            showDrinkStats={false}
+            title="Jogadores na mesa"
+          />
+        )}
+
         {showMesaPanel && (
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3">
-            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em] mb-2">Contador (goles)</p>
-            <div className="grid grid-cols-2 gap-2">
-              {players.map((player, idx) => (
-                <div key={player.name} className="rounded-xl bg-white/[0.04] border border-white/[0.06] p-2">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <p className="text-white text-sm font-bold truncate">
-                      {genderSymbol(player.gender) && (
-                        <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
-                      )}
-                      {player.name}
-                    </p>
-                    <p className="text-amber-300 text-sm font-black">{drinkStats[idx]?.drinks || 0}</p>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1">
-                    {[1, 2, 3].map((amount) => (
-                      <button key={amount} type="button" onClick={() => registerDrink(idx, amount)} className="rounded-lg bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
-                        +{amount}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PlayerRosterPanel
+            {...rosterPanelProps}
+            showDrinkStats
+            title="Contador (goles)"
+          />
         )}
 
         <CardDeck
@@ -1298,12 +1585,14 @@ export default function DrinkGame(){
           activeDeck={activeDeck}
           agentPublicPool={agentPublicPool}
           players={players}
+          departedPlayers={departedPlayers}
           deckSessionId={deckSessionId}
           impostorPairs={impostorPairs}
           onCardDrawn={onCardDrawn}
           onAgentResult={handleAgentResult}
           onAllianceChosen={onAllianceChosen}
           onImpostorResult={handleImpostorResult}
+          onChaosResolved={handleChaosResolved}
         />
       </div>
     </GameShell>

@@ -19,55 +19,67 @@
           "type": "beber",
           "emoji": "🍺",
           "title": "Bebe 2!",
-          "text": "O jogador com o cabelo mais comprido bebe 2 goles."
+          "text": "O jogador com o cabelo mais comprido bebe 2 golos.",
+          "caos": {
+            "activator": "subject",
+            "activatorLabel": "Quem tiver o cabelo mais comprido",
+            "buttonLabel": "Evoluir carta!",
+            "cost": "Bebes 3 goles em vez de 2.",
+            "preview": "Passa a distribuir 5 goles como quiseres.",
+            "title": "Distribuição Épica!",
+            "text": "Distribui 5 goles como quiseres à mesa.",
+            "emoji": "⚡",
+            "readerDrinks": 3,
+            "readerDistributes": 5
+          }
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Último a reagir!",
-          "text": "O último a pôr o dedo no nariz bebe 3 goles."
+          "text": "O último a pôr o dedo no nariz bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Redes Sociais!",
-          "text": "Toda a gente com redes sociais instaladas bebe 1 gole."
+          "text": "Toda a gente com redes sociais instaladas bebe 1 golo."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Mais velho / Mais novo!",
-          "text": "O mais novo bebe 2 goles. O mais velho distribui 2 goles."
+          "text": "O mais novo bebe 2 golos. O mais velho distribui 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Bateria!",
-          "text": "Quem tem o telemóvel com menos de 30% bebe 2 goles."
+          "text": "Quem tem o telemóvel com menos de 30% bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Notificações!",
-          "text": "O jogador com mais notificações não lidas bebe 3 goles."
+          "text": "O jogador com mais notificações não lidas bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "💪",
           "title": "Ginásio!",
-          "text": "Quem foi ao ginásio esta semana não bebe. Os outros bebem 2 goles."
+          "text": "Quem foi ao ginásio esta semana não bebe. Os outros bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🏁",
           "title": "Corrida!",
-          "text": "Vira o copo — quem acabar primeiro distribui 3 goles. O último bebe mais 2 goles."
+          "text": "Vira o copo — quem acabar primeiro distribui 3 golos. O último bebe mais 2 golos."
         },
         {
           "type": "beber",
           "emoji": "💬",
           "title": "WhatsApp!",
-          "text": "Quem tiver mais de 100 contactos no WhatsApp bebe 1 gole."
+          "text": "Quem tiver mais de 100 contactos no WhatsApp bebe 1 golo."
         },
         {
           "type": "beber",
@@ -79,49 +91,49 @@
           "type": "beber",
           "emoji": "👟",
           "title": "Sapatos!",
-          "text": "Quem está de sapatilhas distribui 2 goles. Quem está descalço bebe 2 goles."
+          "text": "Quem está de sapatilhas distribui 2 golos. Quem está descalço bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "😴",
           "title": "Dorminhoco!",
-          "text": "Quem acordou depois das 10h hoje bebe 2 goles."
+          "text": "Quem acordou depois das 10h hoje bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🎵",
           "title": "Música!",
-          "text": "O último a nomear uma música portuguesa bebe 2 goles."
+          "text": "O último a nomear uma música portuguesa bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "📱",
           "title": "Ecrã partido!",
-          "text": "Quem tem o ecrã do telemóvel partido bebe 1 gole."
+          "text": "Quem tem o ecrã do telemóvel partido bebe 1 golo."
         },
         {
           "type": "beber",
           "emoji": "👈",
           "title": "Esquerda bebe!",
-          "text": "As pessoas à tua esquerda bebem 2 goles."
+          "text": "As pessoas à tua esquerda bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👉",
           "title": "Direita bebe!",
-          "text": "As pessoas à tua direita bebem 2 goles."
+          "text": "As pessoas à tua direita bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Queixo de cu",
-          "text": "Quem tiver queixo repartido (queixo de cu) bebe 2 goles."
+          "text": "Quem tiver queixo repartido (queixo de cu) bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🧔",
           "title": "Barbudos",
-          "text": "Quem tiver barba bebe 2 goles."
+          "text": "Quem tiver barba bebe 2 golos."
         },
         {
           "type": "beber",
@@ -133,13 +145,13 @@
           "type": "beber",
           "emoji": "🌊",
           "title": "Cascata!",
-          "text": "Bebe 1 gole, a pessoa à tua esquerda bebe 2, a seguinte 3, e assim sucessivamente até voltar a ti."
+          "text": "Bebe 1 golo, a pessoa à tua esquerda bebe 2, a seguinte 3, e assim sucessivamente até voltar a ti."
         },
         {
           "type": "beber",
           "emoji": "👇",
           "title": "Último ao chão",
-          "text": "O último a tocar no chão com a mão bebe 3 goles."
+          "text": "O último a tocar no chão com a mão bebe 3 golos."
         },
         {
           "type": "beber",
@@ -157,115 +169,115 @@
           "type": "beber",
           "emoji": "✈️",
           "title": "Viajante",
-          "text": "Quem já viajou para mais países bebe 2 goles."
+          "text": "Quem já viajou para mais países bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🧍",
           "title": "Todos de pé",
-          "text": "Todos de pé! O último a levantar-se bebe 3 goles."
+          "text": "Todos de pé! O último a levantar-se bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "🛌",
           "title": "Todos deitados",
-          "text": "Todos deitados no chão! O último a deitar-se bebe 3 goles."
+          "text": "Todos deitados no chão! O último a deitar-se bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "♈",
           "title": "Mesmo signo",
-          "text": "Quem for do mesmo signo que tu bebe 2 goles."
+          "text": "Quem for do mesmo signo que tu bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🥂",
           "title": "Brinde!",
-          "text": "BRINDEEE! Todos batem os copos e bebem 2 goles."
+          "text": "BRINDEEE! Todos batem os copos e bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "⚽",
           "title": "Penáltis!",
-          "text": "Penáltis para todos! Toda a gente bebe 3 goles."
+          "text": "Penáltis para todos! Toda a gente bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "➡️",
           "title": "Passa e bebe",
-          "text": "Todos passam a bebida para a pessoa à esquerda e bebem 1 gole dela."
+          "text": "Todos passam a bebida para a pessoa à esquerda e bebem 1 golo dela."
         },
         {
           "type": "beber",
           "emoji": "👃",
           "title": "Olhar para o nariz",
-          "text": "Todos olham para a ponta do próprio nariz e bebem 1 gole."
+          "text": "Todos olham para a ponta do próprio nariz e bebem 1 golo."
         },
         {
           "type": "beber",
           "emoji": "😜",
-          "title": "Careta e gole",
-          "text": "Todos fazem a careta mais parva que conseguirem e bebem 1 gole assim mesmo."
+          "title": "Careta e golo",
+          "text": "Todos fazem a careta mais parva que conseguirem e bebem 1 golo assim mesmo."
         },
         {
           "type": "beber",
           "emoji": "👴",
           "title": "Mais velhos bebem",
-          "text": "Todos os jogadores mais velhos que tu bebem 2 goles."
+          "text": "Todos os jogadores mais velhos que tu bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👶",
           "title": "Mais novos refrescam",
-          "text": "Todos os jogadores mais novos que tu bebem 1 gole."
+          "text": "Todos os jogadores mais novos que tu bebem 1 golo."
         },
         {
           "type": "beber",
           "emoji": "⚖️",
           "title": "Homens vs Mulheres",
-          "text": "Se houver mais homens que mulheres, elas bebem 2 goles. Se houver mais mulheres que homens, eles bebem 2 goles."
+          "text": "Se houver mais homens que mulheres, elas bebem 2 golos. Se houver mais mulheres que homens, eles bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🤙",
           "title": "Mindinhos",
-          "text": "Comparem os mindinhos: quem o tiver mais pequeno e quem o tiver maior bebem 2 goles."
+          "text": "Comparem os mindinhos: quem o tiver mais pequeno e quem o tiver maior bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "📏",
           "title": "Mais baixos",
-          "text": "Todos os jogadores mais baixos que tu bebem 2 goles."
+          "text": "Todos os jogadores mais baixos que tu bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "📐",
           "title": "Mais altos",
-          "text": "Todos os jogadores mais altos que tu bebem 2 goles."
+          "text": "Todos os jogadores mais altos que tu bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👴",
           "title": "Mais velho",
-          "text": "O jogador mais velho da mesa bebe 2 goles."
+          "text": "O jogador mais velho da mesa bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👶",
           "title": "Mais novo",
-          "text": "O jogador mais novo da mesa bebe 2 goles."
+          "text": "O jogador mais novo da mesa bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🎂",
           "title": "Aniversário próximo",
-          "text": "O jogador com o aniversário mais próximo do teu bebe 2 goles."
+          "text": "O jogador com o aniversário mais próximo do teu bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🥂",
           "title": "Cheira a brinde",
-          "text": "Cheira-me a festa... BRINDEEE! Todos bebem 2 goles."
+          "text": "Cheira-me a festa... BRINDEEE! Todos bebem 2 golos."
         },
         {
           "type": "beber",
@@ -277,79 +289,79 @@
           "type": "beber",
           "emoji": "🏆",
           "title": "Recorde mundial",
-          "text": "Se estiverem mais de 7 a jogar, é recorde mundial: BRINDEEE! Todos bebem 2 goles."
+          "text": "Se estiverem mais de 7 a jogar, é recorde mundial: BRINDEEE! Todos bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👓",
           "title": "Óculos bebem",
-          "text": "Quem usar óculos bebe 2 goles."
+          "text": "Quem usar óculos bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🪑",
           "title": "Mais longe",
-          "text": "O jogador sentado mais longe de ti bebe 2 goles."
+          "text": "O jogador sentado mais longe de ti bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👃",
           "title": "Maior nariz",
-          "text": "O jogador com o maior... nariz bebe 2 goles."
+          "text": "O jogador com o maior... nariz bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍹",
           "title": "Mesma bebida",
-          "text": "Todos os que estiverem a beber a mesma bebida que tu bebem 2 goles."
+          "text": "Todos os que estiverem a beber a mesma bebida que tu bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🧭",
           "title": "Guias na sala",
-          "text": "Há guias na sala? Bebem 1 gole, se faz favor."
+          "text": "Há guias na sala? Bebem 1 golo, se faz favor."
         },
         {
           "type": "beber",
           "emoji": "🏃",
           "title": "Atletas na sala",
-          "text": "Há atletas na sala? Vocês aguentam bem: bebem 2 goles."
+          "text": "Há atletas na sala? Aguentam bem: bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "💼",
           "title": "Trabalhadores",
-          "text": "Quem andou a trabalhar hoje? De certeza que estão cansados: bebem 1 gole."
+          "text": "Quem andou a trabalhar hoje? De certeza que estão cansados: bebem 1 golo."
         },
         {
           "type": "beber",
           "emoji": "🥂",
           "title": "Copos ao alto",
-          "text": "Copos ao alto! Alguém faz um brinde e todos bebem 2 goles."
+          "text": "Copos ao alto! Alguém faz um brinde e todos bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🏷️",
           "title": "Alcunha",
-          "text": "Quem for mais tratado pela alcunha do que pelo nome bebe 2 goles."
+          "text": "Quem for mais tratado pela alcunha do que pelo nome bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🔢",
           "title": "Idade par",
-          "text": "Quem tiver idade par bebe 2 goles."
+          "text": "Quem tiver idade par bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🙌",
           "title": "Sem mãos",
-          "text": "Bebe 2 goles sem usar as mãos."
+          "text": "Bebe 2 golos sem usar as mãos."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Simplesmente bebe",
-          "text": "Simplesmente... bebe 2 goles."
+          "text": "Simplesmente... bebe 2 golos."
         },
         {
           "type": "beber",
@@ -361,13 +373,13 @@
           "type": "beber",
           "emoji": "🔤",
           "title": "Letras do nome",
-          "text": "Bebe 1 gole por cada letra do teu primeiro nome."
+          "text": "Bebe 1 golo por cada letra do teu primeiro nome."
         },
         {
           "type": "beber",
           "emoji": "🍺",
           "title": "Bebe 3",
-          "text": "Bebe 3 goles."
+          "text": "Bebe 3 golos."
         },
         {
           "type": "beber",
@@ -379,157 +391,157 @@
           "type": "beber",
           "emoji": "👦",
           "title": "Rapazes bebem",
-          "text": "Os rapazes bebem 2 goles."
+          "text": "Os rapazes bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👧",
           "title": "Raparigas bebem",
-          "text": "As raparigas bebem 2 goles."
+          "text": "As raparigas bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🎂",
           "title": "Próximo aniversário",
-          "text": "O jogador com o aniversário mais próximo bebe 2 goles."
+          "text": "O jogador com o aniversário mais próximo bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🚽",
           "title": "Último à casa de banho",
-          "text": "O último que foi à casa de banho bebe 2 goles."
+          "text": "O último que foi à casa de banho bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🌍",
           "title": "Países viajados",
-          "text": "Bebe 1 gole por cada país que já visitaste (máximo 5)."
+          "text": "Bebe 1 golo por cada país que já visitaste (máximo 5)."
         },
         {
           "type": "beber",
           "emoji": "🔁",
           "title": "Déjà vu",
-          "text": "Déjà vu! Quem foi o último a beber bebe outra vez, 2 goles."
+          "text": "Déjà vu! Quem foi o último a beber bebe outra vez, 2 golos."
         },
         {
           "type": "beber",
           "emoji": "📱",
           "title": "No telemóvel",
-          "text": "Quem estiver com o telemóvel na mão agora bebe 2 goles."
+          "text": "Quem estiver com o telemóvel na mão agora bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "😏",
           "title": "Ar sedutor",
-          "text": "Todos fazem a cara mais sedutora que conseguirem e depois bebem 2 goles."
+          "text": "Todos fazem a cara mais sedutora que conseguirem e depois bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍻",
           "title": "Penalidades!",
-          "text": "Todos mandam abaixo! Bebem 2 goles."
+          "text": "Todos mandam abaixo! Bebem 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🤳",
           "title": "Selfie",
-          "text": "Quem tirou uma selfie mais recentemente bebe 2 goles."
+          "text": "Quem tirou uma selfie mais recentemente bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍻",
           "title": "Todos",
-          "text": "Todos bebem 1 gole."
+          "text": "Todos bebem 1 golo."
         },
         {
           "type": "beber",
           "emoji": "👉",
           "title": "Escolha",
-          "text": "Escolhe alguém para beber 3 goles."
+          "text": "Escolhe alguém para beber 3 golos."
         },
         {
           "type": "beber",
           "emoji": "🎂",
           "title": "Aniversário",
-          "text": "Quem fez anos mais recentemente bebe 2 goles."
+          "text": "Quem fez anos mais recentemente bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🥤",
           "title": "Copo cheio",
-          "text": "Quem tiver mais bebida no copo bebe 2 goles."
+          "text": "Quem tiver mais bebida no copo bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🍳",
           "title": "Perto da cozinha",
-          "text": "Quem está mais perto da cozinha bebe 2 goles."
+          "text": "Quem está mais perto da cozinha bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🎵",
           "title": "Última música",
-          "text": "Quem escolheu a última música distribui 2 goles."
+          "text": "Quem escolheu a última música distribui 2 golos."
         },
         {
           "type": "beber",
           "emoji": "👈",
           "title": "Esquerda",
-          "text": "Bebe 1 gole e distribui 2 para a tua esquerda."
+          "text": "Bebe 1 golo e distribui 2 para a tua esquerda."
         },
         {
           "type": "beber",
           "emoji": "👉",
           "title": "Direita",
-          "text": "Bebe 1 gole e distribui 2 para a tua direita."
+          "text": "Bebe 1 golo e distribui 2 para a tua direita."
         },
         {
           "type": "beber",
           "emoji": "🔤",
           "title": "Nome mais longo",
-          "text": "Quem tiver o nome mais longo bebe 2 goles."
+          "text": "Quem tiver o nome mais longo bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "📏",
           "title": "O mais alto",
-          "text": "O mais alto distribui 2 goles."
+          "text": "O mais alto distribui 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🙈",
           "title": "Vistos nus",
-          "text": "Bebe 1 gole por cada pessoa nesta sala que já viste nua."
+          "text": "Bebe 1 golo por cada pessoa nesta sala que já viste nua."
         },
         {
           "type": "beber",
           "emoji": "🍑",
           "title": "Dedo curioso",
-          "text": "Todos os que já tiveram um dedo no rabo... sabem o que fazer, bebem 1 gole. O resto bebe 2 goles."
+          "text": "Todos os que já tiveram um dedo no rabo... sabem o que fazer, bebem 1 golo. O resto bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🌿",
           "title": "Pelos púbicos",
-          "text": "Quem tiver pelos púbicos bebe 4 goles. Os lisinhos estão salvos."
+          "text": "Quem tiver pelos púbicos bebe 4 golos. Os lisinhos estão salvos."
         },
         {
           "type": "beber",
           "emoji": "🚿",
           "title": "Banho de hoje",
-          "text": "Quem tomou banho hoje bebe 3 goles."
+          "text": "Quem tomou banho hoje bebe 3 golos."
         },
         {
           "type": "beber",
           "emoji": "🛏️",
           "title": "Amor recente",
-          "text": "Quem fez amor esta semana bebe 2 goles."
+          "text": "Quem fez amor esta semana bebe 2 golos."
         },
         {
           "type": "beber",
           "emoji": "🤮",
           "title": "Mente marota",
-          "text": "Quem pensou em fazer coisas erótico-badalhocas esta semana bebe 4 goles."
+          "text": "Quem pensou em fazer coisas erótico-badalhocas esta semana bebe 4 golos."
         },
         {
           "type": "beber",
@@ -541,67 +553,67 @@
           "type": "beber",
           "emoji": "🐾",
           "title": "Amigos peludos",
-          "text": "Se tiveres animais de estimação, bebe 1 gole por cada um. Sem animais? Bebe 3 por seres um sem coração."
+          "text": "Se tiveres animais de estimação, bebe 1 golo por cada um. Sem animais? Bebe 3 por seres um sem coração."
         },
         {
           "type": "beber",
           "emoji": "🔴",
           "title": "Vermelho à volta",
-          "text": "Bebe 1 gole por cada peça de roupa vermelha à tua volta."
+          "text": "Bebe 1 golo por cada peça de roupa vermelha à tua volta."
         },
         {
           "type": "beber",
           "emoji": "🖋️",
           "title": "Tatuagens",
-          "text": "Bebe 1 gole por cada tatuagem que tenhas. Não tens nenhuma? Bebe 2 por seres aborrecido."
+          "text": "Bebe 1 golo por cada tatuagem que tenhas. Não tens nenhuma? Bebe 2 por seres aborrecido."
         },
         {
           "type": "beber",
           "emoji": "👏",
           "title": "Salva de palmas",
-          "text": "reader bebe 3 goles primeiro e depois recebe uma bela salva de palmas, se faz favor!"
+          "text": "reader bebe 3 golos primeiro e depois recebe uma bela salva de palmas, se faz favor!"
         },
         {
           "type": "beber",
           "emoji": "🛁",
           "title": "Amor na banheira",
-          "text": "Quem já fez amor numa banheira bebe 1 gole."
+          "text": "Quem já fez amor numa banheira bebe 1 golo."
         },
         {
           "type": "beber",
           "emoji": "💞",
           "title": "Contagem íntima",
-          "text": "Bebe 1 gole por cada parceiro sexual que já tiveste. Podes cortar o número a meio se já estiveste com mais do que um género."
+          "text": "Bebe 1 golo por cada parceiro sexual que já tiveste. Podes cortar o número a meio se já estiveste com mais do que um género."
         },
         {
           "type": "beber",
           "emoji": "🎂",
           "title": "Mês de aniversário",
-          "text": "reader, bebe goles equivalentes ao número do teu mês de aniversário a dividir por 2 (arredonda para cima)."
+          "text": "reader, bebe golos equivalentes ao número do teu mês de aniversário a dividir por 2 (arredonda para cima)."
         },
         {
           "type": "beber",
           "emoji": "🍒",
           "title": "Seca prolongada",
-          "text": "reader, bebe 1 gole por cada dia que passou desde a última vez que fizeste... o tutti-frutti, o coito, ou lá como lhe chamas. Até ao máximo de 8."
+          "text": "reader, bebe 1 golo por cada dia que passou desde a última vez que fizeste... o tutti-frutti, o coito, ou lá como lhe chamas. Até ao máximo de 8."
         },
         {
           "type": "beber",
           "emoji": "💭",
           "title": "Fantasias na sala",
-          "text": "reader, vamos ser honestos... bebe 1 gole por cada pessoa aqui com quem já tiveste uma fantasia sexual."
+          "text": "reader, vamos ser honestos... bebe 1 golo por cada pessoa aqui com quem já tiveste uma fantasia sexual."
         },
         {
           "type": "beber",
           "emoji": "🍆",
           "title": "Pilas na sala",
-          "text": "Todos os jogadores bebem 1 gole por cada pila nesta sala."
+          "text": "Todos os jogadores bebem 1 golo por cada pila nesta sala."
         },
         {
           "type": "beber",
           "emoji": "🌸",
           "title": "Vaginas na sala",
-          "text": "Todos os jogadores bebem 1 gole por cada vagina nesta sala."
+          "text": "Todos os jogadores bebem 1 golo por cada vagina nesta sala."
         }
       ]
     },
@@ -614,7 +626,7 @@
           "type": "desafio",
           "emoji": "🙅",
           "title": "Eu Nunca",
-          "text": "EU NUNCA — Diz algo que nunca fizeste. Quem já fez bebe 1 gole!"
+          "text": "EU NUNCA — Diz algo que nunca fizeste. Quem já fez bebe 1 golo!"
         },
         {
           "type": "desafio",
@@ -704,367 +716,367 @@
           "type": "desafio",
           "emoji": "😏",
           "title": "Eu Nunca",
-          "text": "EU NUNCA comi alguém do grupo. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA comi alguém do grupo. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🚗",
           "title": "Eu Nunca",
-          "text": "EU NUNCA disse «já vou a caminho» estando ainda em casa. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA disse «já vou a caminho» estando ainda em casa. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🏖️",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fiz amor na praia. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fiz amor na praia. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🕵️",
           "title": "Eu Nunca",
-          "text": "EU NUNCA stalkei alguém numa rede social. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA stalkei alguém numa rede social. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🧇",
           "title": "Eu Nunca",
-          "text": "EU NUNCA comi uma pila de waffle depois de uma festa. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA comi uma pila de waffle depois de uma festa. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🙈",
           "title": "Eu Nunca",
-          "text": "EU NUNCA inventei uma desculpa para faltar a um plano. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA inventei uma desculpa para faltar a um plano. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "📵",
           "title": "Eu Nunca",
-          "text": "EU NUNCA ignorei uma chamada porque não me apetecia falar. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA ignorei uma chamada porque não me apetecia falar. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "😳",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me masturbei e tive arrependimento logo a seguir. Quem já fez, bebe 1 gole (homens, não tentem enganar)!"
+          "text": "EU NUNCA me masturbei e tive arrependimento logo a seguir. Quem já fez, bebe 1 golo (homens, não tentem enganar)!"
         },
         {
           "type": "desafio",
           "emoji": "😅",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fingi perceber o que alguém estava a dizer para não parecer perdido. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fingi perceber o que alguém estava a dizer para não parecer perdido. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🏊",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui nu para o mar. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui nu para o mar. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "😂",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me ri de uma piada que não percebi. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me ri de uma piada que não percebi. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🤷",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me levantei para ir buscar algo e esqueci-me do que ia buscar. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me levantei para ir buscar algo e esqueci-me do que ia buscar. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🔞",
           "title": "Eu Nunca",
-          "text": "EU NUNCA vi porn. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA vi porn. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "😈",
           "title": "Eu Nunca",
-          "text": "EU NUNCA tentei comer alguém desta roda. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA tentei comer alguém desta roda. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "👀",
           "title": "Eu Nunca",
-          "text": "EU NUNCA entrei num quarto que tinha lá dentro pessoas a fazer coisas indecentes. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA entrei num quarto que tinha lá dentro pessoas a fazer coisas indecentes. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🌅",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fiquei acordado só para ver o nascer do sol. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fiquei acordado só para ver o nascer do sol. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🔍",
           "title": "Eu Nunca",
-          "text": "EU NUNCA procurei o meu próprio nome no Google. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA procurei o meu próprio nome no Google. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🌿",
           "title": "Eu Nunca",
-          "text": "EU NUNCA provei uma ervinha. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA provei uma ervinha. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💬",
           "title": "Eu Nunca",
-          "text": "EU NUNCA vi uma mensagem e esqueci-me de responder porque já tinha respondido mentalmente. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA vi uma mensagem e esqueci-me de responder porque já tinha respondido mentalmente. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🎤",
           "title": "Eu Nunca",
-          "text": "EU NUNCA cantei uma música errada com toda a confiança. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA cantei uma música errada com toda a confiança. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🚦",
           "title": "Eu Nunca",
-          "text": "EU NUNCA cheguei atrasado e culpei o trânsito. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA cheguei atrasado e culpei o trânsito. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "✈️",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui viajar, enganei-me no voo e acabei a fazer voluntariado no Congo. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui viajar, enganei-me no voo e acabei a fazer voluntariado no Congo. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "👊",
           "title": "Eu Nunca",
-          "text": "EU NUNCA bati um punho ao amigo, na brotheragem claro. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA bati um punho ao amigo, na brotheragem claro. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "📺",
           "title": "Eu Nunca",
-          "text": "EU NUNCA passei mais de uma hora a escolher algo para ver. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA passei mais de uma hora a escolher algo para ver. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "⏰",
           "title": "Eu Nunca",
-          "text": "EU NUNCA adiei uma tarefa até ao último minuto. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA adiei uma tarefa até ao último minuto. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "📍",
           "title": "Eu Nunca",
-          "text": "EU NUNCA mandei uma localização errada a um amigo. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA mandei uma localização errada a um amigo. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🛍️",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui às compras e comprei demasiado. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui às compras e comprei demasiado. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "📱",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me ri sozinho a olhar para o telemóvel. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me ri sozinho a olhar para o telemóvel. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🤥",
           "title": "Eu Nunca",
-          "text": "EU NUNCA inventei uma história para parecer mais interessante. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA inventei uma história para parecer mais interessante. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "📝",
           "title": "Eu Nunca",
-          "text": "EU NUNCA procurei respostas antes de um quiz. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA procurei respostas antes de um quiz. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "😴",
           "title": "Eu Nunca",
-          "text": "EU NUNCA deixei o despertador tocar várias vezes seguidas. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA deixei o despertador tocar várias vezes seguidas. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💦",
           "title": "Eu Nunca",
-          "text": "EU NUNCA nadei nu na piscina da casa de férias. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA nadei nu na piscina da casa de férias. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🎂",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me esqueci do aniversário de alguém importante. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me esqueci do aniversário de alguém importante. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🤧",
           "title": "Eu Nunca",
-          "text": "EU NUNCA meti o dedo no cu enquanto espirrava para ver se explodia. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA meti o dedo no cu enquanto espirrava para ver se explodia. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "👂",
           "title": "Eu Nunca",
-          "text": "EU NUNCA ouvi uma conversa que não era para mim e fiquei para ouvir o final. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA ouvi uma conversa que não era para mim e fiquei para ouvir o final. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🥂",
           "title": "Eu Nunca",
-          "text": "EU NUNCA mandei um BRINDEEE do nada, tipo agora. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA mandei um BRINDEEE do nada, tipo agora. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🌹",
           "title": "Eu Nunca",
-          "text": "EU NUNCA falei mal de outra etnia e fui comprar-lhe rosas no fim da noite. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA falei mal de outra etnia e fui comprar-lhe rosas no fim da noite. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "😱",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui ver um vídeo porno e fiquei triste por ver lá a minha tia. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui ver um vídeo porno e fiquei triste por ver lá a minha tia. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🙊",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me enganei no nome de alguém. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me enganei no nome de alguém. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🌙",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fiz uma direta. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fiz uma direta. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🎙️",
           "title": "Eu Nunca",
-          "text": "EU NUNCA enviei um áudio a cantar. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA enviei um áudio a cantar. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🫣",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fingi não ver alguém que conhecia só para não ter de falar com ele. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fingi não ver alguém que conhecia só para não ter de falar com ele. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🪞",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fiquei em frente ao espelho a fazer frente a mim próprio. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fiquei em frente ao espelho a fazer frente a mim próprio. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💇",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me arrependi depois de um corte de cabelo. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me arrependi depois de um corte de cabelo. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🥴",
           "title": "Eu Nunca",
-          "text": "EU NUNCA tive um blackout de tão bêbado que estava. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA tive um blackout de tão bêbado que estava. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🍾",
           "title": "Eu Nunca",
-          "text": "EU NUNCA parti algo por mandar uma garrafa de vidro a alguém. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA parti algo por mandar uma garrafa de vidro a alguém. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💸",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui sair com um amigo e acabei arruinado. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui sair com um amigo e acabei arruinado. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🔑",
           "title": "Eu Nunca",
-          "text": "EU NUNCA usei a mesma palavra-passe em vários sites. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA usei a mesma palavra-passe em vários sites. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🤭",
           "title": "Eu Nunca",
-          "text": "EU NUNCA me ri numa situação em que devia estar sério. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA me ri numa situação em que devia estar sério. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🚪",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fiquei mais tempo numa situação porque não queria ser o primeiro a sair. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fiquei mais tempo numa situação porque não queria ser o primeiro a sair. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🍺",
           "title": "Eu Nunca",
-          "text": "EU NUNCA deixei de conseguir andar de tão bêbado que estava. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA deixei de conseguir andar de tão bêbado que estava. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🎸",
           "title": "Eu Nunca",
-          "text": "EU NUNCA cantei uma música como se estivesse a dar um concerto. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA cantei uma música como se estivesse a dar um concerto. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💪",
           "title": "Eu Nunca",
-          "text": "Só para os que têm bengala: EU NUNCA pendurei a toalha na bengala depois do banho e comecei a fazer elevações. Quem já fez, bebe 1 gole!"
+          "text": "Só para os que têm bengala: EU NUNCA pendurei a toalha na bengala depois do banho e comecei a fazer elevações. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🕺",
           "title": "Eu Nunca",
-          "text": "EU NUNCA tive medo do Michael Jackson, hehe. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA tive medo do Michael Jackson, hehe. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💩",
           "title": "Eu Nunca",
-          "text": "EU NUNCA calquei fezes e encontrei dinheiro logo a seguir. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA calquei fezes e encontrei dinheiro logo a seguir. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🐦",
           "title": "Eu Nunca",
-          "text": "EU NUNCA tive um pássaro a cagar-me em cima. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA tive um pássaro a cagar-me em cima. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🔮",
           "title": "Eu Nunca",
-          "text": "EU NUNCA achei que o meu amigo me conseguia ler a mente. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA achei que o meu amigo me conseguia ler a mente. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🍸",
           "title": "Eu Nunca",
-          "text": "EU NUNCA fui ao Bô Zen. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA fui ao Bô Zen. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "💨",
           "title": "Eu Nunca",
-          "text": "EU NUNCA levei um peido na boca. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA levei um peido na boca. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🥺",
           "title": "Eu Nunca",
-          "text": "EU NUNCA achei que o meu namorado não gostava de mim depois de bêbeda. Quem já fez, bebe 1 gole!"
+          "text": "EU NUNCA achei que o meu namorado não gostava de mim depois de bêbeda. Quem já fez, bebe 1 golo!"
         },
         {
           "type": "desafio",
           "emoji": "🎉",
           "title": "Eu Nunca",
-          "text": "EU NUNCA... nem sei o quê. BRINDEEEE! Todos bebem 1 gole!"
+          "text": "EU NUNCA... nem sei o quê. BRINDEEEE! Todos bebem 1 golo!"
         }
       ]
     },
@@ -1077,7 +1089,7 @@
           "type": "regra",
           "emoji": "📜",
           "title": "Nova Regra!",
-          "text": "Quem disser \"sim\" ou \"não\" bebe 1 gole até ao fim do jogo!"
+          "text": "Quem disser \"sim\" ou \"não\" bebe 1 golo até ao fim do jogo!"
         },
         {
           "type": "regra",
@@ -1113,7 +1125,7 @@
           "type": "regra",
           "emoji": "📜",
           "title": "Nova Regra!",
-          "text": "Quem rir bebe 1 gole. Sorrisos também contam."
+          "text": "Quem rir bebe 1 golo. Sorrisos também contam."
         },
         {
           "type": "regra",
@@ -1155,7 +1167,7 @@
           "type": "regra",
           "emoji": "🥱",
           "title": "Proibido bocejar",
-          "text": "A partir de agora, quem for apanhado a bocejar bebe 2 goles. Vale para o resto do jogo."
+          "text": "A partir de agora, quem for apanhado a bocejar bebe 2 golos. Vale para o resto do jogo."
         },
         {
           "type": "regra",
@@ -1167,43 +1179,43 @@
           "type": "regra",
           "emoji": "🙊",
           "title": "Nem sim nem não",
-          "text": "Na próxima volta, quem disser «sim» ou «não» bebe 1 gole por cada falha."
+          "text": "Na próxima volta, quem disser «sim» ou «não» bebe 1 golo por cada falha."
         },
         {
           "type": "regra",
           "emoji": "👉",
           "title": "Dedo proibido",
-          "text": "Quem apontar com o dedo bebe 1 gole, até sair outra regra."
+          "text": "Quem apontar com o dedo bebe 1 golo, até sair outra regra."
         },
         {
           "type": "regra",
           "emoji": "🎩",
           "title": "Sois ricos",
-          "text": "Sois ricos! Tratem-se por Sr./Sra... Quem falhar bebe 1 gole. Dura 6 rondas."
+          "text": "Sois ricos! Tratem-se por Sr./Sra... Quem falhar bebe 1 golo. Dura 6 rondas."
         },
         {
           "type": "regra",
           "emoji": "🙋",
           "title": "Com licença",
-          "text": "Quem se levantar sem pedir permissão reader_a bebe 1 gole. Dura 7 rondas."
+          "text": "Quem se levantar sem pedir permissão reader_a bebe 1 golo. Dura 7 rondas."
         },
         {
           "type": "regra",
           "emoji": "🙅",
           "title": "Braços à solta",
-          "text": "Quem cruzar os braços bebe 1 gole. Dura 2 rondas."
+          "text": "Quem cruzar os braços bebe 1 golo. Dura 2 rondas."
         },
         {
           "type": "regra",
           "emoji": "🤙",
           "title": "Sem mano nem bro",
-          "text": "Quem disser «mano» ou «bro» bebe 1 gole, até sair outra regra."
+          "text": "Quem disser «mano» ou «bro» bebe 1 golo, até sair outra regra."
         },
         {
           "type": "regra",
           "emoji": "🚫",
           "title": "Sem «mas»",
-          "text": "Quem disser «mas» bebe 1 gole, até sair outra regra."
+          "text": "Quem disser «mas» bebe 1 golo, até sair outra regra."
         },
         {
           "type": "regra",
@@ -1215,7 +1227,7 @@
           "type": "regra",
           "emoji": "🥂",
           "title": "Brinde obrigatório",
-          "text": "A partir de agora, antes de beber têm de brindar com alguém. Dura 2 voltas. Quem beber sem brindar bebe mais 2 goles."
+          "text": "A partir de agora, antes de beber têm de brindar com alguém. Dura 2 voltas. Quem beber sem brindar bebe mais 2 golos."
         },
         {
           "type": "regra",
@@ -1227,31 +1239,31 @@
           "type": "regra",
           "emoji": "👃",
           "title": "Comichão no nariz",
-          "text": "Quem tocar na própria cara bebe 1 gole, até sair outra regra. Já estás a sentir aquela comichão no nariz?"
+          "text": "Quem tocar na própria cara bebe 1 golo, até sair outra regra. Já estás a sentir aquela comichão no nariz?"
         },
         {
           "type": "regra",
           "emoji": "🥁",
           "title": "Baterista da mesa",
-          "text": "Sempre que alguém beber, reader tem de bater uma vez na mesa. Se falhar, bebe 2 goles. Dura 5 rondas."
+          "text": "Sempre que alguém beber, reader tem de bater uma vez na mesa. Se falhar, bebe 2 golos. Dura 5 rondas."
         },
         {
           "type": "regra",
           "emoji": "☝️",
           "title": "Dedo no ar",
-          "text": "Antes de falar, tens de levantar um dedo e escolher mais 2 pessoas para fazerem o mesmo contigo. Quem falar sem o fazer bebe 2 goles. Dura uma volta."
+          "text": "Antes de falar, tens de levantar um dedo e escolher mais 2 pessoas para fazerem o mesmo contigo. Quem falar sem o fazer bebe 2 golos. Dura uma volta."
         },
         {
           "type": "regra",
           "emoji": "👆",
           "title": "Ok = nariz",
-          "text": "Sempre que alguém disser «ok», todos têm de tocar no nariz. O último bebe 2 goles. Dura uma volta."
+          "text": "Sempre que alguém disser «ok», todos têm de tocar no nariz. O último bebe 2 golos. Dura uma volta."
         },
         {
           "type": "regra",
           "emoji": "🤏",
           "title": "Poupa nas palavras",
-          "text": "Quem responder com mais de 5 palavras bebe 1 gole. Dura 7 rondas."
+          "text": "Quem responder com mais de 5 palavras bebe 1 golo. Dura 7 rondas."
         },
         {
           "type": "regra",
@@ -1275,13 +1287,13 @@
           "type": "regra",
           "emoji": "😂",
           "title": "Riso contagioso",
-          "text": "Sempre que alguém se rir, todos têm de rir também. Quem não acompanhar bebe mais 1 gole. Dura 5 rondas."
+          "text": "Sempre que alguém se rir, todos têm de rir também. Quem não acompanhar bebe mais 1 golo. Dura 5 rondas."
         },
         {
           "type": "regra",
           "emoji": "👈",
           "title": "Todos apontam",
-          "text": "Sempre que alguém disser «não», todos apontam para essa pessoa. Se ninguém apontar, todos bebem 1 gole. Dura 5 rondas."
+          "text": "Sempre que alguém disser «não», todos apontam para essa pessoa. Se ninguém apontar, todos bebem 1 golo. Dura 5 rondas."
         },
         {
           "type": "regra",
@@ -1293,7 +1305,7 @@
           "type": "regra",
           "emoji": "🔁",
           "title": "Palavra repetida",
-          "text": "Quem repetir a mesma palavra duas vezes seguidas bebe 1 gole, até sair outra regra."
+          "text": "Quem repetir a mesma palavra duas vezes seguidas bebe 1 golo, até sair outra regra."
         },
         {
           "type": "regra",
@@ -1305,7 +1317,7 @@
           "type": "regra",
           "emoji": "👑",
           "title": "Princesa da mesa",
-          "text": "reader é agora uma pequena princesa. Quem não a tratar como tal bebe 4 goles. Dura 3 rondas."
+          "text": "reader é agora uma pequena princesa. Quem não a tratar como tal bebe 4 golos. Dura 3 rondas."
         },
         {
           "type": "regra",
@@ -1324,7 +1336,7 @@
           "type": "caos",
           "emoji": "💥",
           "title": "Caos!",
-          "text": "Durante 3 rondas, quem disser nomes próprios bebe 1 gole."
+          "text": "Durante 3 rondas, quem disser nomes próprios bebe 1 golo."
         },
         {
           "type": "caos",
@@ -1342,13 +1354,13 @@
           "type": "caos",
           "emoji": "💥",
           "title": "Caos!",
-          "text": "O grupo cria uma palavra proibida. Quem a disser bebe 2 goles."
+          "text": "O grupo cria uma palavra proibida. Quem a disser bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "💥",
           "title": "Caos!",
-          "text": "Inverte a ordem dos turnos. Quem se enganar bebe 1 gole."
+          "text": "Inverte a ordem dos turnos. Quem se enganar bebe 1 golo."
         },
         {
           "type": "caos",
@@ -1360,37 +1372,37 @@
           "type": "caos",
           "emoji": "💪",
           "title": "Caos!",
-          "text": "Durante uma volta à mesa só podes usar os cotovelos. Se falhares, bebe 2 goles."
+          "text": "Durante uma volta à mesa só podes usar os cotovelos. Se falhares, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🤫",
           "title": "Caos!",
-          "text": "Fala no tom mais baixo que conseguires durante 3 rondas. Se te esqueceres, bebe 3 goles."
+          "text": "Fala no tom mais baixo que conseguires durante 3 rondas. Se te esqueceres, bebe 3 golos."
         },
         {
           "type": "caos",
           "emoji": "📢",
           "title": "Caos!",
-          "text": "Fala no tom mais alto que conseguires durante 3 rondas. Se te esqueceres, bebe 3 goles."
+          "text": "Fala no tom mais alto que conseguires durante 3 rondas. Se te esqueceres, bebe 3 golos."
         },
         {
           "type": "caos",
           "emoji": "🤬",
           "title": "Caos!",
-          "text": "Proibidos palavrões durante 5 rondas. Quem disser um bebe 2 goles."
+          "text": "Proibidos palavrões durante 5 rondas. Quem disser um bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🤐",
           "title": "Caos!",
-          "text": "Não podes falar durante 2 rondas. Sussurra à pessoa à tua esquerda, que diz em voz alta. Se falhares, bebe 2 goles."
+          "text": "Não podes falar durante 2 rondas. Sussurra à pessoa à tua esquerda, que diz em voz alta. Se falhares, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🏴‍☠️",
           "title": "Caos!",
-          "text": "Fala como um pirata durante uma volta à mesa. Se falhares, bebe 2 goles."
+          "text": "Fala como um pirata durante uma volta à mesa. Se falhares, bebe 2 golos."
         },
         {
           "type": "caos",
@@ -1402,13 +1414,13 @@
           "type": "caos",
           "emoji": "🎬",
           "title": "Caos!",
-          "text": "Escolhe um nome de ator porno para cada jogador. Durante uma volta à mesa, tratam-se por esses nomes. Quem se esquecer bebe 2 goles."
+          "text": "Escolhe um nome de ator porno para cada jogador. Durante uma volta à mesa, tratam-se por esses nomes. Quem se esquecer bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🪞",
           "title": "Caos!",
-          "text": "Espelho meu, espelho meu: copia tudo o que o jogador à tua direita fizer durante 2 rondas. Se falhares, bebe 2 goles."
+          "text": "Espelho meu, espelho meu: copia tudo o que o jogador à tua direita fizer durante 2 rondas. Se falhares, bebe 2 golos."
         },
         {
           "type": "caos",
@@ -1420,31 +1432,31 @@
           "type": "caos",
           "emoji": "⚡",
           "title": "Caos!",
-          "text": "Estás no mundo do Harry Potter: fala como as personagens durante 4 rondas. Se falhares, bebe 2 goles."
+          "text": "Estás no mundo do Harry Potter: fala como as personagens durante 4 rondas. Se falhares, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🗿",
           "title": "Caos!",
-          "text": "Ficas como uma estátua durante 2 rondas, na pose que o grupo escolher. Se te mexeres, bebe 2 goles."
+          "text": "Ficas como uma estátua durante 2 rondas, na pose que o grupo escolher. Se te mexeres, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🌋",
           "title": "Caos!",
-          "text": "O chão é lava! Durante 2 rondas, quem tocar no chão bebe 2 goles."
+          "text": "O chão é lava! Durante 2 rondas, quem tocar no chão bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🚫",
           "title": "Caos!",
-          "text": "A palavra «ok» fica banida durante 2 rondas. Quem a disser bebe 2 goles. Mas «brinde» não... BRINDEEE, todos bebem 1 gole!"
+          "text": "A palavra «ok» fica banida durante 2 rondas. Quem a disser bebe 2 golos. Mas «brinde» não... BRINDEEE, todos bebem 1 golo!"
         },
         {
           "type": "caos",
           "emoji": "💃",
           "title": "Caos!",
-          "text": "Dança sem parar durante as próximas 2 rondas. Se parares, bebe 3 goles."
+          "text": "Dança sem parar durante as próximas 2 rondas. Se parares, bebe 3 golos."
         },
         {
           "type": "caos",
@@ -1462,25 +1474,25 @@
           "type": "caos",
           "emoji": "🚷",
           "title": "Caos!",
-          "text": "Durante 4 rondas, toda a gente te ignora. Quem falar contigo ou reagir a ti bebe 2 goles."
+          "text": "Durante 4 rondas, toda a gente te ignora. Quem falar contigo ou reagir a ti bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🪑",
           "title": "Caos!",
-          "text": "O jogador mais baixo senta-se no chão durante 4 rondas. Se se levantar antes, bebe 2 goles."
+          "text": "O jogador mais baixo senta-se no chão durante 4 rondas. Se se levantar antes, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🧍",
           "title": "Caos!",
-          "text": "O jogador mais alto fica de pé durante 3 rondas. Se se sentar antes, bebe 2 goles."
+          "text": "O jogador mais alto fica de pé durante 3 rondas. Se se sentar antes, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🔄",
           "title": "Caos!",
-          "text": "Durante uma volta à mesa, todos se tratam pelo nome dito ao contrário. Quem falhar bebe 2 goles."
+          "text": "Durante uma volta à mesa, todos se tratam pelo nome dito ao contrário. Quem falhar bebe 2 golos."
         },
         {
           "type": "caos",
@@ -1492,19 +1504,19 @@
           "type": "caos",
           "emoji": "👁️",
           "title": "Caos!",
-          "text": "Durante as próximas 6 rondas, quem fizer contacto visual contigo bebe 2 goles."
+          "text": "Durante as próximas 6 rondas, quem fizer contacto visual contigo bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🦖",
           "title": "Caos!",
-          "text": "Viraste um T-Rex durante 7 rondas: mantém os cotovelos colados ao corpo. Se te esqueceres, bebe 2 goles."
+          "text": "Viraste um T-Rex durante 7 rondas: mantém os cotovelos colados ao corpo. Se te esqueceres, bebe 2 golos."
         },
         {
           "type": "caos",
           "emoji": "🤖",
           "title": "Caos!",
-          "text": "Fala como um robô durante 2 rondas. Se te esqueceres, bebe 2 goles."
+          "text": "Fala como um robô durante 2 rondas. Se te esqueceres, bebe 2 golos."
         },
         {
           "type": "caos",
@@ -1516,91 +1528,91 @@
           "type": "caos",
           "emoji": "🤫",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos falam a sussurrar. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos falam a sussurrar. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🗣️",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos só podem responder com uma palavra. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos só podem responder com uma palavra. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🇧🇷",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos falam com sotaque brasileiro. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos falam com sotaque brasileiro. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "✋",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos têm de manter uma mão na mesa. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos têm de manter uma mão na mesa. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🐢",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos têm de falar mais devagar do que o normal. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos têm de falar mais devagar do que o normal. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🚫",
           "title": "Caos!",
-          "text": "Durante 5 minutos, ninguém pode dizer «tipo». Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, ninguém pode dizer «tipo». Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "😠",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos falam como se estivessem zangados. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos falam como se estivessem zangados. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🔤",
           "title": "Caos!",
-          "text": "Durante 3 rondas, ninguém pode usar a letra «s» no início das palavras. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, ninguém pode usar a letra «s» no início das palavras. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🤬",
           "title": "Caos!",
-          "text": "Durante 1 volta, para falar com alguém têm de o insultar antes ou depois. Quem falhar bebe 1 gole."
+          "text": "Durante 1 volta, para falar com alguém têm de o insultar antes ou depois. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "⏱️",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos têm de responder em menos de 2 segundos. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos têm de responder em menos de 2 segundos. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "⚽",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos falam como comentadores de futebol. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos falam como comentadores de futebol. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🦁",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos falam como narradores de documentários de vida selvagem. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos falam como narradores de documentários de vida selvagem. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🤓",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos têm de começar as frases com «na verdade». Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos têm de começar as frases com «na verdade». Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "📸",
           "title": "Caos!",
-          "text": "Durante 5 minutos, todos respondem como celebridades a fugir de paparazzi. Quem falhar bebe 1 gole."
+          "text": "Durante 5 minutos, todos respondem como celebridades a fugir de paparazzi. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
           "emoji": "🎤",
           "title": "Caos!",
-          "text": "Durante 3 rondas, todos têm de responder a cantar. Quem falhar bebe 1 gole."
+          "text": "Durante 3 rondas, todos têm de responder a cantar. Quem falhar bebe 1 golo."
         },
         {
           "type": "caos",
@@ -1612,7 +1624,7 @@
           "type": "caos",
           "emoji": "📱",
           "title": "Caos!",
-          "text": "Durante uma volta à mesa, sempre que se ouvir um telemóvel (a vibrar, a tocar, etc.), todos têm de se levantar e aplaudir. O último a fazê-lo bebe 2 goles."
+          "text": "Durante uma volta à mesa, sempre que se ouvir um telemóvel (a vibrar, a tocar, etc.), todos têm de se levantar e aplaudir. O último a fazê-lo bebe 2 golos."
         }
       ]
     },
@@ -1751,7 +1763,7 @@
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Forma dupla com quem te convidou para a festa (ou escolhe alguém). Nas próximas 3 rondas: se a soma de vocês beberem der 3+ goles numa carta, sirvam 4 goles à patrão."
+          "text": "Forma dupla com quem te convidou para a festa (ou escolhe alguém). Nas próximas 3 rondas: se a soma do que beberem der 3+ golos numa carta, sirvam 4 golos à patrão."
         },
         {
           "type": "alliance",
@@ -1763,7 +1775,7 @@
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Escolhe um parceiro. Até à próxima aliança: quando um distribuir goles, o outro distribui 1 também."
+          "text": "Escolhe um parceiro. Até à próxima aliança: quando um distribuir golos, o outro distribui 1 também."
         },
         {
           "type": "alliance",
@@ -1787,7 +1799,7 @@
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Aliança secreta: tens de acenar ao jogador à tua frente. Quem não perceber até ao fim da volta bebe 2 goles. Atenção: só precisas de acenar uma vez, força guerreiro/a."
+          "text": "Aliança secreta: tens de acenar ao jogador à tua frente. Quem não perceber até ao fim da volta bebe 2 golos. Atenção: só precisas de acenar uma vez, força guerreiro/a."
         },
         {
           "type": "alliance",
@@ -1817,67 +1829,67 @@
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 20 segundos, nomeiem 10 marcas de carros. Conseguem → todos distribuem 2 goles. Falham → todos bebem 2 goles."
+          "text": "Em 20 segundos, nomeiem 10 marcas de carros. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 20 segundos, nomeiem 10 marcas de roupa. Conseguem → todos distribuem 2 goles. Falham → todos bebem 2 goles."
+          "text": "Em 20 segundos, nomeiem 10 marcas de roupa. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "A mesa tem 30 segundos para listar 8 capitais. Sucesso → quem leu a carta distribui 4 goles. Falha → todos bebem 2 goles."
+          "text": "A mesa tem 30 segundos para listar 8 capitais. Sucesso → quem leu a carta distribui 4 golos. Falha → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Todos em pé: primeiro a sentar sem ser apanhado distribui 3 goles. Último a sentar bebe 3 goles."
+          "text": "Todos em pé: primeiro a sentar sem ser apanhado distribui 3 golos. Último a sentar bebe 3 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 15 segundos, cada um diz uma palavra que rima com «festa». Quem repetir ou travar bebe 2 goles. Resto distribui 2 goles."
+          "text": "Em 15 segundos, cada um diz uma palavra que rima com «festa». Quem repetir ou travar bebe 2 golos. Resto distribui 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Mini boss: contem de 1 a 15 em coro sem errar. Se falharem, todos bebem 2 goles. Se acertarem, todos escolhem 1 pessoa para beber 1."
+          "text": "Mini boss: contem de 1 a 15 em coro sem errar. Se falharem, todos bebem 2 golos. Se acertarem, todos escolhem 1 pessoa para beber 1."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 25 segundos, nomeiem 12 programas de TV portugueses. Sucesso → mesa distribui 6 goles. Falha → mesa bebe 6 (1 cada)."
+          "text": "Em 25 segundos, nomeiem 12 programas de TV portugueses. Sucesso → mesa distribui 6 golos. Falha → mesa bebe 6 (1 cada)."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Desafio mímica em cadeia: cada um imita o anterior em 5 s. Se a cadeia partir, todos bebem 2 goles. Se aguentar, distribuem 3 goles."
+          "text": "Desafio mímica em cadeia: cada um imita o anterior em 5 s. Se a cadeia partir, todos bebem 2 golos. Se aguentar, distribuem 3 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 20 segundos, nomeiem 10 filmes da Disney. Conseguem → todos distribuem 2 goles. Falham → todos bebem 2 goles."
+          "text": "Em 20 segundos, nomeiem 10 filmes da Disney. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 20 segundos, digam 5 ex-presidentes da República. Acertam → quem tirou a carta escolhe 3 pessoas para beber 1. Erram → todos bebem 2 goles."
+          "text": "Em 20 segundos, digam 5 ex-presidentes da República. Acertam → quem tirou a carta escolhe 3 pessoas para beber 1. Erram → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Boss da ronda: todos dizem o pior hábito de alguém da mesa (sem nome). Quem quiser saber joga pedra-papel-tesoura com quem disse — perdedor bebe 1 gole. No fim: se ninguém quiser adivinhar → quem disse o hábito distribui 1 golo. Se alguém ganhar o PPT, a pessoa diz quem era e bebe 2 goles."
+          "text": "Boss da ronda: todos dizem o pior hábito de alguém da mesa (sem nome). Quem quiser saber joga pedra-papel-tesoura com quem disse — perdedor bebe 1 golo. No fim: se ninguém quiser adivinhar → quem disse o hábito distribui 1 golo. Se alguém ganhar o PPT, a pessoa diz quem era e bebe 2 golos."
         },
         {
           "type": "impostor",
@@ -2061,19 +2073,19 @@
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Aliança da cama: escolhe um parceiro. Durante 3 rondas, sempre que um beber o outro tem de lhe fazer um elogio atrevido. Quem falhar bebe 2 goles."
+          "text": "Aliança da cama: escolhe um parceiro. Durante 3 rondas, sempre que um beber o outro tem de lhe fazer um elogio atrevido. Quem falhar bebe 2 golos."
         },
         {
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Aliança de pele: par com o jogador à tua direita. Durante 2 rondas têm de manter contacto físico (mão no ombro ou joelho). Se soltarem, ambos bebem 2 goles."
+          "text": "Aliança de pele: par com o jogador à tua direita. Durante 2 rondas têm de manter contacto físico (mão no ombro ou joelho). Se soltarem, ambos bebem 2 golos."
         },
         {
           "type": "alliance",
           "emoji": "🤝",
           "title": "Aliança!",
-          "text": "Aliança do colo: escolhe um parceiro. Um de vós passa a próxima ronda no colo do outro. Quem se levantar antes bebe 3 goles."
+          "text": "Aliança do colo: escolhe um parceiro. Um de vós passa a próxima ronda no colo do outro. Quem se levantar antes bebe 3 golos."
         },
         {
           "type": "alliance",
@@ -2085,25 +2097,25 @@
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 20 segundos, a mesa nomeia 10 posições sexuais. Conseguem → todos distribuem 2 goles. Falham → todos bebem 2 goles."
+          "text": "Em 20 segundos, a mesa nomeia 10 posições sexuais. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Cada um confessa o seu maior fetiche em 5 segundos. Quem hesitar ou recusar bebe 3; o resto distribui 1 gole."
+          "text": "Cada um confessa o seu maior fetiche em 5 segundos. Quem hesitar ou recusar bebe 3; o resto distribui 1 golo."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Em 15 segundos, digam 8 nomes de brinquedos sexuais. Sucesso → distribuem 4 goles. Falha → todos bebem 3 goles."
+          "text": "Em 15 segundos, digam 8 nomes de brinquedos sexuais. Sucesso → distribuem 4 golos. Falha → todos bebem 3 golos."
         },
         {
           "type": "miniboss",
           "emoji": "👹",
           "title": "Mini Boss!",
-          "text": "Todos ao mesmo tempo imitam a sua própria cara de prazer. O grupo elege a pior: essa pessoa bebe 3, o resto distribui 1 gole."
+          "text": "Todos ao mesmo tempo imitam a sua própria cara de prazer. O grupo elege a pior: essa pessoa bebe 3, o resto distribui 1 golo."
         },
         {
           "type": "impostor",
@@ -2123,7 +2135,7 @@
           "type": "desafio",
           "emoji": "⚡",
           "title": "Rima!",
-          "text": "Diz uma palavra. Cada um diz uma rima. Quem falhar bebe 2 goles."
+          "text": "Diz uma palavra. Cada um diz uma rima. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2147,13 +2159,13 @@
           "type": "desafio",
           "emoji": "⚡",
           "title": "Telefone Estragado",
-          "text": "Sussurra frase ao ouvido. O último diz em voz alta. Quem errou mais bebe 2 goles."
+          "text": "Sussurra frase ao ouvido. O último diz em voz alta. Quem errou mais bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "⚡",
           "title": "Duelo!",
-          "text": "Escolhe adversário. Pedra-papel-tesoura melhor de 3. Perdedor bebe 3 goles."
+          "text": "Escolhe adversário. Pedra-papel-tesoura melhor de 3. Perdedor bebe 3 golos."
         },
         {
           "type": "desafio",
@@ -2195,13 +2207,13 @@
           "type": "desafio",
           "emoji": "📲",
           "title": "Sticker vivo",
-          "text": "Imita o teu sticker de WhatsApp preferido. Quem adivinhar manda outra pessoa beber 2. Se ninguém acertar, distribuis 5 goles."
+          "text": "Imita o teu sticker de WhatsApp preferido. Quem adivinhar manda outra pessoa beber 2. Se ninguém acertar, distribuis 5 golos."
         },
         {
           "type": "desafio",
           "emoji": "😃",
           "title": "Recria o emoji",
-          "text": "Escolhe um emoji. Todos tentam recriá-lo com a cara. Quem fizer pior bebe 2 goles."
+          "text": "Escolhe um emoji. Todos tentam recriá-lo com a cara. Quem fizer pior bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2213,7 +2225,7 @@
           "type": "desafio",
           "emoji": "🍸",
           "title": "Vou ao bar comprar...",
-          "text": "Cada jogador diz «Vou ao bar comprar uma...» e acrescenta uma bebida. O seguinte repete todas por ordem e acrescenta outra. Quem esquecer ou repetir bebe 2 goles."
+          "text": "Cada jogador diz «Vou ao bar comprar uma...» e acrescenta uma bebida. O seguinte repete todas por ordem e acrescenta outra. Quem esquecer ou repetir bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2225,25 +2237,25 @@
           "type": "desafio",
           "emoji": "📸",
           "title": "Foto a dois",
-          "text": "Tira uma foto com a pessoa à tua direita. Depois, bebem os dois 1 gole."
+          "text": "Tira uma foto com a pessoa à tua direita. Depois, bebem os dois 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📷",
           "title": "Foto de grupo",
-          "text": "Tirem uma foto de grupo. Depois, todos bebem 1 gole."
+          "text": "Tirem uma foto de grupo. Depois, todos bebem 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🐾",
           "title": "Som de animal",
-          "text": "Todos fazem um som de animal ao mesmo tempo e depois bebem 1 gole."
+          "text": "Todos fazem um som de animal ao mesmo tempo e depois bebem 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👐",
           "title": "Cadeia de gestos",
-          "text": "Faz um gesto à pessoa à tua esquerda (ex.: carolo, cachaço). Ela repete e acrescenta um gesto novo. Continua até alguém se esquecer. Quem falhar bebe 2 goles."
+          "text": "Faz um gesto à pessoa à tua esquerda (ex.: carolo, cachaço). Ela repete e acrescenta um gesto novo. Continua até alguém se esquecer. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2255,13 +2267,13 @@
           "type": "desafio",
           "emoji": "📞",
           "title": "Telefone estragado",
-          "text": "Sussurra uma frase ao ouvido do jogador à tua esquerda. Se chegar errada ao fim da roda, todos bebem 1 gole."
+          "text": "Sussurra uma frase ao ouvido do jogador à tua esquerda. Se chegar errada ao fim da roda, todos bebem 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤺",
           "title": "Tripla competição",
-          "text": "Desafia quem está à tua frente, à direita e à esquerda (braço-de-ferro ou pedra-papel-tesoura). Quem perder bebe 2 goles. Se ganhares às três, distribuis 3."
+          "text": "Desafia quem está à tua frente, à direita e à esquerda (braço-de-ferro ou pedra-papel-tesoura). Quem perder bebe 2 golos. Se ganhares às três, distribuis 3."
         },
         {
           "type": "desafio",
@@ -2273,37 +2285,37 @@
           "type": "desafio",
           "emoji": "💄",
           "title": "Beijo de batom",
-          "text": "Quem tiver batom à mão põe-no e dá um beijo na bochecha de alguém à escolha. O escolhido bebe 2 goles."
+          "text": "Quem tiver batom à mão põe-no e dá um beijo na bochecha de alguém à escolha. O escolhido bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "✋",
           "title": "Dedos iguais",
-          "text": "Todos de punho fechado. À contagem de três mostram 1 a 5 dedos. Quem calhar com o mesmo número que outra pessoa bebe goles iguais ao número de dedos."
+          "text": "Todos de punho fechado. À contagem de três mostram 1 a 5 dedos. Quem calhar com o mesmo número que outra pessoa bebe golos iguais ao número de dedos."
         },
         {
           "type": "desafio",
           "emoji": "🎤",
           "title": "Rimas em cadeia",
-          "text": "Escolhe uma palavra. À vez, cada um diz uma que rime. Quem repetir ou falhar bebe 2 goles."
+          "text": "Escolhe uma palavra. À vez, cada um diz uma que rime. Quem repetir ou falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🎨",
           "title": "Cor favorita",
-          "text": "Todos dizem a sua cor favorita ao mesmo tempo. Quem disser igual a outra pessoa bebe 2 goles."
+          "text": "Todos dizem a sua cor favorita ao mesmo tempo. Quem disser igual a outra pessoa bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👆",
           "title": "Toque no ombro",
-          "text": "Vira-te de costas. Um jogador toca-te no ombro. Se adivinhares quem foi, distribuis 7 goles; se falhares, bebes 3."
+          "text": "Vira-te de costas. Um jogador toca-te no ombro. Se adivinhares quem foi, distribuis 7 golos; se falhares, bebes 3."
         },
         {
           "type": "desafio",
           "emoji": "✊",
           "title": "Pedra-papel-tesoura",
-          "text": "Pedra-papel-tesoura com a pessoa à tua esquerda e à direita. Quem perder bebe 2 goles. Se ganhares às duas, distribuis 3."
+          "text": "Pedra-papel-tesoura com a pessoa à tua esquerda e à direita. Quem perder bebe 2 golos. Se ganhares às duas, distribuis 3."
         },
         {
           "type": "desafio",
@@ -2315,19 +2327,19 @@
           "type": "desafio",
           "emoji": "🐒",
           "title": "Imita o animal",
-          "text": "Escolhe um animal. Todos o imitam. Quem imitar pior (tu decides) bebe 2 goles."
+          "text": "Escolhe um animal. Todos o imitam. Quem imitar pior (tu decides) bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "➗",
           "title": "Resposta rápida",
-          "text": "Diz uma conta matemática simples em voz alta. O primeiro a acertar escolhe quem bebe 2 goles."
+          "text": "Diz uma conta matemática simples em voz alta. O primeiro a acertar escolhe quem bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "💫",
           "title": "Tonto e aponta",
-          "text": "De olhos fechados, dá 5 voltas sobre ti mesmo e aponta em frente. O jogador mais próximo bebe 2 goles."
+          "text": "De olhos fechados, dá 5 voltas sobre ti mesmo e aponta em frente. O jogador mais próximo bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2339,13 +2351,13 @@
           "type": "desafio",
           "emoji": "🤐",
           "title": "Pergunta secreta",
-          "text": "A pessoa à tua direita faz-te uma pergunta em segredo. Respondes em voz alta. Se o grupo quiser saber a pergunta, todos bebem 2 goles."
+          "text": "A pessoa à tua direita faz-te uma pergunta em segredo. Respondes em voz alta. Se o grupo quiser saber a pergunta, todos bebem 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🦶",
           "title": "Equilíbrio",
-          "text": "Aguenta 10 segundos em cima do teu pé mais fraco. Se caíres antes, bebe 2 goles."
+          "text": "Aguenta 10 segundos em cima do teu pé mais fraco. Se caíres antes, bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2357,13 +2369,13 @@
           "type": "desafio",
           "emoji": "✋",
           "title": "Match de dedos",
-          "text": "De olhos fechados, cada jogador mostra 1 a 5 dedos. Dizes um número; quem tiver esse número de dedos bebe 2 goles."
+          "text": "De olhos fechados, cada jogador mostra 1 a 5 dedos. Dizes um número; quem tiver esse número de dedos bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🏁",
           "title": "Corrida de penáltis",
-          "text": "Desafia o jogador à tua frente (e mais alguém, se quiseres) para uma corrida a beber. Quem ganhar escolhe quem bebe mais 3 goles."
+          "text": "Desafia o jogador à tua frente (e mais alguém, se quiseres) para uma corrida a beber. Quem ganhar escolhe quem bebe mais 3 golos."
         },
         {
           "type": "desafio",
@@ -2375,37 +2387,37 @@
           "type": "desafio",
           "emoji": "🍾",
           "title": "Roda a garrafa",
-          "text": "Girem uma garrafa no centro da mesa. Aquele para quem apontar bebe 2 goles."
+          "text": "Girem uma garrafa no centro da mesa. Aquele para quem apontar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔢",
           "title": "Conta e brinda",
-          "text": "Contem a partir do 1. Nos números com 6 ou múltiplos de 6 dizem «brinde» e invertem a direção. Primeiro a falhar bebe 2 goles."
+          "text": "Contem a partir do 1. Nos números com 6 ou múltiplos de 6 dizem «brinde» e invertem a direção. Primeiro a falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👐",
           "title": "Gestos em cadeia",
-          "text": "Faz um gesto. A pessoa à tua esquerda repete-o e acrescenta outro. Continuem até alguém falhar. Quem falhar bebe 2 goles."
+          "text": "Faz um gesto. A pessoa à tua esquerda repete-o e acrescenta outro. Continuem até alguém falhar. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🪙",
           "title": "Cara ou coroa",
-          "text": "Alguém lança uma moeda ao ar. Cada jogador diz cara ou coroa. Quem errar bebe 2 goles."
+          "text": "Alguém lança uma moeda ao ar. Cada jogador diz cara ou coroa. Quem errar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👀",
           "title": "Toca no objeto",
-          "text": "Diz um objeto que estejas a ver na sala. Todos correm a tocar-lhe. O último a tocar bebe 2 goles."
+          "text": "Diz um objeto que estejas a ver na sala. Todos correm a tocar-lhe. O último a tocar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👇",
           "title": "Todos apontam",
-          "text": "À contagem de três, todos apontam para uma pessoa. Quem tiver mais dedos apontados bebe 2 goles."
+          "text": "À contagem de três, todos apontam para uma pessoa. Quem tiver mais dedos apontados bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2447,7 +2459,7 @@
           "type": "desafio",
           "emoji": "👀",
           "title": "Duelo de olhares",
-          "text": "Escolhe alguém para um duelo de olhares. O primeiro a rir bebe 2 goles."
+          "text": "Escolhe alguém para um duelo de olhares. O primeiro a rir bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2483,7 +2495,7 @@
           "type": "desafio",
           "emoji": "✊",
           "title": "Par ou ímpar",
-          "text": "Escolhe alguém para jogar par ou ímpar. O perdedor bebe 2 goles."
+          "text": "Escolhe alguém para jogar par ou ímpar. O perdedor bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -2537,43 +2549,43 @@
           "type": "desafio",
           "emoji": "🍔",
           "title": "Duelo dos gostos",
-          "text": "reader e o jogador à tua direita duelam: quem acertar primeiro a comida favorita do outro ganha. O perdedor bebe 3 goles. Se em 10 segundos ninguém acertar, ambos bebem 3 goles."
+          "text": "reader e o jogador à tua direita duelam: quem acertar primeiro a comida favorita do outro ganha. O perdedor bebe 3 golos. Se em 10 segundos ninguém acertar, ambos bebem 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🗼",
           "title": "Torre maluca",
-          "text": "A começar reader_com, construam uma torre em cima da mesa com objetos aleatórios. O primeiro que a fizer cair bebe 3 goles."
+          "text": "A começar reader_com, construam uma torre em cima da mesa com objetos aleatórios. O primeiro que a fizer cair bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🎲",
           "title": "Bebe e arrisca",
-          "text": "Bebe goles um a um e pára quando quiseres. Ao parares, levanta a mão e distribui esse número de goles a outro jogador. Mas cuidado: se alguém gritar «BEBE» antes de parares, bebes o dobro."
+          "text": "Bebe golos um a um e pára quando quiseres. Ao parares, levanta a mão e distribui esse número de golos a outro jogador. Mas cuidado: se alguém gritar «BEBE» antes de parares, bebes o dobro."
         },
         {
           "type": "desafio",
           "emoji": "⛓️",
-          "title": "Corrente de goles",
-          "text": "reader bebe 1 e escolhe alguém para beber 2. Essa pessoa bebe e escolhe outra para beber, e assim sucessivamente até alguém recusar. Quem recusar bebe 7 goles."
+          "title": "Corrente de golos",
+          "text": "reader bebe 1 e escolhe alguém para beber 2. Essa pessoa bebe e escolhe outra para beber, e assim sucessivamente até alguém recusar. Quem recusar bebe 7 golos."
         },
         {
           "type": "desafio",
           "emoji": "🩲",
           "title": "Duelo íntimo",
-          "text": "reader e o jogador à tua esquerda duelam: quem adivinhar primeiro a cor da roupa interior do outro distribui 3 goles. Sem vencedor em 10 segundos? Ambos bebem 3 goles."
+          "text": "reader e o jogador à tua esquerda duelam: quem adivinhar primeiro a cor da roupa interior do outro distribui 3 golos. Sem vencedor em 10 segundos? Ambos bebem 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "😋",
           "title": "Néctar dos deuses",
-          "text": "Bebe 2 goles e mostra a todos que a tua bebida é a mais deliciosa que já provaste na vida."
+          "text": "Bebe 2 golos e mostra a todos que a tua bebida é a mais deliciosa que já provaste na vida."
         },
         {
           "type": "desafio",
           "emoji": "☠️",
           "title": "O veneno",
-          "text": "reader escolhe 2 jogadores para darem um gole e, em segredo, decide qual deles está envenenado. Eles podem trocar antes de revelares. O envenenado bebe +2."
+          "text": "reader escolhe 2 jogadores para darem um golo e, em segredo, decide qual deles está envenenado. Eles podem trocar antes de revelares. O envenenado bebe +2."
         },
         {
           "type": "desafio",
@@ -2591,7 +2603,7 @@
           "type": "desafio",
           "emoji": "📚",
           "title": "Duelo de livros",
-          "text": "Escolhe 2 jogadores: têm de adivinhar o livro preferido um do outro. O perdedor bebe 2 goles. Sem vencedor? Ambos bebem 2 goles."
+          "text": "Escolhe 2 jogadores: têm de adivinhar o livro preferido um do outro. O perdedor bebe 2 golos. Sem vencedor? Ambos bebem 2 golos."
         },
         {
           "type": "desafio",
@@ -2603,25 +2615,25 @@
           "type": "desafio",
           "emoji": "👩‍💼",
           "title": "3 presidentes",
-          "text": "Tens 10 segundos para dizer 3 mulheres que já foram presidentes. Não consegues? Seu porco sexista, bebe 4 goles."
+          "text": "Tens 10 segundos para dizer 3 mulheres que já foram presidentes. Não consegues? Seu porco sexista, bebe 4 golos."
         },
         {
           "type": "desafio",
           "emoji": "🖍️",
           "title": "Concurso de arte",
-          "text": "Todos pegam num pedaço de papel e desenham um pénis, com alma e personalidade. O artista com o melhor desenho distribui 4 goles."
+          "text": "Todos pegam num pedaço de papel e desenham um pénis, com alma e personalidade. O artista com o melhor desenho distribui 4 golos."
         },
         {
           "type": "desafio",
           "emoji": "🏋️",
           "title": "Bebida pesada",
-          "text": "reader bebe 3 goles, mas finge que a tua bebida é super pesada."
+          "text": "reader bebe 3 golos, mas finge que a tua bebida é super pesada."
         },
         {
           "type": "desafio",
           "emoji": "✋",
           "title": "Dedos escondidos",
-          "text": "reader, põe uma mão atrás das costas e levanta alguns dedos. Os outros adivinham quantos. Quem falhar bebe 2 goles. Os vencedores ganham um high-five... ou um beijo? Um beijo soa-me bem."
+          "text": "reader, põe uma mão atrás das costas e levanta alguns dedos. Os outros adivinham quantos. Quem falhar bebe 2 golos. Os vencedores ganham um high-five... ou um beijo? Um beijo soa-me bem."
         }
       ]
     },
@@ -2634,7 +2646,7 @@
           "type": "poder",
           "emoji": "👑",
           "title": "Poder!",
-          "text": "Distribui 4 goles como quiseres pelo grupo."
+          "text": "Distribui 4 golos como quiseres pelo grupo."
         },
         {
           "type": "poder",
@@ -2658,7 +2670,7 @@
           "type": "poder",
           "emoji": "👑",
           "title": "Poder!",
-          "text": "Escolhe 2 jogadores para pedra-papel-tesoura. Perdedor bebe 3 goles."
+          "text": "Escolhe 2 jogadores para pedra-papel-tesoura. Perdedor bebe 3 golos."
         },
         {
           "type": "poder",
@@ -2706,37 +2718,37 @@
           "type": "poder",
           "emoji": "🚫",
           "title": "Banir palavra",
-          "text": "Bane uma palavra à tua escolha durante 7 rondas. Quem a disser bebe 2 goles."
+          "text": "Bane uma palavra à tua escolha durante 7 rondas. Quem a disser bebe 2 golos."
         },
         {
           "type": "poder",
           "emoji": "📜",
           "title": "Cria uma regra",
-          "text": "Cria uma regra nova à tua escolha. Escolhe se dura 1 ou 2 voltas à mesa. Quem a quebrar bebe 2 goles."
+          "text": "Cria uma regra nova à tua escolha. Escolhe se dura 1 ou 2 voltas à mesa. Quem a quebrar bebe 2 golos."
         },
         {
           "type": "poder",
           "emoji": "👑",
           "title": "És o rei",
-          "text": "És o rei! Manda toda a gente fazer algo à tua escolha. Quem se recusar bebe 3 goles."
+          "text": "És o rei! Manda toda a gente fazer algo à tua escolha. Quem se recusar bebe 3 golos."
         },
         {
           "type": "poder",
           "emoji": "🍻",
           "title": "Três vítimas",
-          "text": "Escolhe 3 jogadores para beberem 2 goles cada um."
+          "text": "Escolhe 3 jogadores para beberem 2 golos cada um."
         },
         {
           "type": "azar",
           "emoji": "⚰️",
           "title": "Sacrifício",
-          "text": "Sacrifício: ou bebes tu de penálti, ou todos os outros bebem 2 goles."
+          "text": "Sacrifício: ou bebes tu de penálti, ou todos os outros bebem 2 golos."
         },
         {
           "type": "poder",
           "emoji": "👯",
           "title": "Dose dupla",
-          "text": "Fazes duas pessoas beberem 2 goles cada."
+          "text": "Fazes duas pessoas beberem 2 golos cada."
         },
         {
           "type": "poder",
@@ -2753,20 +2765,20 @@
         {
           "type": "poder",
           "emoji": "🌧️",
-          "title": "Chuva de goles",
-          "text": "Distribuis 6 goles como quiseres entre os jogadores."
+          "title": "Chuva de golos",
+          "text": "Distribuis 6 golos como quiseres entre os jogadores."
         },
         {
           "type": "poder",
           "emoji": "🍻",
           "title": "Companhia de copos",
-          "text": "Escolhe alguém para beber 2 goles contigo."
+          "text": "Escolhe alguém para beber 2 golos contigo."
         },
         {
           "type": "poder",
           "emoji": "🥂",
           "title": "Brinde real",
-          "text": "Fazes todos darem um brinde contigo e beber 1 gole."
+          "text": "Fazes todos darem um brinde contigo e beber 1 golo."
         },
         {
           "type": "poder",
@@ -2790,7 +2802,7 @@
           "type": "poder",
           "emoji": "🥵",
           "title": "Castigo pesado",
-          "text": "Escolhe alguém para beber 5 goles."
+          "text": "Escolhe alguém para beber 5 golos."
         },
         {
           "type": "poder",
@@ -2808,7 +2820,7 @@
           "type": "poder",
           "emoji": "💐",
           "title": "Elogio forçado",
-          "text": "Fazes alguém beber 2 goles e fazer um elogio a outra pessoa."
+          "text": "Fazes alguém beber 2 golos e fazer um elogio a outra pessoa."
         },
         {
           "type": "poder",
@@ -2820,31 +2832,31 @@
           "type": "poder",
           "emoji": "👁️",
           "title": "Duelo de olhares",
-          "text": "Escolhes duas pessoas para um duelo de olhares. O perdedor bebe 3 goles."
+          "text": "Escolhes duas pessoas para um duelo de olhares. O perdedor bebe 3 golos."
         },
         {
           "type": "poder",
           "emoji": "🤫",
           "title": "Bebe e cala",
-          "text": "Escolhe alguém para beber 2 goles e ficar em silêncio 1 ronda."
+          "text": "Escolhe alguém para beber 2 golos e ficar em silêncio 1 ronda."
         },
         {
           "type": "poder",
           "emoji": "🍸",
           "title": "Rodada para todos",
-          "text": "Distribuis 2 goles a cada pessoa da mesa."
+          "text": "Distribuis 2 golos a cada pessoa da mesa."
         },
         {
           "type": "poder",
           "emoji": "🧮",
           "title": "Conta a mesa",
-          "text": "Escolhe alguém para beber 1 gole por cada 2 pessoas na mesa."
+          "text": "Escolhe alguém para beber 1 golo por cada 2 pessoas na mesa."
         },
         {
           "type": "poder",
           "emoji": "👬",
           "title": "Dupla castigada",
-          "text": "Escolhe dois jogadores para beberem juntos 3 goles."
+          "text": "Escolhe dois jogadores para beberem juntos 3 golos."
         },
         {
           "type": "poder",
@@ -2856,7 +2868,7 @@
           "type": "poder",
           "emoji": "🥂",
           "title": "Bebe e brinda",
-          "text": "Escolhe alguém para beber 2 goles e dar um brinde ao grupo."
+          "text": "Escolhe alguém para beber 2 golos e dar um brinde ao grupo."
         },
         {
           "type": "poder",
@@ -2868,19 +2880,19 @@
           "type": "poder",
           "emoji": "🗣️",
           "title": "Boca de trapos",
-          "text": "Escolhe quem bebe 1 gole sempre que falar nas próximas 2 rondas."
+          "text": "Escolhe quem bebe 1 golo sempre que falar nas próximas 2 rondas."
         },
         {
           "type": "poder",
           "emoji": "⏱️",
           "title": "Ao mesmo tempo",
-          "text": "Escolhe alguém para beber 3 goles contigo, ao mesmo tempo."
+          "text": "Escolhe alguém para beber 3 golos contigo, ao mesmo tempo."
         },
         {
           "type": "poder",
           "emoji": "🌊",
-          "title": "Dilúvio de goles",
-          "text": "Distribuis 8 goles como quiseres."
+          "title": "Dilúvio de golos",
+          "text": "Distribuis 8 golos como quiseres."
         },
         {
           "type": "poder",
@@ -2934,13 +2946,13 @@
           "type": "sorte",
           "emoji": "💰",
           "title": "Reembolso",
-          "text": "Recuperas os goles que bebeste nas últimas 3 rondas e devolve-os a alguém."
+          "text": "Recuperas os golos que bebeste nas últimas 3 rondas e devolve-os a alguém."
         },
         {
           "type": "sorte",
           "emoji": "🔃",
           "title": "Vira o jogo",
-          "text": "Transformas a tua próxima penalização numa distribuição de goles."
+          "text": "Transformas a tua próxima penalização numa distribuição de golos."
         },
         {
           "type": "sorte",
@@ -2970,7 +2982,7 @@
           "type": "sorte",
           "emoji": "🏷️",
           "title": "Desconto",
-          "text": "Reduzes qualquer penalização futura em 2 goles."
+          "text": "Reduzes qualquer penalização futura em 2 golos."
         },
         {
           "type": "sorte",
@@ -3024,7 +3036,7 @@
           "type": "azar",
           "emoji": "👥",
           "title": "Um por cabeça",
-          "text": "Bebes 1 gole por cada pessoa na mesa."
+          "text": "Bebes 1 golo por cada pessoa na mesa."
         },
         {
           "type": "azar",
@@ -3036,19 +3048,19 @@
           "type": "azar",
           "emoji": "🤐",
           "title": "Bebe e cala",
-          "text": "Bebes 3 goles e ficas proibido de falar na próxima ronda."
+          "text": "Bebes 3 golos e ficas proibido de falar na próxima ronda."
         },
         {
           "type": "azar",
           "emoji": "😬",
           "title": "Bebe e paga",
-          "text": "Bebes 2 goles e ainda tens de fazer um desafio escolhido pela mesa."
+          "text": "Bebes 2 golos e ainda tens de fazer um desafio escolhido pela mesa."
         },
         {
           "type": "azar",
           "emoji": "🥴",
           "title": "Já para dentro",
-          "text": "Bebes 4 goles imediatamente."
+          "text": "Bebes 4 golos imediatamente."
         },
         {
           "type": "azar",
@@ -3066,13 +3078,13 @@
           "type": "azar",
           "emoji": "😖",
           "title": "Castigo da mesa",
-          "text": "A mesa decide um castigo físico leve para ti e ainda bebes 2 goles."
+          "text": "A mesa decide um castigo físico leve para ti e ainda bebes 2 golos."
         },
         {
           "type": "azar",
           "emoji": "🙊",
           "title": "Palavra amaldiçoada",
-          "text": "Bebes 2 goles sempre que disseres uma palavra proibida na próxima ronda."
+          "text": "Bebes 2 golos sempre que disseres uma palavra proibida na próxima ronda."
         },
         {
           "type": "azar",
@@ -3084,25 +3096,25 @@
           "type": "azar",
           "emoji": "📈",
           "title": "Maré de azar",
-          "text": "Ficas penalizado: +1 gole em todas as cartas durante 5 rondas."
+          "text": "Ficas penalizado: +1 golo em todas as cartas durante 5 rondas."
         },
         {
           "type": "azar",
           "emoji": "⚖️",
-          "title": "5 goles ou castigo",
-          "text": "Bebes 5 goles ou deixas a mesa escolher o teu castigo."
+          "title": "5 golos ou castigo",
+          "text": "Bebes 5 golos ou deixas a mesa escolher o teu castigo."
         },
         {
           "type": "azar",
           "emoji": "📜",
           "title": "Bebe e obedece",
-          "text": "Bebes 4 goles e ficas com uma regra inventada pela mesa durante 3 minutos."
+          "text": "Bebes 4 golos e ficas com uma regra inventada pela mesa durante 3 minutos."
         },
         {
           "type": "poder",
           "emoji": "💪",
           "title": "Equipa dos ativos",
-          "text": "Distribui 9 goles a quem estiver mais passivo! Nós somos a equipa dos ativos."
+          "text": "Distribui 9 golos a quem estiver mais passivo! Nós somos a equipa dos ativos."
         },
         {
           "type": "poder",
@@ -3114,7 +3126,7 @@
           "type": "poder",
           "emoji": "🍺",
           "title": "Rei da Taberna",
-          "text": "És o rei da taberna! Durante uma volta à mesa, sempre que alguém tiver de beber podes acrescentar ou retirar goles, se te sentires generoso."
+          "text": "És o rei da taberna! Durante uma volta à mesa, sempre que alguém tiver de beber podes acrescentar ou retirar golos, se te sentires generoso."
         }
       ]
     },
@@ -3127,7 +3139,7 @@
           "type": "desafio",
           "emoji": "🔥",
           "title": "Picante!",
-          "text": "Conta algo que nunca disseste a ninguém aqui — vida amorosa. Ou bebe 3 goles."
+          "text": "Conta algo que nunca disseste a ninguém aqui — vida amorosa. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
@@ -3139,7 +3151,7 @@
           "type": "desafio",
           "emoji": "🔥",
           "title": "Picante!",
-          "text": "Descreve o teu maior fantasma em 30 segundos. Quem não o fizer bebe 3 goles."
+          "text": "Descreve o teu maior fantasma em 30 segundos. Quem não o fizer bebe 3 golos."
         },
         {
           "type": "desafio",
@@ -3169,103 +3181,103 @@
           "type": "desafio",
           "emoji": "🔥",
           "title": "Picante!",
-          "text": "Mostra o histórico de pesquisa do teu telemóvel ao grupo. Ou bebe 4 goles."
+          "text": "Mostra o histórico de pesquisa do teu telemóvel ao grupo. Ou bebe 4 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔥",
           "title": "Picante!",
-          "text": "Diz o nome da pessoa da sala que mais te atrai. Ou bebe 3 goles."
+          "text": "Diz o nome da pessoa da sala que mais te atrai. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔥",
           "title": "Picante!",
-          "text": "Lê a última mensagem enviada no WhatsApp em voz alta. Ou bebe 2 goles."
+          "text": "Lê a última mensagem enviada no WhatsApp em voz alta. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔥",
           "title": "Um podcast",
-          "text": "Quem costuma demorar mais de 30 segundos (um «podcast») a fazer amor bebe 2 goles. Ou bebe 2 na mesma se não quiseres responder."
+          "text": "Quem costuma demorar mais de 30 segundos (um «podcast») a fazer amor bebe 2 golos. Ou bebe 2 na mesma se não quiseres responder."
         },
         {
           "type": "desafio",
           "emoji": "😍",
           "title": "Quem te atrai",
-          "text": "Diz quem na mesa te atrai mais. Ou bebe 3 goles."
+          "text": "Diz quem na mesa te atrai mais. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "😏",
           "title": "Atrevimento",
-          "text": "Mostra a última pessoa a quem mandaste uma mensagem atrevida. Ou bebe 2 goles."
+          "text": "Mostra a última pessoa a quem mandaste uma mensagem atrevida. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "💔",
           "title": "Pior ex",
-          "text": "Quem na mesa seria o teu pior ex? Ou bebe 3 goles."
+          "text": "Quem na mesa seria o teu pior ex? Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "💋",
           "title": "Beijo hipotético",
-          "text": "Diz quem da mesa beijavas num cenário hipotético. Ou bebe 4 goles."
+          "text": "Diz quem da mesa beijavas num cenário hipotético. Ou bebe 4 golos."
         },
         {
           "type": "desafio",
           "emoji": "🕵️",
           "title": "Último stalk",
-          "text": "Mostra a última pessoa que stalkeaste. Ou bebe 2 goles."
+          "text": "Mostra a última pessoa que stalkeaste. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "😎",
           "title": "Mais rizz",
-          "text": "Diz quem da mesa tem mais «rizz». Ou bebe 2 goles."
+          "text": "Diz quem da mesa tem mais «rizz». Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👅",
           "title": "Gemido ao ouvido",
-          "text": "Geme no ouvido do jogador à tua direita. Ou bebe 2 goles."
+          "text": "Geme no ouvido do jogador à tua direita. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🚩",
           "title": "Red flag",
-          "text": "Diz o teu maior red flag. Ou bebe 3 goles."
+          "text": "Diz o teu maior red flag. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "😤",
           "title": "Difícil de namorar",
-          "text": "Diz quem da mesa seria mais difícil de namorar. Ou bebe 2 goles."
+          "text": "Diz quem da mesa seria mais difícil de namorar. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "😖",
           "title": "Pior beijo",
-          "text": "Diz quem da mesa teria pior beijo (hipotético). Ou bebe 3 goles."
+          "text": "Diz quem da mesa teria pior beijo (hipotético). Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🥱",
           "title": "Perde interesse",
-          "text": "Diz o que te faz perder interesse rápido. Ou bebe 2 goles."
+          "text": "Diz o que te faz perder interesse rápido. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "✋",
           "title": "Um fora",
-          "text": "Diz quem da mesa seria mais provável dar-te um fora. Ou bebe 2 goles."
+          "text": "Diz quem da mesa seria mais provável dar-te um fora. Ou bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "💕",
           "title": "Melhor date",
-          "text": "Diz quem da mesa seria o melhor date. Ou bebe 3 goles."
+          "text": "Diz quem da mesa seria o melhor date. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
@@ -3277,25 +3289,25 @@
           "type": "desafio",
           "emoji": "😍",
           "title": "Amor à bebida",
-          "text": "reader, bebe 2 goles enquanto sussurras palavras de amor e tesão à tua bebida."
+          "text": "reader, bebe 2 golos enquanto sussurras palavras de amor e tesão à tua bebida."
         },
         {
           "type": "desafio",
           "emoji": "💃",
           "title": "Striptease",
-          "text": "reader, estás meio a dormir, vê se acordas! Faz 20 segundos de striptease para toda a gente aproveitar estranhamente. Ou bebe 5 goles."
+          "text": "reader, estás meio a dormir, vê se acordas! Faz 20 segundos de striptease para toda a gente aproveitar estranhamente. Ou bebe 5 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔥",
           "title": "Mais atraente",
-          "text": "reader dá 2 goles à pessoa que achas mais atraente na mesa."
+          "text": "reader dá 2 golos à pessoa que achas mais atraente na mesa."
         },
         {
           "type": "desafio",
           "emoji": "🍑",
           "title": "Palmada",
-          "text": "reader dá uma palmada no rabo a alguém à tua escolha. Se essa pessoa recusar, ambos bebem 4 goles."
+          "text": "reader dá uma palmada no rabo a alguém à tua escolha. Se essa pessoa recusar, ambos bebem 4 golos."
         }
       ]
     },
@@ -3845,619 +3857,619 @@
           "type": "desafio",
           "emoji": "👉",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de adormecer primeiro esta noite? Contagem 1-2-3 — apontem! Quem receber mais dedos bebe 2 goles."
+          "text": "Quem é mais provável de adormecer primeiro esta noite? Contagem 1-2-3 — apontem! Quem receber mais dedos bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👉",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de mandar mensagem a alguém indevido bêbado? Mais dedos = bebe 2 goles. Empate = todos bebem 1 gole."
+          "text": "Quem é mais provável de mandar mensagem a alguém indevido bêbado? Mais dedos = bebe 2 golos. Empate = todos bebem 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👉",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de vomitar antes do fim da festa? Quem for apontado bebe 2 goles. Quem apontar a si mesmo bebe 3 goles."
+          "text": "Quem é mais provável de vomitar antes do fim da festa? Quem for apontado bebe 2 golos. Quem apontar a si mesmo bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🥴",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de dar um blackout hoje? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de dar um blackout hoje? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤓",
           "title": "Quem é mais provável?",
-          "text": "Quem é o mais nerd do grupo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é o mais nerd do grupo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤑",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ficar rico com uma ideia duvidosa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ficar rico com uma ideia duvidosa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏔️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de escalar o Everest nu? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de escalar o Everest nu? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👮",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de passar um tempo na prisão? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de passar um tempo na prisão? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "⚓",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser capitão de um navio? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser capitão de um navio? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💘",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de estar secretamente apaixonado por alguém nesta sala neste momento? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de estar secretamente apaixonado por alguém nesta sala neste momento? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤐",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de revelar acidentalmente o segredo de um amigo depois de ter jurado sigilo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de revelar acidentalmente o segredo de um amigo depois de ter jurado sigilo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🕵️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter uma conta stalker? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter uma conta stalker? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤥",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de se safar de uma mentira por ser tão convincente? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de se safar de uma mentira por ser tão convincente? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍆",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de sacar o órgão genital agora mesmo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de sacar o órgão genital agora mesmo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😏",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de engatar um estranho só para conseguir algo de graça? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de engatar um estranho só para conseguir algo de graça? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🥷",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de roubar e agir como se nada se passasse? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de roubar e agir como se nada se passasse? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🔞",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de contar as suas histórias sexuais? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de contar as suas histórias sexuais? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👀",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de entrar num quarto com alguém a fazer sexo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de entrar num quarto com alguém a fazer sexo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💼",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de comer o chefe de trabalho? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de comer o chefe de trabalho? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💭",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter a fantasia sexual mais estranha? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter a fantasia sexual mais estranha? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍸",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de, numa saída à noite, mamar o/a barista e desaparecer? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de, numa saída à noite, mamar o/a barista e desaparecer? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💔",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de se apaixonar por um amor impossível? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de se apaixonar por um amor impossível? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "⚡",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de viver um romance relâmpago nas férias e depois seguir em frente? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de viver um romance relâmpago nas férias e depois seguir em frente? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😎",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de, com o seu charme, se livrar de uma multa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de, com o seu charme, se livrar de uma multa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🌟",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter uma paixão tão intensa por uma celebridade ao ponto de tentar mesmo conhecê-la? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter uma paixão tão intensa por uma celebridade ao ponto de tentar mesmo conhecê-la? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏹",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer de cupido para os amigos? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer de cupido para os amigos? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😴",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de sonhar com um ex/ficante e perguntar-se se isso significa alguma coisa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de sonhar com um ex/ficante e perguntar-se se isso significa alguma coisa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏊",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de nadar nu numa festa animada ou por desafio? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de nadar nu numa festa animada ou por desafio? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🙈",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser apanhado a fazer algo indevido num local público? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser apanhado a fazer algo indevido num local público? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💃",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser o último a dançar numa noite de festa, mesmo quando as luzes se acendem? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser o último a dançar numa noite de festa, mesmo quando as luzes se acendem? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚨",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de experimentar coisas ilegais (ou infringir as regras) só pela emoção? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de experimentar coisas ilegais (ou infringir as regras) só pela emoção? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😵",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de acordar sem se lembrar do que aconteceu na noite anterior? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de acordar sem se lembrar do que aconteceu na noite anterior? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🎉",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de invadir uma festa ou casamento para o qual não foi convidado? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de invadir uma festa ou casamento para o qual não foi convidado? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍺",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de participar num desafio de bebida sem hesitar? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de participar num desafio de bebida sem hesitar? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📖",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter uma história incrível que ninguém no grupo ouviu ainda? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter uma história incrível que ninguém no grupo ouviu ainda? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😈",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer uma partida a um amigo, ultrapassando todos os limites? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer uma partida a um amigo, ultrapassando todos os limites? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💋",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de beijar um(a) desconhecido(a) na véspera de Ano Novo, na emoção do momento? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de beijar um(a) desconhecido(a) na véspera de Ano Novo, na emoção do momento? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🖋️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer uma tatuagem por desafio durante uma viagem ou festa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer uma tatuagem por desafio durante uma viagem ou festa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "✈️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de reservar espontaneamente uma viagem a Las Vegas (ou outra cidade festiva) por impulso, para um fim de semana agitado? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de reservar espontaneamente uma viagem a Las Vegas (ou outra cidade festiva) por impulso, para um fim de semana agitado? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤪",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de dizer «YOLO» e viver mesmo de acordo com isso? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de dizer «YOLO» e viver mesmo de acordo com isso? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🗣️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de falar abertamente sobre detalhes íntimos da sua vida? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de falar abertamente sobre detalhes íntimos da sua vida? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍑",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de entrar numa orgia? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de entrar numa orgia? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👴",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de mamar um/a velho/a? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de mamar um/a velho/a? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📸",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de enviar uma foto provocante a alguém e depois entrar em pânico por causa disso? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de enviar uma foto provocante a alguém e depois entrar em pânico por causa disso? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💈",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer um piercing ou mudar de visual simplesmente porque é emocionante ou rebelde? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer um piercing ou mudar de visual simplesmente porque é emocionante ou rebelde? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚶",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser convidado para sair por um estranho e aceitar mesmo o convite? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser convidado para sair por um estranho e aceitar mesmo o convite? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🗄️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter uma coleção secreta de algo um pouco impróprio (filmes, revistas, etc.)? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter uma coleção secreta de algo um pouco impróprio (filmes, revistas, etc.)? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🙊",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de apanhar outra pessoa num momento íntimo constrangedor (por acidente)? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de apanhar outra pessoa num momento íntimo constrangedor (por acidente)? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😜",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser desafiado a fazer algo louco em público e fazê-lo mesmo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser desafiado a fazer algo louco em público e fazê-lo mesmo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🔀",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de namorar dois homens ao mesmo tempo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de namorar dois homens ao mesmo tempo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🛏️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer amor com alguém no primeiro encontro? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer amor com alguém no primeiro encontro? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍒",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter experimentado sexo anal? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter experimentado sexo anal? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💤",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de adormecer durante o sexo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de adormecer durante o sexo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🔥",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de experimentar um ménage à trois? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de experimentar um ménage à trois? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "⛓️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de construir uma masmorra sexual? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de construir uma masmorra sexual? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏢",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de dormir com um(a) colega de trabalho? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de dormir com um(a) colega de trabalho? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🩰",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de frequentar um clube de striptease? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de frequentar um clube de striptease? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍌",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de se masturbar num local público? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de se masturbar num local público? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📹",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer um vídeo íntimo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer um vídeo íntimo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚫",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de não usar proteção? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de não usar proteção? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🔊",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de gemer mais alto durante o sexo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de gemer mais alto durante o sexo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📱",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de enviar 10 mensagens quando uma só bastava? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de enviar 10 mensagens quando uma só bastava? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🥱",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de adormecer numa discoteca? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de adormecer numa discoteca? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💍",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de casar primeiro? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de casar primeiro? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🎂",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de esquecer o próprio aniversário? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de esquecer o próprio aniversário? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚓",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser preso por uma situação absurda? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser preso por uma situação absurda? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🧟",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de sobreviver menos tempo num apocalipse zombie? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de sobreviver menos tempo num apocalipse zombie? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "💸",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de gastar todo o dinheiro num dia? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de gastar todo o dinheiro num dia? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📲",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de enviar mensagem ao ex bêbado? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de enviar mensagem ao ex bêbado? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🔦",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de perder o telemóvel na própria casa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de perder o telemóvel na própria casa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤑",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser rico e mesmo assim pedir dinheiro emprestado? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser rico e mesmo assim pedir dinheiro emprestado? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😆",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de rir na pior altura possível? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de rir na pior altura possível? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤔",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de esquecer o que ia dizer a meio da frase? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de esquecer o que ia dizer a meio da frase? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚪",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser expulso de um bar? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser expulso de um bar? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🙃",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de esquecer o nome de alguém que acabou de conhecer? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de esquecer o nome de alguém que acabou de conhecer? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😭",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de chorar num filme de animação? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de chorar num filme de animação? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🛫",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de perder um voo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de perder um voo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👶",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter mais filhos no futuro? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter mais filhos no futuro? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏝️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de sobreviver mais tempo numa ilha deserta? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de sobreviver mais tempo numa ilha deserta? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤦",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de se meter em problemas por uma ideia estúpida? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de se meter em problemas por uma ideia estúpida? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤫",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de contar um segredo sem querer? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de contar um segredo sem querer? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "⭐",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser o mais famoso da mesa no futuro? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser o mais famoso da mesa no futuro? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍀",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ficar rico por sorte? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ficar rico por sorte? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🏧",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de esquecer o próprio PIN do multibanco? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de esquecer o próprio PIN do multibanco? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👋",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser o primeiro a ir embora da festa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser o primeiro a ir embora da festa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📺",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de se meter num reality show? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de se meter num reality show? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😅",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser apanhado a mentir? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser apanhado a mentir? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🛌",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de dormir em qualquer lado? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de dormir em qualquer lado? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🧳",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de arranjar problemas numa viagem? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de arranjar problemas numa viagem? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🦥",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser o mais preguiçoso da mesa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser o mais preguiçoso da mesa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤡",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ficar famoso por algo ridículo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ficar famoso por algo ridículo? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🗨️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de falar com estranhos como se fossem amigos? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de falar com estranhos como se fossem amigos? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🛂",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de perder o passaporte em viagem? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de perder o passaporte em viagem? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🎭",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser o mais dramático da mesa? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser o mais dramático da mesa? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😤",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de começar uma discussão por nada? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de começar uma discussão por nada? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "⚖️",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer algo ilegal sem querer? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer algo ilegal sem querer? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "👻",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de sobreviver num filme de terror? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de sobreviver num filme de terror? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🎤",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer um discurso estranho num casamento? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer um discurso estranho num casamento? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "📚",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ter mais histórias loucas? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ter mais histórias loucas? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🍵",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de acabar a noite a cuidar dos outros? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de acabar a noite a cuidar dos outros? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🤏",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ficar rico e ainda assim ser mão de vaca? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ficar rico e ainda assim ser mão de vaca? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "😰",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de fazer o pior primeiro dia de trabalho? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de fazer o pior primeiro dia de trabalho? A pessoa com mais dedos apontados bebe 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🚌",
           "title": "Quem é mais provável?",
-          "text": "Quem é mais provável de ser expulso de uma viagem de grupo? A pessoa com mais dedos apontados bebe 1 gole."
+          "text": "Quem é mais provável de ser expulso de uma viagem de grupo? A pessoa com mais dedos apontados bebe 1 golo."
         }
       ]
     },
@@ -4482,7 +4494,7 @@
           "type": "desafio",
           "emoji": "🎭",
           "title": "Bluff!",
-          "text": "Diz três factos sobre ti — dois verdadeiros, um falso. Quem não adivinhar o falso bebe 1 gole. Se todos adivinharem, bebes 2."
+          "text": "Diz três factos sobre ti — dois verdadeiros, um falso. Quem não adivinhar o falso bebe 1 golo. Se todos adivinharem, bebes 2."
         },
         {
           "type": "desafio",
@@ -4651,7 +4663,7 @@
           "type": "desafio",
           "emoji": "🔮",
           "title": "Maldição!",
-          "text": "Amaldiçoado: tens de bater palmas antes de cada gole. Esqueceste? Bebes 1 extra. Passa a maldição quando alguém te lembrar em voz alta."
+          "text": "Amaldiçoado: tens de bater palmas antes de cada golo. Esqueceste? Bebes 1 extra. Passa a maldição quando alguém te lembrar em voz alta."
         },
         {
           "type": "maldicao",
@@ -4868,19 +4880,19 @@
           "type": "desafio",
           "emoji": "🎬",
           "title": "História",
-          "text": "Começa: «Era uma vez numa festa em Portugal…» Sentido horário, cada um acrescenta UMA frase. Quem travar, repetir ou rir até perder bebe 2 goles."
+          "text": "Começa: «Era uma vez numa festa em Portugal…» Sentido horário, cada um acrescenta UMA frase. Quem travar, repetir ou rir até perder bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🎬",
           "title": "História",
-          "text": "Tema: terror cómico. Cada um uma frase. Palavra proibida: «normal». Quem disser «normal» bebe 1 gole. História incoerente 5 frases seguidas = todos bebem 1 gole."
+          "text": "Tema: terror cómico. Cada um uma frase. Palavra proibida: «normal». Quem disser «normal» bebe 1 golo. História incoerente 5 frases seguidas = todos bebem 1 golo."
         },
         {
           "type": "desafio",
           "emoji": "🎬",
           "title": "História",
-          "text": "Começa quem tirou a carta com «O pior encontro de sempre começou quando…» Uma frase cada. Quem quebrar o flow ou contradizer o anterior bebe 2 goles."
+          "text": "Começa quem tirou a carta com «O pior encontro de sempre começou quando…» Uma frase cada. Quem quebrar o flow ou contradizer o anterior bebe 2 golos."
         },
         {
           "type": "desafio",
@@ -4904,253 +4916,253 @@
           "type": "desafio",
           "emoji": "🌶️",
           "title": "História picante",
-          "text": "Conta a tua melhor história sexual. Ou bebe 3 goles."
+          "text": "Conta a tua melhor história sexual. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🙈",
           "title": "Pior date",
-          "text": "Conta o teu pior date, do mais erótico ao mais badalhoco. Ou bebe 3 goles."
+          "text": "Conta o teu pior date, do mais erótico ao mais badalhoco. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "🤥",
           "title": "Mentira de date",
-          "text": "Conta uma mentira que já disseste num date para impressionar. Ou bebe 3 goles."
+          "text": "Conta uma mentira que já disseste num date para impressionar. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "😬",
           "title": "Flirt falhado",
-          "text": "Conta um flirt que te correu mal. Ou bebe 3 goles."
+          "text": "Conta um flirt que te correu mal. Ou bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "💭",
           "title": "Fantasia",
-          "text": "Conta uma história ou fantasia sexual tua. Ou bebe 3 goles."
+          "text": "Conta uma história ou fantasia sexual tua. Ou bebe 3 golos."
         },
         {
           "type": "historia",
           "emoji": "🎉",
           "title": "História da Festa",
-          "text": "Tema: uma festa que correu mal. À vez, cada jogador diz 1 palavra para construir a história. Quem travar bebe 2 goles."
+          "text": "Tema: uma festa que correu mal. À vez, cada jogador diz 1 palavra para construir a história. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🏦",
           "title": "História do Assalto",
-          "text": "Tema: um assalto ao banco que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um assalto ao banco que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "📱",
           "title": "História do Tinder",
-          "text": "Tema: um encontro do Tinder desastroso. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um encontro do Tinder desastroso. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🧟",
           "title": "História do Apocalipse",
-          "text": "Tema: um apocalipse zombie em Portugal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um apocalipse zombie em Portugal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🧳",
           "title": "História da Viagem",
-          "text": "Tema: uma viagem que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma viagem que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "💒",
           "title": "História do Casamento",
-          "text": "Tema: um casamento caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um casamento caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "📺",
           "title": "História do Reality Show",
-          "text": "Tema: um reality show absurdo. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um reality show absurdo. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "📵",
           "title": "História Sem Internet",
-          "text": "Tema: um dia inteiro sem internet. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um dia inteiro sem internet. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "👽",
           "title": "História da Invasão",
-          "text": "Tema: uma invasão alienígena. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma invasão alienígena. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "⚽",
           "title": "História do Jogo",
-          "text": "Tema: um jogo de futebol épico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um jogo de futebol épico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🎰",
           "title": "História do Casino",
-          "text": "Tema: uma noite no casino. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma noite no casino. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🚓",
           "title": "História da Fuga",
-          "text": "Tema: uma fuga à polícia. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma fuga à polícia. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🍽️",
           "title": "História do Jantar",
-          "text": "Tema: um jantar de família caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um jantar de família caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "✈️",
           "title": "História do Voo",
-          "text": "Tema: um avião sem piloto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um avião sem piloto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🎪",
           "title": "História do Festival",
-          "text": "Tema: um festival que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um festival que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🌃",
           "title": "História de Lisboa",
-          "text": "Tema: uma noite em Lisboa completamente perdida. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma noite em Lisboa completamente perdida. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🐦",
           "title": "História dos Pombos",
-          "text": "Tema: um ataque de pombos assassinos. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um ataque de pombos assassinos. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🕵️",
           "title": "História da Missão",
-          "text": "Tema: uma missão secreta falhada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma missão secreta falhada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🏖️",
           "title": "História da Praia",
-          "text": "Tema: um dia de praia caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um dia de praia caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "💥",
           "title": "História do Restaurante",
-          "text": "Tema: um restaurante que quase explodiu. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um restaurante que quase explodiu. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🍕",
           "title": "História da Pizza",
-          "text": "Tema: um roubo de pizza. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um roubo de pizza. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🎓",
           "title": "História da Universidade",
-          "text": "Tema: uma universidade maldita. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma universidade maldita. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "👻",
           "title": "História Assombrada",
-          "text": "Tema: uma casa assombrada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma casa assombrada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🛋️",
           "title": "História do IKEA",
-          "text": "Tema: um grupo perdido no IKEA. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um grupo perdido no IKEA. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🏋️",
           "title": "História do Ginásio",
-          "text": "Tema: uma ida ao ginásio que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma ida ao ginásio que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "💑",
           "title": "História do Namoro Falso",
-          "text": "Tema: um namoro a fingir. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um namoro a fingir. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🏫",
           "title": "História da Escola",
-          "text": "Tema: uma fuga da escola. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma fuga da escola. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🚫",
           "title": "História Sem Regras",
-          "text": "Tema: um dia sem regras nenhumas. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um dia sem regras nenhumas. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🔪",
           "title": "História do Crime",
-          "text": "Tema: um crime impossível. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um crime impossível. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🌙",
           "title": "História da Noite",
-          "text": "Tema: uma noite que nunca devia ter acontecido. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma noite que nunca devia ter acontecido. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🔮",
           "title": "História do Espiritismo",
-          "text": "Tema: uma sessão de espiritismo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma sessão de espiritismo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🖼️",
           "title": "História do Museu",
-          "text": "Tema: um roubo num museu. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um roubo num museu. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🎤",
           "title": "História do Concerto",
-          "text": "Tema: um concerto que se descontrolou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um concerto que se descontrolou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🌶️",
           "title": "História Picante",
-          "text": "Tema: uma noite de sexo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma noite de sexo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "💋",
           "title": "História Proibida",
-          "text": "Tema: um caso de amor secreto no escritório. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um caso de amor secreto no escritório. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🍑",
           "title": "História Molhada",
-          "text": "Tema: um strip-tease que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: um strip-tease que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         },
         {
           "type": "historia",
           "emoji": "🍾",
           "title": "História Louca",
-          "text": "Tema: uma despedida de solteiro fora de controlo. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 goles."
+          "text": "Tema: uma despedida de solteiro fora de controlo. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos."
         }
       ]
     },
@@ -5163,223 +5175,223 @@
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: géneros musicais. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: géneros musicais. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: artistas ou bandas portuguesas. Começa por ti, sentido horário. Quem repetir ou não souber bebe 2 goles."
+          "text": "Tema: artistas ou bandas portuguesas. Começa por ti, sentido horário. Quem repetir ou não souber bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: músicas portuguesas (título). Sentido horário, uma cada. Quem repetir ou travar bebe 2 goles."
+          "text": "Tema: músicas portuguesas (título). Sentido horário, uma cada. Quem repetir ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: clubes de futebol portugueses. Começa quem tirou a carta. Quem falhar bebe 2 goles."
+          "text": "Tema: clubes de futebol portugueses. Começa quem tirou a carta. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: seleções nacionais de futebol. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: seleções nacionais de futebol. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: marcas de cerveja. Começa por ti. Quem não souber ou repetir bebe 2 goles."
+          "text": "Tema: marcas de cerveja. Começa por ti. Quem não souber ou repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: marcas de carros. Sentido horário, uma cada. Quem travar bebe 2 goles."
+          "text": "Tema: marcas de carros. Sentido horário, uma cada. Quem travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: super-heróis (Marvel, DC, etc.). Começa quem tirou a carta. Quem falhar bebe 2 goles."
+          "text": "Tema: super-heróis (Marvel, DC, etc.). Começa quem tirou a carta. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: personagens Disney ou Pixar. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: personagens Disney ou Pixar. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: programas de TV portugueses. Começa por ti. Quem não souber bebe 2 goles."
+          "text": "Tema: programas de TV portugueses. Começa por ti. Quem não souber bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: filmes (qualquer). Sentido horário. Quem repetir o título bebe 2 goles."
+          "text": "Tema: filmes (qualquer). Sentido horário. Quem repetir o título bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: países europeus. Começa quem tirou a carta. Quem falhar bebe 2 goles."
+          "text": "Tema: países europeus. Começa quem tirou a carta. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: capitais europeias. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: capitais europeias. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: cidades de Portugal. Começa por ti. Quem travar bebe 2 goles."
+          "text": "Tema: cidades de Portugal. Começa por ti. Quem travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: comidas ou pratos portugueses. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: comidas ou pratos portugueses. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: frutas. Começa quem tirou a carta. Quem não souber bebe 2 goles."
+          "text": "Tema: frutas. Começa quem tirou a carta. Quem não souber bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: animais. Sentido horário, um cada. Quem repetir bebe 2 goles."
+          "text": "Tema: animais. Sentido horário, um cada. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: apps ou redes sociais. Começa por ti. Quem falhar bebe 2 goles."
+          "text": "Tema: apps ou redes sociais. Começa por ti. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: videojogos famosos. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: videojogos famosos. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: profissões. Começa quem tirou a carta. Quem travar bebe 2 goles."
+          "text": "Tema: profissões. Começa quem tirou a carta. Quem travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: marcas de roupa. Sentido horário. Quem repetir bebe 2 goles."
+          "text": "Tema: marcas de roupa. Sentido horário. Quem repetir bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: festivais de música (Portugal ou internacionais). Começa por ti. Quem falhar bebe 2 goles."
+          "text": "Tema: festivais de música (Portugal ou internacionais). Começa por ti. Quem falhar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia livre",
-          "text": "Escolhe tu o tema (ex.: géneros musicais, memes, séries). Começa por ti, sentido horário. Quem repetir ou travar bebe 2 goles."
+          "text": "Escolhe tu o tema (ex.: géneros musicais, memes, séries). Começa por ti, sentido horário. Quem repetir ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: géneros de filme. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: géneros de filme. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: raças de cão. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: raças de cão. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: estilos de música. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: estilos de música. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: países. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: países. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: músicas do Michael Jackson. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: músicas do Michael Jackson. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: distritos de Portugal. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: distritos de Portugal. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: marcas de carros. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: marcas de carros. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: frutas. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: frutas. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: tipos de moeda. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: tipos de moeda. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema: capitais. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 goles."
+          "text": "Tema: capitais. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Tema à escolha de quem tirou a carta. Sentido horário, cada um diz uma palavra diferente. Quem repetir ou demorar mais de 3 segundos bebe 2 goles."
+          "text": "Tema à escolha de quem tirou a carta. Sentido horário, cada um diz uma palavra diferente. Quem repetir ou demorar mais de 3 segundos bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "🔗",
           "title": "Cadeia!",
-          "text": "Escolhe uma letra. Sentido horário, cada um diz uma palavra começada por essa letra. Quem repetir ou travar bebe 2 goles."
+          "text": "Escolhe uma letra. Sentido horário, cada um diz uma palavra começada por essa letra. Quem repetir ou travar bebe 2 golos."
         },
         {
           "type": "desafio",
           "emoji": "👩",
           "title": "Cadeia!",
-          "text": "Começando reader_com, digam mulheres famosas à vez. Quem não conseguir é um misógino... e bebe 3 goles."
+          "text": "Começando reader_com, digam mulheres famosas à vez. Quem não conseguir é um misógino... e bebe 3 golos."
         },
         {
           "type": "desafio",
           "emoji": "👆",
           "title": "Cadeia!",
-          "text": "A começar reader_com, deem a volta à mesa: cada um diz, à vez, algo que poderia fazer com um dedo, sem repetições. O primeiro a falhar bebe 1 gole por cada resposta certa antes dele."
+          "text": "A começar reader_com, deem a volta à mesa: cada um diz, à vez, algo que poderia fazer com um dedo, sem repetições. O primeiro a falhar bebe 1 golo por cada resposta certa antes dele."
         }
       ]
     },
@@ -5392,7 +5404,7 @@
           "type": "beber",
           "emoji": "💣",
           "title": "Shot ou verdade",
-          "text": "Bebe 3 goles ou responde à pergunta mais incómoda que o grupo inventar.",
+          "text": "Bebe 3 golos ou responde à pergunta mais incómoda que o grupo inventar.",
           "image": "/cards/extreme-teste.png"
         }
       ]

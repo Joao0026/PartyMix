@@ -16,12 +16,21 @@ const API_URL = getSocketUrl()
 const LEGENDA_PACK_LABELS = {
   todas: 'Todas',
   base: 'Portugal (PT)',
-  br: 'Brasil (BR)',
+  br: 'Portugal Extra',
+  'house-party': '#House Party',
   picante: 'Picante 18+',
   trabalho: 'Trabalho/Escola',
   relacionamentos: 'Relacionamentos',
   nostalgia: 'Nostalgia',
   community: 'Comunidade',
+}
+
+function normalizeLegendaPacks(value) {
+  const raw = Array.isArray(value) ? value : [value]
+  const packs = raw.map((p) => String(p || 'todas').trim()).filter(Boolean)
+  const unique = [...new Set(packs)]
+  if (!unique.length || unique.includes('todas') || unique.includes('all')) return ['todas']
+  return unique
 }
 
 export default function MemeMixLobby() {
@@ -43,7 +52,7 @@ export default function MemeMixLobby() {
   const [uploadsMode, setUploadsMode] = useState('all')
   const [includeOfficialMemes, setIncludeOfficialMemes] = useState(false)
   const [legendaMode, setLegendaMode] = useState('pack')
-  const [legendaPack, setLegendaPack] = useState('todas')
+  const [legendaPacks, setLegendaPacks] = useState(['todas'])
   const [availablePacks, setAvailablePacks] = useState([])
   const [consent, setConsent] = useState(false)
   const [removingId, setRemovingId] = useState(null)
@@ -205,7 +214,7 @@ export default function MemeMixLobby() {
       bindSocket(s, name.trim(), true)
       s.emit('mm_create_room', {
         playerName: name.trim(),
-        settings: { maxPoints, uploads: uploadsMode, maxMemesPerPlayer, includeOfficialMemes, legendaMode, legendaPack },
+        settings: { maxPoints, uploads: uploadsMode, maxMemesPerPlayer, includeOfficialMemes, legendaMode, legendaPacks },
       })
     })
   }
@@ -272,8 +281,10 @@ export default function MemeMixLobby() {
   }, [room?.settings?.legendaMode])
 
   useEffect(() => {
-    if (room?.settings?.legendaPack) setLegendaPack(room.settings.legendaPack)
-  }, [room?.settings?.legendaPack])
+    if (room?.settings?.legendaPacks || room?.settings?.legendaPack) {
+      setLegendaPacks(normalizeLegendaPacks(room.settings.legendaPacks || room.settings.legendaPack))
+    }
+  }, [room?.settings?.legendaPacks, room?.settings?.legendaPack])
 
   useEffect(() => {
     api.getMemeMixPacks().then((rows) => {
@@ -297,7 +308,7 @@ export default function MemeMixLobby() {
       maxMemesPerPlayer: overrides.maxMemesPerPlayer ?? maxMemesPerPlayer,
       includeOfficialMemes: overrides.includeOfficialMemes ?? includeOfficialMemes,
       legendaMode: overrides.legendaMode ?? legendaMode,
-      legendaPack: overrides.legendaPack ?? legendaPack,
+      legendaPacks: overrides.legendaPacks ?? legendaPacks,
     }
     socket.emit('mm_update_settings', {
       code: room.code,
@@ -305,6 +316,20 @@ export default function MemeMixLobby() {
       settings: payload,
     })
     setRoom((r) => r ? { ...r, settings: { ...r.settings, ...payload } } : r)
+  }
+
+  const toggleLegendaPack = (pack) => {
+    const current = normalizeLegendaPacks(legendaPacks)
+    const next = pack === 'todas'
+      ? ['todas']
+      : current.includes('todas')
+        ? [pack]
+        : current.includes(pack)
+          ? current.filter((p) => p !== pack)
+          : [...current, pack]
+    const normalized = normalizeLegendaPacks(next.length ? next : ['todas'])
+    setLegendaPacks(normalized)
+    pushSettings({ legendaPacks: normalized })
   }
 
   useEffect(() => {
@@ -583,22 +608,19 @@ export default function MemeMixLobby() {
               </div>
               {legendaMode !== 'escritas' && (
                 <div>
-                  <p className="text-slate-400 text-xs mb-2">Pack de legendas</p>
+                  <p className="text-slate-400 text-xs mb-2">Packs de legendas</p>
                   <div className="flex gap-2 flex-wrap">
                     {['todas', ...availablePacks.filter((p) => p !== 'community')].map((p) => (
-                      <button key={p} type="button" onClick={() => {
-                        setLegendaPack(p)
-                        pushSettings({ legendaPack: p })
-                      }}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold ${legendaPack === p ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
+                      <button key={p} type="button" onClick={() => toggleLegendaPack(p)}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold ${legendaPacks.includes(p) ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
                         {LEGENDA_PACK_LABELS[p] || p}
                       </button>
                     ))}
                   </div>
                   <p className="text-slate-600 text-[10px] mt-1.5">
-                    {legendaPack === 'todas'
+                    {legendaPacks.includes('todas')
                       ? 'Mistura todos os packs de legendas disponíveis.'
-                      : `Só legendas do pack «${LEGENDA_PACK_LABELS[legendaPack] || legendaPack}».`}
+                      : `Mistura: ${legendaPacks.map((p) => LEGENDA_PACK_LABELS[p] || p).join(', ')}.`}
                   </p>
                 </div>
               )}
@@ -656,10 +678,10 @@ export default function MemeMixLobby() {
               {uploadStatus && <p className="text-green-400 text-xs text-center">{uploadStatus}</p>}
               {otherMemesList.length > 0 && (
                 <div>
-                  <p className="text-slate-600 text-xs mb-2">Outras fotos na sala</p>
+                  <p className="text-slate-600 text-xs mb-2">Outras fotos na sala ({otherMemesList.length})</p>
                   <div className="grid grid-cols-4 gap-2">
-                    {otherMemesList.slice(0, 8).map((m) => (
-                      <MemeThumb key={m.id} meme={m} label={m.uploadedBy} />
+                    {otherMemesList.map((m) => (
+                      <MemeThumb key={m.id} meme={m} />
                     ))}
                   </div>
                 </div>

@@ -27,7 +27,7 @@ export default function AldeiaMixLobby() {
 
   const [numLobos, setNumLobos] = useState(1)
   const [numCurandeiras, setNumCurandeiras] = useState(1)
-  const [numVidentes, setNumVidentes] = useState(1)
+  const [numVidentes, setNumVidentes] = useState(0)
   const [discussionSeconds, setDiscussionSeconds] = useState(120)
 
   const goToGame = (incomingRoom, playerName, isHost, role) => {
@@ -156,7 +156,7 @@ export default function AldeiaMixLobby() {
     navigate('/AldeiaMix')
   }
 
-  const maxSpec = room ? Math.max(0, (room.players?.length || 0) - 3) : 0
+  const maxSpec = room ? Math.max(1, (room.players?.length || 0) - 2) : 0
   const isHost = room && room.host === name.trim()
   const juizName = room?.juizName || room?.players?.[0]?.name
   const savedSession = loadAmSession()
@@ -167,9 +167,9 @@ export default function AldeiaMixLobby() {
       <div className="flex items-center justify-center gap-2">
         <button type="button" onClick={() => set((v) => Math.max(0, v - 1))} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400">−</button>
         <span className="text-white font-black">{val}</span>
-        <button type="button" onClick={() => {
+        <button type="button" disabled={numLobos + numCurandeiras + numVidentes >= maxSpec} onClick={() => {
           if (numLobos + numCurandeiras + numVidentes < maxSpec) set((v) => v + 1)
-        }} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400">+</button>
+        }} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-30">+</button>
       </div>
     </div>
   )

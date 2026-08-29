@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trash2, WifiOff } from 'lucide-react'
+import { Crown, RefreshCw, Trash2, WifiOff } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
@@ -181,6 +181,12 @@ export default function MemeMixOnline() {
     socket.emit('mm_pick_winner', { code: room.code, winnerId })
   }
 
+  const swapLegenda = (text) => {
+    if (!socket || !room) return
+    socket.emit('mm_swap_legenda', { code: room.code, text })
+    if (pickedLegenda === text) setPickedLegenda(null)
+  }
+
   const closeRoom = () => {
     if (!socket || !room || !window.confirm('Fechar sala e apagar todas as fotos?')) return
     socket.emit('mm_end_session', { code: room.code })
@@ -209,11 +215,13 @@ export default function MemeMixOnline() {
   const currentMeme = room.currentMeme
   const submissions = g.submissionsPublic || []
   const scores = room.players || []
+  const myScore = scores.find((p) => p.name === playerName)?.score || 0
   const pending = g.pendingSubmissions ?? room.submissions ?? 0
   const expected = room.submissionsExpected ?? Math.max(0, scores.filter((p) => !p.disconnected).length - 1)
   const rawLegendaMode = room.settings?.legendaMode || 'pack'
   const legendaMode = rawLegendaMode === 'misto' ? 'pack' : rawLegendaMode
   const canPickFromHand = legendaMode === 'pack' && hand.length > 0
+  const canSwapLegendas = canPickFromHand && !isJuiz && !g.mySubmission && !room.revealed && myScore > 0
   const canType = legendaMode === 'escritas'
 
   return (
@@ -237,11 +245,22 @@ export default function MemeMixOnline() {
 
         <div className="flex flex-wrap gap-2">
           {scores.map((p) => (
-            <span key={p.id || p.name} className={`text-xs px-2 py-1 rounded-lg ${p.disconnected ? 'opacity-40 line-through' : ''} ${p.name === playerName ? 'bg-pink-600/30 text-pink-200' : 'bg-white/[0.05] text-slate-400'}`}>
+            <span key={p.id || p.name} className={`relative text-xs px-2 py-1 rounded-lg ${p.disconnected ? 'opacity-40 line-through' : ''} ${p.name === playerName ? 'bg-pink-600/30 text-pink-200' : 'bg-white/[0.05] text-slate-400'}`}>
+              {p.name === room.juizName && (
+                <Crown className="absolute -top-3 left-1/2 h-4 w-4 -translate-x-1/2 text-amber-300 drop-shadow" />
+              )}
               {p.name}: {p.score}
             </span>
           ))}
         </div>
+
+        {room.lastRoundWinner && (
+          <div className="rounded-2xl border border-pink-400/25 bg-pink-500/10 p-3 text-center">
+            <p className="text-pink-200 text-xs font-black uppercase tracking-[0.16em]">Legenda vencedora</p>
+            <p className="mt-1 text-white font-bold leading-snug">"{room.lastRoundWinner.text}"</p>
+            <p className="mt-1 text-pink-300 text-sm font-semibold">+1 ponto: {room.lastRoundWinner.playerName}</p>
+          </div>
+        )}
 
         {isJuiz && g.stashCount > 0 && (
           <p className="text-slate-500 text-xs text-center">
@@ -302,14 +321,14 @@ export default function MemeMixOnline() {
                           type="button" onClick={() => pickWinner(s.playerId)}
                           className="relative w-full text-left bg-white text-slate-950 hover:bg-pink-50 border border-pink-200/80 rounded-[1.4rem] p-4 shadow-lg">
                           <span className="absolute -top-2 left-6 h-4 w-4 rotate-45 bg-white border-l border-t border-pink-200/80" />
-                          <p className="text-slate-400 text-xs">{s.playerName}</p>
+                          <p className="text-slate-400 text-xs">Legenda {i + 1}</p>
                           <p className="text-slate-950 font-bold">{s.text}</p>
                         </motion.button>
                       ) : (
                         <motion.div key={s.playerId} custom={i} variants={cardVariants} initial="hidden" animate="visible"
                           className="relative bg-white/[0.08] border border-white/10 rounded-[1.4rem] p-3">
                           <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-[#24172f] border-l border-t border-white/10" />
-                          <p className="text-slate-500 text-xs">{s.playerName}</p>
+                          <p className="text-slate-500 text-xs">Legenda {i + 1}</p>
                           <p className="text-white font-medium">{s.text}</p>
                         </motion.div>
                       )
@@ -323,9 +342,27 @@ export default function MemeMixOnline() {
                         <p className="text-slate-400 text-sm">Escolhe uma legenda:</p>
                         {hand.map((leg) => (
                           <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
-                            className={`relative w-full text-left rounded-[1.35rem] p-3 text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white ring-2 ring-pink-300/70' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                            className={`relative w-full text-left rounded-[1.35rem] p-3 pr-12 text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white ring-2 ring-pink-300/70' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
                             <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
                             {leg}
+                            {canSwapLegendas && (
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); swapLegenda(leg) }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    swapLegenda(leg)
+                                  }
+                                }}
+                                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl bg-black/20 text-white/90"
+                                title="Trocar por 1 ponto"
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </span>
+                            )}
                           </button>
                         ))}
                       </>
@@ -372,9 +409,27 @@ export default function MemeMixOnline() {
                     <p className="text-slate-400 text-sm">As tuas legendas — podes ir escolhendo:</p>
                     {hand.map((leg) => (
                       <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
-                        className={`relative w-full text-left rounded-[1.35rem] p-3 text-sm ${pickedLegenda === leg ? 'bg-pink-600/80 text-white ring-1 ring-pink-400/50' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                        className={`relative w-full text-left rounded-[1.35rem] p-3 pr-12 text-sm ${pickedLegenda === leg ? 'bg-pink-600/80 text-white ring-1 ring-pink-400/50' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
                         <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
                         {leg}
+                        {canSwapLegendas && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); swapLegenda(leg) }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                swapLegenda(leg)
+                              }
+                            }}
+                            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl bg-black/20 text-white/90"
+                            title="Trocar por 1 ponto"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </span>
+                        )}
                       </button>
                     ))}
                   </>

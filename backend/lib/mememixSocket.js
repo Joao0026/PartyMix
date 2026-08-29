@@ -27,6 +27,15 @@ function normalizeLegendaPack(p) {
   const clean = String(p || 'todas').trim().slice(0, 60)
   return clean || 'todas'
 }
+function normalizeLegendaPacks(input) {
+  const raw = Array.isArray(input) ? input : [input]
+  const packs = raw
+    .map(normalizeLegendaPack)
+    .filter(Boolean)
+  const unique = [...new Set(packs)]
+  if (!unique.length || unique.includes('todas') || unique.includes('all')) return ['todas']
+  return unique
+}
 const MAX_LEGENDA_LEN = 200
 
 function removeMemeFromRoom(code, memeId, { playerName, socketId } = {}) {
@@ -122,6 +131,7 @@ function sanitizeMm(room) {
     submissionsExpected: Math.max(0, room.players.filter((p) => !p.disconnected).length - 1),
     revealed: room.revealed,
     roundWinner: room.roundWinner,
+    lastRoundWinner: room.lastRoundWinner || null,
     gameWinner: room.gameWinner,
     uploadsLocked: room.uploadsLocked,
   }
@@ -144,15 +154,33 @@ function buildGameView(room, socketId) {
     stashCount: stash.length,
     mySubmission: room.submissions?.[socketId] || null,
     submissionsPublic: room.revealed
-      ? Object.entries(room.submissions || {}).map(([id, text]) => {
+      ? Object.entries(room.submissions || {}).map(([id, submission]) => {
         const p = room.players.find((pl) => pl.id === id)
-        return { playerId: id, playerName: p?.name, text }
+        return { playerId: id, playerName: room.roundWinner ? p?.name : null, text: submissionText(submission) }
       })
       : [],
     pendingSubmissions: !room.revealed && room.currentMeme
       ? Object.keys(room.submissions || {}).length
       : 0,
   }
+}
+
+function submissionText(submission) {
+  if (submission && typeof submission === 'object') return String(submission.text || '').trim()
+  return String(submission || '').trim()
+}
+
+function uniqueTexts(rows) {
+  const seen = new Set()
+  const out = []
+  for (const row of rows || []) {
+    const text = String(row?.text || row || '').trim()
+    const key = text.normalize('NFKC').toLowerCase().replace(/\s+/g, ' ')
+    if (!text || seen.has(key)) continue
+    seen.add(key)
+    out.push(text)
+  }
+  return out
 }
 
 function migratePlayerSocket(room, oldId, newId) {
@@ -278,16 +306,17 @@ function dealMemesToJuiz(room, playerId) {
   }
 }
 
-async function loadLegendas(includeCommunity, pack) {
+async function loadLegendas(includeCommunity, packsInput) {
   const filter = { mode_type: 'mememix', category: 'legenda' }
-  const p = String(pack || 'todas')
-  if (p && p !== 'todas' && p !== 'all') {
-    filter.pack = includeCommunity ? { $in: [p, 'community'] } : p
+  const packs = normalizeLegendaPacks(packsInput)
+  if (!packs.includes('todas')) {
+    const selected = includeCommunity ? [...packs, 'community'] : packs
+    filter.pack = selected.length === 1 ? selected[0] : { $in: selected }
   } else if (!includeCommunity) {
     filter.pack = { $ne: 'community' }
   }
   const rows = await Card.find(filter).lean()
-  return rows.map((r) => r.text).filter(Boolean)
+  return uniqueTexts(rows)
 }
 
 async function loadOfficialMemes() {
@@ -322,6 +351,7 @@ function registerMemeMixHandlers(io, socket) {
   socket.on('mm_create_room', ({ playerName, settings }) => {
     const code = Math.random().toString(36).substring(2, 6).toUpperCase()
     const cfg = settings || {}
+    const legendaPacks = normalizeLegendaPacks(cfg.legendaPacks ?? cfg.legendaPack)
     mmRooms[code] = {
       code,
       host: playerName,
@@ -335,7 +365,8 @@ function registerMemeMixHandlers(io, socket) {
         uploads: cfg.uploads === 'host' ? 'host' : 'all',
         maxMemesPerPlayer: clampMaxMemesPerPlayer(cfg.maxMemesPerPlayer),
         legendaMode: normalizeLegendaMode(cfg.legendaMode),
-        legendaPack: normalizeLegendaPack(cfg.legendaPack),
+        legendaPack: legendaPacks[0],
+        legendaPacks,
       },
       status: 'waiting',
       memes: [],
@@ -349,6 +380,7 @@ function registerMemeMixHandlers(io, socket) {
       submissions: {},
       revealed: false,
       roundWinner: null,
+      lastRoundWinner: null,
       gameWinner: null,
       round: 0,
       currentMeme: null,
@@ -446,8 +478,10 @@ function registerMemeMixHandlers(io, socket) {
     if (settings?.legendaMode != null) {
       room.settings.legendaMode = normalizeLegendaMode(settings.legendaMode)
     }
-    if (settings?.legendaPack != null) {
-      room.settings.legendaPack = normalizeLegendaPack(settings.legendaPack)
+    if (settings?.legendaPacks != null || settings?.legendaPack != null) {
+      const legendaPacks = normalizeLegendaPacks(settings.legendaPacks ?? settings.legendaPack)
+      room.settings.legendaPacks = legendaPacks
+      room.settings.legendaPack = legendaPacks[0]
     }
     io.to(room.code).emit('mm_room_updated', sanitizeMm(room))
   })
@@ -501,7 +535,7 @@ function registerMemeMixHandlers(io, socket) {
     const legendaMode = normalizeLegendaMode(room.settings.legendaMode)
     let legendas = []
     if (legendaMode !== 'escritas') {
-      legendas = await loadLegendas(room.settings.includeCommunity, room.settings.legendaPack)
+      legendas = await loadLegendas(room.settings.includeCommunity, room.settings.legendaPacks || room.settings.legendaPack)
       const legendasNeeded = Math.max(10, (active.length - 1) * 5)
       if (legendas.length < legendasNeeded) {
         socket.emit('error', `Poucas legendas (${legendas.length}/${legendasNeeded}) — corre npm run seed:packs`)
@@ -524,6 +558,7 @@ function registerMemeMixHandlers(io, socket) {
     room.juizIdx = 0
     room.submissions = {}
     room.revealed = false
+    room.lastRoundWinner = null
     room.stash = {}
     room.hands = {}
     room.memeHands = {}
@@ -578,7 +613,7 @@ function registerMemeMixHandlers(io, socket) {
       const newCard = room.legendasDeck.shift()
       if (newCard) room.hands[socket.id].push(newCard)
     }
-    room.submissions[socket.id] = legenda
+    room.submissions[socket.id] = { text: legenda, playerName: room.players.find((p) => p.id === socket.id)?.name || null }
 
     io.to(code).emit('mm_round_update', sanitizeMm(room))
     room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
@@ -598,6 +633,34 @@ function registerMemeMixHandlers(io, socket) {
     }
   })
 
+  socket.on('mm_swap_legenda', ({ code, text }) => {
+    const room = mmRooms[code]
+    if (!room || room.status !== 'playing') return
+    if (normalizeLegendaMode(room.settings.legendaMode) !== 'pack') return
+    const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
+    const juiz = room.players[room.juizIdx]
+    if (!player || player.id === juiz?.id) return
+    if ((player.score || 0) < 1) {
+      socket.emit('error', 'Precisas de 1 ponto para trocar uma legenda')
+      return
+    }
+
+    const legenda = String(text || '').trim().slice(0, MAX_LEGENDA_LEN)
+    const hand = room.hands[socket.id] || []
+    const idx = hand.indexOf(legenda)
+    if (idx < 0) return
+
+    hand.splice(idx, 1)
+    const replacement = room.legendasDeck.shift()
+    if (replacement) hand.push(replacement)
+    player.score = Math.max(0, (player.score || 0) - 1)
+
+    io.to(code).emit('mm_round_update', sanitizeMm(room))
+    room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
+      io.to(p.id).emit('mm_state', buildGameView(room, p.id))
+    })
+  })
+
   socket.on('mm_pick_winner', ({ code, winnerId }) => {
     const room = mmRooms[code]
     if (!room || room.status !== 'playing') return
@@ -607,10 +670,12 @@ function registerMemeMixHandlers(io, socket) {
 
     const winner = room.players.find((p) => p.id === winnerId)
     if (!winner || winner.id === juiz.id) return
-    if (!room.submissions[winnerId]) return
+    const winningText = submissionText(room.submissions[winnerId])
+    if (!winningText) return
 
     winner.score = (winner.score || 0) + 1
     room.roundWinner = winner.name
+    room.lastRoundWinner = { playerName: winner.name, text: winningText }
 
     if (winner.score >= room.settings.maxPoints) {
       room.gameWinner = winner.name
@@ -647,6 +712,7 @@ function registerMemeMixHandlers(io, socket) {
     room.status = 'waiting'
     room.uploadsLocked = false
     room.gameWinner = null
+    room.lastRoundWinner = null
     room.round = 0
     room.currentMeme = null
     room.submissions = {}

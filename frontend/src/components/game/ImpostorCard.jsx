@@ -79,6 +79,7 @@ export default function ImpostorCard({
   correctQuestion,
   wrongQuestion,
   impostorIndex,
+  ghostImpostorName = null,
   onComplete,
 }) {
   const [phase, setPhase] = useState('pass')
@@ -114,7 +115,14 @@ export default function ImpostorCard({
     <div className="w-full space-y-4">
       <div className="rounded-2xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-3 py-2 text-center">
         <p className="text-fuchsia-200 text-xs font-black uppercase tracking-[0.18em]">Carta Impostor</p>
-        <p className="text-white/80 text-xs mt-0.5">1 jogador viu outra pergunta. Descubram-no no fim.</p>
+        {ghostImpostorName ? (
+          <p className="text-white/90 text-xs mt-0.5">
+            O impostor é <span className="font-black text-fuchsia-100">{ghostImpostorName}</span> (já saiu da mesa).
+            Um jogador aqui viu a pergunta errada.
+          </p>
+        ) : (
+          <p className="text-white/80 text-xs mt-0.5">1 jogador viu outra pergunta. Descubram-no no fim.</p>
+        )}
       </div>
 
       <AnimatePresence mode="wait">
@@ -247,9 +255,23 @@ export default function ImpostorCard({
               {guessedCorrect ? 'Mesa acertou!' : 'Mesa falhou!'}
             </p>
             <p className="text-white/90 text-sm leading-relaxed">
-              O impostor era <span className="font-black">{impostor?.name}</span>.
-              {accusedIdx !== impostorIndex && accusedIdx !== null && (
-                <> Acusaram {players[accusedIdx]?.name}.</>
+              {ghostImpostorName ? (
+                <>
+                  O impostor era <span className="font-black">{ghostImpostorName}</span> (já saiu).
+                  {accusedIdx !== impostorIndex && accusedIdx !== null && (
+                    <> Acusaram {players[accusedIdx]?.name}.</>
+                  )}
+                  {accusedIdx === impostorIndex && (
+                    <> Acertaram quem tinha a pergunta errada: {impostor?.name}.</>
+                  )}
+                </>
+              ) : (
+                <>
+                  O impostor era <span className="font-black">{impostor?.name}</span>.
+                  {accusedIdx !== impostorIndex && accusedIdx !== null && (
+                    <> Acusaram {players[accusedIdx]?.name}.</>
+                  )}
+                </>
               )}
             </p>
             <div className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
