@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, RotateCcw, Check, Plus, Trash2, Beer, Share2 } from 'lucide-react'
+import { ChevronRight, RotateCcw, Check, Plus, Beer, Share2, Users } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import { fetchChallenges, fetchDrinkDecks, fetchDrinkPacks } from '../utils/contentApi'
@@ -27,6 +27,8 @@ import PageShell from '../components/layout/PageShell'
 import ModeHeader from '../components/layout/ModeHeader'
 import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
+import MesaNoite from '../components/layout/MesaNoite'
+import NightShell, { NightTitle, NightCta, GlowDisc } from '../components/layout/NightShell'
 import { shareNight } from '../utils/shareNight'
 import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 
@@ -798,17 +800,19 @@ function CardDeck({
       </AnimatePresence>
 
       {deck.length > 0 ? (
-        <div className="sticky-cta -mx-4 px-4 mt-2 !bg-transparent">
-        <motion.button
-          id="drink-next-card-btn"
-          whileHover={{ scale: actionLocked ? 1 : 1.02 }}
-          whileTap={{ scale: actionLocked ? 1 : 0.97 }}
-          onClick={draw}
-          disabled={actionLocked}
-          className="btn-primary bg-gradient-to-r from-amber-400 via-orange-500 to-rose-600 text-lg text-black shadow-[0_16px_40px_rgba(245,158,11,0.22)] disabled:opacity-40"
-        >
-          {impostorLocked ? 'Termina a ronda Impostor' : allianceLocked ? 'Escolhe a aliança' : chaosLocked ? 'Escolhe: normal ou Caos' : current ? 'Próxima carta →' : 'Ver carta'}
-        </motion.button>
+        <div id="drink-next-card-btn" className="mt-2 flex justify-center">
+          <button
+            type="button"
+            onClick={draw}
+            disabled={actionLocked}
+            className="min-h-11 rounded-full border bg-[#1c1c21] px-6 text-[15px] font-extrabold text-white active:scale-[0.98] disabled:opacity-40"
+            style={{
+              borderColor: '#ff5c8d66',
+              boxShadow: actionLocked ? 'none' : '0 8px 24px -8px #ff5c8d88',
+            }}
+          >
+            {impostorLocked ? 'Termina Impostor' : allianceLocked ? 'Escolhe a aliança' : chaosLocked ? 'Normal ou Caos' : current ? 'Próxima carta' : 'Ver carta'}
+          </button>
         </div>
       ) : (
         <div className="text-center space-y-3 w-full">
@@ -1312,254 +1316,137 @@ export default function DrinkGame(){
     )
   }
 
-  if(phase==='setup')return(
-    <PageShell mode="drink" innerClassName="space-y-5">
-        <ModeHeader
-          onBack={() => setupStep > 0 ? setSetupStep(0) : navigate('/')}
-          title="🍺 Modo Beber"
-          subtitle={setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Escolhe os decks'}
-        />
+  if(phase==='setup' && setupStep === 0) {
+    const names = playerNames.map((n) => n.trim()).filter(Boolean)
+    const genders = playerNames
+      .map((n, i) => (n.trim() ? playerGenders[i] ?? null : null))
+      .filter((_, i) => playerNames[i]?.trim())
+    return (
+      <MesaNoite
+        names={names}
+        genders={genders}
+        max={MAX_DRINK_PLAYERS}
+        confirmPrefix="Continuar com"
+        onBack={() => navigate('/')}
+        onChange={(nextNames, nextGenders) => {
+          setPlayerNames(nextNames)
+          setPlayerGenders(nextGenders)
+        }}
+        onConfirm={(nextNames, nextGenders) => {
+          if (nextNames.length < 2) return
+          setPlayerNames(nextNames)
+          setPlayerGenders(nextGenders)
+          setSetupStep(1)
+        }}
+      />
+    )
+  }
 
-        <div className="w-full bg-white/[0.06] rounded-full h-1 mb-6">
-          <div
-            className="bg-gradient-to-r from-amber-400 to-orange-500 h-1 rounded-full transition-all"
-            style={{ width: setupStep === 0 ? '50%' : '100%' }}
-          />
-        </div>
+  if(phase==='setup') {
+    const PINK = '#ff5c8d'
+    const selectedPacks = packOptions.filter((pack) => contentPacks.includes(pack.pack))
 
-        <AnimatePresence mode="wait">
-          {setupStep === 0 && (
-            <motion.div
-              key="setup-players"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              className="space-y-4"
+    if (setupStep === 1) {
+      return (
+        <NightShell
+          onBack={() => setSetupStep(0)}
+          footer={(
+            <NightCta
+              accent={PINK}
+              onClick={() => setSetupStep(2)}
+              disabled={contentPacks.length === 0 || decksLoading}
             >
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-                <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
-                <p className="text-slate-500 text-sm mb-4">
-                  Adiciona pelo menos <span className="text-slate-300 font-semibold">2 nomes</span>. O género é opcional e só serve para adaptar algumas cartas.
-                </p>
-                <div className="space-y-3">
-                  {playerNames.map((n, i) => {
-                    return (
-                    <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-3 space-y-2">
-                      <p className="text-slate-500 text-xs font-semibold">Jogador {i + 1}</p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id={`drink-player-name-${i}`}
-                          value={n}
-                          onChange={(e) => setPlayerNames((ns) => ns.map((x, j) => (j === i ? e.target.value : x)))}
-                          placeholder={`Ex.: ${['Margarida', 'João', 'Joel'][i] || `Jogador ${i + 1}`}`}
-                          autoComplete="off"
-                          aria-label={`Nome do jogador ${i + 1}`}
-                          className="flex-1 min-w-0 bg-white/[0.04] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.1] focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 text-sm font-medium placeholder-slate-600"
-                        />
-                        {playerNames.length > 2 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPlayerNames((ns) => ns.filter((_, j) => j !== i))
-                              setPlayerGenders((gs) => gs.filter((_, j) => j !== i))
-                            }}
-                            className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/[0.04] transition-colors flex-shrink-0"
-                            title="Remover jogador"
-                          >
-                            <Trash2 className="w-4 h-4"/>
-                          </button>
-                        )}
-                        <div className="flex gap-1 flex-shrink-0 rounded-xl p-0.5">
-                          {[
-                            { id: 'm', label: '♂', title: 'Masculino' },
-                            { id: 'f', label: '♀', title: 'Feminino' },
-                          ].map((opt) => (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              title={opt.title}
-                              onClick={() => setPlayerGenders((gs) => gs.map((g, j) => (j === i ? opt.id : g)))}
-                              className={`min-w-[48px] min-h-[48px] rounded-xl border text-sm font-black transition-all ${
-                                playerGenders[i] === opt.id
-                                  ? opt.id === 'm'
-                                    ? 'border-sky-400/50 bg-sky-500/20 text-sky-200'
-                                    : 'border-pink-400/50 bg-pink-500/20 text-pink-200'
-                                  : 'border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white'
-                              }`}
-                            >
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    )
-                  })}
-                </div>
-                {players.length < 2 && (
-                  <p className="text-amber-400/90 text-xs mt-3">
-                    Falta adicionar {players.length === 0 ? '2 jogadores' : 'mais 1 jogador'} para continuar.
-                  </p>
-                )}
-                {playerNames.length < MAX_DRINK_PLAYERS && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPlayerNames((n) => [...n, ''])
-                      setPlayerGenders((g) => [...g, null])
-                    }}
-                    className="mt-3 w-full border border-dashed border-white/[0.1] rounded-2xl py-2.5 text-slate-500 hover:text-white hover:border-white/[0.25] transition-all flex items-center justify-center gap-2 text-sm"
-                  >
-                    <Plus className="w-4 h-4"/> Adicionar jogador
-                  </button>
-                )}
-              </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setSetupStep(1)}
-                disabled={!playersSetupReady}
-                className="w-full text-black font-black rounded-2xl py-4 text-lg disabled:opacity-40 flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
-              >
-                Escolher decks
-                <ChevronRight className="w-5 h-5"/>
-              </motion.button>
-            </motion.div>
+              Continuar
+            </NightCta>
           )}
+        >
+          <NightTitle>Modo Beber</NightTitle>
+          <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Que packs queres?</p>
+          <p className="mt-1.5 text-center text-[13px] text-white/45">Os baralhos escolhes no passo a seguir.</p>
 
-          {setupStep === 1 && (
-            <motion.div
-              key="setup-decks"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              className="space-y-4"
-            >
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-                <p className="text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Jogadores</p>
+          <div className="mt-6 space-y-1.5">
+            {packOptions.map((pack) => {
+              const selected = contentPacks.includes(pack.pack)
+              const packCount = countPackCards(pack.pack)
+              return (
+                <button
+                  key={pack.pack}
+                  type="button"
+                  onClick={() => togglePack(pack.pack)}
+                  className="flex w-full items-center gap-2.5 rounded-full border bg-[#1c1c21] px-2.5 py-1.5 text-left active:scale-[0.98]"
+                  style={selected
+                    ? { borderColor: `${PINK}66`, boxShadow: `0 8px 20px -10px ${PINK}88` }
+                    : { borderColor: 'rgba(255,255,255,.1)' }}
+                >
+                  <GlowDisc color={selected ? PINK : '#64748b'} size={36}>
+                    <Beer className="h-4 w-4" style={{ color: selected ? PINK : '#94a3b8' }} strokeWidth={1.75} />
+                  </GlowDisc>
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-white">
+                    {pack.name || pack.pack}
+                    {packCount > 0 && <span className="ml-1.5 font-semibold text-slate-400">{packCount}</span>}
+                  </span>
+                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-[#ff5c8d] bg-[#ff5c8d]' : 'border-white/20'}`}>
+                    {selected && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+          {decksLoading && <p className="mt-3 text-center text-xs text-[#ff5c8d]">A preparar os packs…</p>}
+        </NightShell>
+      )
+    }
+
+    return (
+      <NightShell
+        onBack={() => setSetupStep(1)}
+        footer={(
+          <NightCta
+            accent={PINK}
+            onClick={startGame}
+            disabled={contentPacks.length === 0 || effectiveCats.length === 0 || activeDeck.length === 0 || !playersSetupReady}
+          >
+            Começar · {activeDeck.length} cartas
+          </NightCta>
+        )}
+      >
+        <NightTitle>Modo Beber</NightTitle>
+        <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Baralhos</p>
+        <p className="mt-1.5 text-center text-[13px] text-white/45">Toca para tirar o que não queres nesta noite.</p>
+
+        <div className="mt-6 space-y-5">
+          {selectedPacks.map((pack) => {
+            const packDecks = decksForPack(pack.pack)
+            const off = packOff[pack.pack] || []
+            return (
+              <div key={pack.pack}>
+                <p className="mb-2 text-[13px] font-bold text-white/70">{pack.name || pack.pack}</p>
                 <div className="flex flex-wrap gap-2">
-                  {players.map((p) => (
-                    <span
-                      key={p.name}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1 text-sm text-white"
-                    >
-                      {genderSymbol(p.gender) && (
-                        <span className={`font-black ${p.gender === 'm' ? 'text-sky-200' : 'text-pink-200'}`}>{genderSymbol(p.gender)}</span>
-                      )}
-                      {p.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-4">
-                  <p className="text-amber-400 text-xs font-black uppercase tracking-[0.18em]">Escolhe a tua noite</p>
-                  <h3 className="text-white text-xl font-black mt-1">Que packs queres à mesa?</h3>
-                  <p className="text-slate-500 text-sm mt-1">Marca os packs. Dentro de cada um, desliga o que não queres — Bluff só neste, Eu Nunca noutro, etc.</p>
-                </div>
-                <div className="space-y-3">
-                  {packOptions.map((pack) => {
-                    const selected = contentPacks.includes(pack.pack)
-                    const packCount = countPackCards(pack.pack)
-                    const isRecommended = pack.pack === 'base'
-                    const packDecks = selected ? decksForPack(pack.pack) : []
-                    const off = packOff[pack.pack] || []
+                  {packDecks.map((cat) => {
+                    const on = !off.includes(cat.id)
                     return (
-                      <div
-                        key={pack.pack}
-                        className={`relative w-full overflow-hidden rounded-3xl border p-4 text-left transition-all ${
-                          selected
-                            ? 'border-amber-400/60 bg-amber-500/[0.12] ring-1 ring-amber-400/20'
-                            : 'border-white/[0.08] bg-white/[0.035]'
-                        }`}
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => togglePackDeck(pack.pack, cat.id)}
+                        className="inline-flex items-center rounded-full border px-3 py-1 text-left"
+                        style={on
+                          ? { borderColor: `${PINK}66`, boxShadow: `0 8px 20px -10px ${PINK}88`, background: '#1c1c21', color: '#fff' }
+                          : { borderColor: 'rgba(255,255,255,.1)', background: '#141419', color: '#64748b', textDecoration: 'line-through' }}
                       >
-                        <button
-                          type="button"
-                          onClick={() => togglePack(pack.pack)}
-                          className="flex w-full items-start gap-4 text-left"
-                        >
-                          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
-                            selected ? 'bg-amber-500 text-black' : 'bg-white/[0.07] text-amber-300'
-                          }`}>
-                            <Beer className="h-6 w-6" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="font-black text-white text-base">{pack.name || pack.pack}</p>
-                              {isRecommended && (
-                                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">
-                                  Recomendado
-                                </span>
-                              )}
-                            </div>
-                            <p className="mt-1 text-sm leading-relaxed text-slate-400">{pack.description}</p>
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              <span className="rounded-full border border-white/[0.08] bg-black/10 px-2.5 py-1 text-[10px] font-bold capitalize text-slate-300">
-                                {pack.intensity || 'moderada'}
-                              </span>
-                              <span className="rounded-full border border-white/[0.08] bg-black/10 px-2.5 py-1 text-[10px] font-bold text-slate-300">
-                                {pack.ageRating || '18+'}
-                              </span>
-                              {packCount > 0 && (
-                                <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold text-amber-200">
-                                  {packCount} cartas
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className={`mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${
-                            selected ? 'border-amber-400 bg-amber-500' : 'border-white/20'
-                          }`}>
-                            {selected && <Check className="h-4 w-4 text-black" />}
-                          </div>
-                        </button>
-                        {selected && packDecks.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
-                            {packDecks.map((cat) => {
-                              const on = !off.includes(cat.id)
-                              return (
-                                <button
-                                  key={cat.id}
-                                  type="button"
-                                  onClick={() => togglePackDeck(pack.pack, cat.id)}
-                                  className={`min-h-[48px] rounded-2xl border px-3 py-2 text-left transition-all ${
-                                    on
-                                      ? 'border-amber-400/40 bg-amber-500/15 text-white'
-                                      : 'border-white/[0.08] bg-black/20 text-slate-500 line-through'
-                                  }`}
-                                >
-                                  <span className="block text-sm font-bold leading-tight">{cat.label}</span>
-                                  <span className="block text-[10px] font-semibold text-slate-400">{cat.count}</span>
-                                </button>
-                              )
-                            })}
-                          </div>
-                        )}
-                      </div>
+                        <span className="text-[13px] font-bold leading-none">{cat.label}</span>
+                        <span className="ml-1.5 text-[10px] font-semibold leading-none opacity-70">{cat.count}</span>
+                      </button>
                     )
                   })}
                 </div>
-                {decksLoading && <p className="text-center text-amber-400 text-xs mt-3">A preparar os decks…</p>}
               </div>
-
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={startGame}
-                disabled={contentPacks.length === 0 || effectiveCats.length === 0 || activeDeck.length === 0 || !playersSetupReady}
-                className="sticky bottom-3 z-20 w-full rounded-2xl py-5 text-xl font-black text-black disabled:opacity-40"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
-              >
-                🍻 Começar! ({activeDeck.length} cartas)
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-    </PageShell>
-  )
+            )
+          })}
+        </div>
+      </NightShell>
+    )
+  }
 
   return(
     <GameShell
@@ -1568,37 +1455,38 @@ export default function DrinkGame(){
         <div className="flex items-center gap-2">
           <BackButton onClick={() => setLeaveConfirm(true)} />
           <div className="flex-1 min-w-0 text-center">
-            <h1 className="text-white font-black text-lg leading-tight">🍺 Modo Beber</h1>
-            <p className="text-slate-300 text-sm">Turno {turnCount}</p>
+            <h1 className="truncate text-lg font-black leading-tight text-white">Modo Beber</h1>
+            <p className="text-sm text-slate-300">Turno {turnCount}</p>
           </div>
           <button
             type="button"
             onClick={() => setShowPlayersPanel((v) => !v)}
-            className={`shrink-0 text-sm font-black rounded-xl border px-2.5 py-2 ${
+            aria-label="Jogadores"
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border ${
               showPlayersPanel
-                ? 'text-black border-emerald-400 bg-emerald-400'
-                : 'text-emerald-300 border-emerald-400/25 bg-emerald-400/10'
+                ? 'border-[#ff5c8d]/50 bg-[#ff5c8d] text-black'
+                : 'border-white/10 bg-[#1c1c21] text-white'
             }`}
           >
-            👥
+            <Users className="h-4 w-4" strokeWidth={2} />
           </button>
           <button
             type="button"
             onClick={() => setShowMesaPanel((v) => !v)}
-            className={`shrink-0 text-sm font-black rounded-xl border px-2.5 py-2 flex items-center gap-1.5 ${
+            className={`relative flex h-10 shrink-0 items-center gap-1 rounded-full border px-3 text-xs font-bold ${
               showMesaPanel
-                ? 'text-black border-amber-400 bg-amber-400'
-                : 'text-amber-300 border-amber-400/25 bg-amber-400/10'
+                ? 'border-[#ffb04f]/50 bg-[#ffb04f] text-black'
+                : 'border-white/10 bg-[#1c1c21] text-white'
             }`}
           >
-            🪑 Mesa
+            Mesa
             {mesaBadgeCount > 0 && !showMesaPanel && (
-              <span className="min-w-[1.1rem] h-4 px-1 rounded-full bg-amber-500 text-black text-[10px] font-black flex items-center justify-center">
+              <span className="grid h-4 min-w-4 place-items-center rounded-full bg-[#ff5c8d] px-1 text-[10px] font-black text-white">
                 {mesaBadgeCount}
               </span>
             )}
           </button>
-          <button type="button" onClick={()=>setPhase('results')} className="shrink-0 text-amber-300 text-sm font-black rounded-xl border border-amber-400/25 bg-amber-400/10 px-2.5 py-2">
+          <button type="button" onClick={() => setPhase('results')} className="h-10 shrink-0 rounded-full border border-white/10 bg-[#1c1c21] px-3 text-xs font-bold text-white">
             Fim
           </button>
         </div>

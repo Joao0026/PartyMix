@@ -1,23 +1,24 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Wifi, Trash2 } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import { Trash2 } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { getSocketUrl } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession } from '../utils/amSession'
 import { loadNightRoster } from '../utils/nightRoster'
-import ShareRoomLink from '../components/layout/ShareRoomLink'
+import NightShell, {
+  NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, pessoaLabel,
+} from '../components/layout/NightShell'
 
 const API_URL = getSocketUrl()
+const CYAN = '#22d3ee'
 
 export default function AldeiaMixLobby() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [tab, setTab] = useState('create')
-  const [name, setName] = useState('')
+  const rosterNames = useMemo(() => loadNightRoster().names, [])
+  const [name, setName] = useState(() => loadAmSession()?.playerName || loadNightRoster().names[0] || '')
   const [code, setCode] = useState('')
   const [error, setError] = useState(null)
   const [room, setRoom] = useState(null)
@@ -155,7 +156,6 @@ export default function AldeiaMixLobby() {
       const roster = loadNightRoster()
       if (roster.names.length) setName(roster.names[0])
     }
-    if (saved?.code) setCode(saved.code)
     return () => unbindSocket()
   }, [])
 
@@ -193,127 +193,133 @@ export default function AldeiaMixLobby() {
     navigate('/AldeiaMix')
   }
 
+  const leaveRoom = () => {
+    socket?.disconnect()
+    clearGlobalSocket()
+    setRoom(null)
+    setSocket(null)
+    setConnecting(false)
+  }
+
   const maxSpec = room ? Math.max(1, (room.players?.length || 0) - 2) : 0
   const isHost = room && room.host === name.trim()
   const juizName = room?.juizName || room?.players?.[0]?.name
   const savedSession = loadAmSession()
-
-  const roleCounter = (label, val, set) => (
-    <div className="bg-white/[0.03] rounded-xl p-3 text-center">
-      <p className="text-slate-500 text-xs mb-1">{label}</p>
-      <div className="flex items-center justify-center gap-2">
-        <button type="button" onClick={() => set((v) => Math.max(0, v - 1))} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400">−</button>
-        <span className="text-white font-black">{val}</span>
-        <button type="button" disabled={numLobos + numCurandeiras + numVidentes >= maxSpec} onClick={() => {
-          if (numLobos + numCurandeiras + numVidentes < maxSpec) set((v) => v + 1)
-        }} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-30">+</button>
-      </div>
-    </div>
-  )
+  const liveCount = room?.players?.filter((p) => !p.disconnected)?.length || 0
 
   if (room) {
     return (
-      <PageShell mode="aldeia" innerClassName="space-y-4">
-          <div className="flex items-center gap-3">
-            <BackButton onClick={() => { clearAmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/AldeiaMix') }} />
-            <div>
-              <h1 className="text-white font-black text-xl flex items-center gap-2">
-                <Wifi className="text-emerald-400 w-5 h-5" /> AldeiaMix · {room.code}
-              </h1>
-              <p className="text-slate-500 text-sm">Juiz (narrador): {juizName} · não joga</p>
-            </div>
-          </div>
+      <NightShell
+        onBack={() => { leaveRoom(); navigate('/AldeiaMix') }}
+        footer={isHost ? (
+          <>
+            <NightCta accent={CYAN} onClick={startGame} disabled={liveCount < 4}>
+              Começar com {pessoaLabel(room.players?.length || 0)}
+            </NightCta>
+            <button type="button" onClick={closeRoom} className="mt-2 flex w-full items-center justify-center gap-1 py-1.5 text-xs font-bold text-red-400/80">
+              <Trash2 className="h-3.5 w-3.5" /> Fechar sala
+            </button>
+          </>
+        ) : (
+          <p className="py-2 text-center text-sm text-white/45">À espera que o host inicie…</p>
+        )}
+      >
+        <NightTitle>AldeiaMix</NightTitle>
+        <p className="mt-1.5 text-center text-[13px] text-white/45">Juiz: {juizName} · não joga</p>
+        <GlowCode code={room.code} accent={CYAN} mode="aldeia" />
 
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
-            <ShareRoomLink mode="aldeia" code={room.code} />
-          </div>
+        <div className="mt-5 space-y-2.5">
+          {(room.players || []).map((p, i) => (
+            <NightPlayerChip
+              key={p.id || p.name || i}
+              name={p.name}
+              index={i}
+              host={p.name === room.host}
+              mine={p.name === name.trim()}
+              disconnected={p.disconnected}
+              accent={CYAN}
+              badge={i === room.juizIdx ? <span className="text-[11px] font-extrabold text-[#fbbf24]">JUIZ</span> : null}
+              onRemove={p.name === name.trim() ? leaveRoom : undefined}
+              removeLabel="Sair da sala"
+            />
+          ))}
+        </div>
 
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
-            {(room.players || []).map((p, i) => (
-              <div key={p.id || p.name || i} className="flex items-center gap-3">
-                <span className={`text-white font-medium ${p.disconnected ? 'opacity-40 line-through' : ''}`}>
-                  {p.name}{p.name === name.trim() ? ' (Tu)' : ''}
-                </span>
-                {p.name === room.host && <span className="ml-auto text-xs text-emerald-400 font-bold">HOST</span>}
-                {i === room.juizIdx && <span className="text-xs text-amber-400 font-bold">JUIZ</span>}
-              </div>
-            ))}
-          </div>
-
-          {isHost && (
-            <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
-              <h3 className="text-white font-semibold text-sm">Papéis</h3>
-              <div className="grid grid-cols-3 gap-2">
-                {roleCounter('Lobos', numLobos, setNumLobos)}
-                {roleCounter('Beijoq./o', numCurandeiras, setNumCurandeiras)}
-                {roleCounter('Xerife', numVidentes, setNumVidentes)}
-              </div>
-              <div>
-                <p className="text-slate-500 text-xs mb-2">Tempo de discussão + votação</p>
-                <div className="grid grid-cols-4 gap-2">
-                  {[60, 90, 120, 180].map((s) => (
-                    <button key={s} type="button" onClick={() => setDiscussionSeconds(s)}
-                      className={`rounded-xl border py-2 text-xs font-bold ${discussionSeconds === s ? 'bg-emerald-600/30 border-emerald-500 text-emerald-200' : 'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                      {s}s
-                    </button>
-                  ))}
+        {isHost && (
+          <div className="mt-5 space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Lobos', val: numLobos, set: setNumLobos },
+                { label: 'Beijoq./o', val: numCurandeiras, set: setNumCurandeiras },
+                { label: 'Xerife', val: numVidentes, set: setNumVidentes },
+              ].map(({ label, val, set }) => (
+                <div key={label} className="rounded-2xl border border-white/10 bg-[#1c1c21] p-3 text-center">
+                  <p className="mb-1 text-[11px] text-slate-500">{label}</p>
+                  <div className="flex items-center justify-center gap-1">
+                    <button type="button" onClick={() => set((v) => Math.max(0, v - 1))} className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400">−</button>
+                    <span className="font-black text-white">{val}</span>
+                    <button
+                      type="button"
+                      disabled={numLobos + numCurandeiras + numVidentes >= maxSpec}
+                      onClick={() => { if (numLobos + numCurandeiras + numVidentes < maxSpec) set((v) => v + 1) }}
+                      className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-30"
+                    >+</button>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
-          )}
-
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-
-          {isHost ? (
-            <>
-              <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={startGame}
-                disabled={(room.players?.filter((p) => !p.disconnected)?.length || 0) < 4}
-                className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black rounded-2xl py-4 disabled:opacity-40">
-                Começar partida ({room.players?.length}/4+)
-              </motion.button>
-              <button type="button" onClick={closeRoom}
-                className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/30 text-red-300 rounded-2xl py-3 text-sm">
-                <Trash2 className="w-4 h-4" /> Fechar sala
-              </button>
-            </>
-          ) : (
-            <p className="text-center text-slate-500 text-sm py-4 animate-pulse">À espera do host…</p>
-          )}
-      </PageShell>
+            <div className="grid grid-cols-4 gap-2">
+              {[60, 90, 120, 180].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setDiscussionSeconds(s)}
+                  className={`rounded-full border py-2 text-xs font-bold ${discussionSeconds === s ? 'border-[#22d3ee]/40 text-[#22d3ee]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
+                >
+                  {s}s
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {error && <p className="mt-4 text-center text-sm text-red-400">{error}</p>}
+      </NightShell>
     )
   }
 
   return (
-    <PageShell mode="aldeia" innerClassName="space-y-5">
-        <BackButton onClick={() => navigate('/AldeiaMix')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
-        <div>
-          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Como te chamas?" maxLength={20}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-emerald-500 text-lg placeholder-slate-500" />
-        </div>
-        <div>
-          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
-          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (e.target.value) setTab('join') }}
-            placeholder="ABC234" maxLength={6}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 text-center tracking-[0.3em] font-black placeholder-slate-600 text-2xl outline-none focus:border-emerald-500" />
-        </div>
-        {savedSession?.code && (
-          <button type="button" onClick={rejoinSaved} disabled={connecting}
-            className="w-full bg-white/[0.06] border border-emerald-500/30 text-emerald-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
-            Voltar à sala {savedSession.code} ({savedSession.playerName})
-          </button>
-        )}
-        {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
-        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={createRoom}
-          disabled={connecting || !name.trim()}
-          className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
-          {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
-        </motion.button>
-        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={joinRoom}
-          disabled={connecting || !name.trim() || !code.trim()}
-          className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
-          {connecting && tab === 'join' ? 'A ligar…' : 'Tenho um código'}
-        </motion.button>
-    </PageShell>
+    <NightShell
+      onBack={() => navigate('/AldeiaMix')}
+      footer={(
+        <>
+          {savedSession?.code && (
+            <button type="button" onClick={rejoinSaved} disabled={connecting} className="mb-2 w-full py-1.5 text-center text-xs font-bold text-white/40 disabled:opacity-40">
+              Voltar à sala {savedSession.code}
+            </button>
+          )}
+          {tab === 'create' ? (
+            <NightCta accent={CYAN} onClick={createRoom} disabled={connecting || !name.trim()}>
+              {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
+            </NightCta>
+          ) : (
+            <NightCta accent={CYAN} onClick={joinRoom} disabled={connecting || !name.trim() || !code.trim()}>
+              {connecting && tab === 'join' ? 'A ligar…' : 'Entrar na sala'}
+            </NightCta>
+          )}
+        </>
+      )}
+    >
+      <NightTitle>AldeiaMix</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Sala online</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Quem és tu nesta mesa?</p>
+
+      <RosterChips names={rosterNames} value={name} onChange={setName} accent={CYAN} />
+      <NameField value={name} onChange={setName} />
+      <NightTabs tab={tab} onChange={setTab} />
+      {tab === 'join' && <CodeField value={code} onChange={setCode} />}
+      {error && (
+        <p className="mt-4 rounded-2xl border border-red-400/40 bg-red-900/30 p-3 text-center text-sm text-red-300">{error}</p>
+      )}
+    </NightShell>
   )
 }

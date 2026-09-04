@@ -8,27 +8,27 @@ import { challengePackParams } from '../utils/packParams'
 import ChallengeCard from '../components/game/ChallengeCard'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 import MiniGameModal from '../components/game/MiniGameModal'
-import { BoardDie } from '../components/game/EroticDie'
 import { Trophy } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
 import PlayerScoreChips from '../components/layout/PlayerScoreChips'
+import { NightCta } from '../components/layout/NightShell'
 
 const CATEGORY_CONFIG = {
-  telepatia:    { emoji:'🧠', color:'#0891b2' },
-  perguntas:    { emoji:'📚', color:'#2563eb' },
-  proibido:     { emoji:'🚫', color:'#b45309' },
-  caos:         { emoji:'💥', color:'#dc2626' },
-  mimica:       { emoji:'🎭', color:'#7c3aed' },
-  desenho:      { emoji:'🎨', color:'#db2777' },
-  palavra:      { emoji:'💬', color:'#2563eb' },
-  acao:         { emoji:'⚡', color:'#d97706' },
-  verdade:      { emoji:'❓', color:'#dc2626' },
-  consequencia: { emoji:'🎲', color:'#475569' },
-  cultura:      { emoji:'📚', color:'#059669' },
-  desporto:     { emoji:'⚽', color:'#16a34a' },
-  musica:       { emoji:'🎵', color:'#9333ea' },
-  cinema:       { emoji:'🎬', color:'#334155' },
+  telepatia:    { emoji:'🧠', color:'#0891b2', label:'Sincronia' },
+  perguntas:    { emoji:'📚', color:'#2563eb', label:'Sabichão' },
+  proibido:     { emoji:'🚫', color:'#b45309', label:'Palavra Tabu' },
+  caos:         { emoji:'💥', color:'#dc2626', label:'Caos' },
+  mimica:       { emoji:'🎭', color:'#7c3aed', label:'Gestos' },
+  desenho:      { emoji:'🎨', color:'#db2777', label:'Rabiscos' },
+  palavra:      { emoji:'💬', color:'#2563eb', label:'Palavra' },
+  acao:         { emoji:'⚡', color:'#d97706', label:'Ação' },
+  verdade:      { emoji:'❓', color:'#dc2626', label:'Verdade' },
+  consequencia: { emoji:'🎲', color:'#475569', label:'Consequência' },
+  cultura:      { emoji:'📚', color:'#059669', label:'Cultura' },
+  desporto:     { emoji:'⚽', color:'#16a34a', label:'Desporto' },
+  musica:       { emoji:'🎵', color:'#9333ea', label:'Música' },
+  cinema:       { emoji:'🎬', color:'#334155', label:'Cinema' },
 }
 
 const FRIENDS_SPECIALS = [
@@ -127,15 +127,15 @@ function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30
 // Snake layout grid
 function MapGrid({ tiles, positions, players, currentPlayer, layout = 'classic' }) {
   const COLS = 6
-  const tileW = 56, tileH = 54, gapX = 6, gapY = 10
+  const tileW = 44, tileH = 42, gapX = 5, gapY = 8
   const rows  = Math.ceil(tiles.length / COLS)
-  const boardW = layout === 'party' ? 360 : COLS*(tileW+gapX)-gapX
-  const boardH = layout === 'party' ? 360 : rows*(tileH+gapY)-gapY
+  const boardW = layout === 'party' ? 292 : COLS*(tileW+gapX)-gapX
+  const boardH = layout === 'party' ? 292 : rows*(tileH+gapY)-gapY
 
   function tilePos(idx) {
     if (layout === 'party') {
       if (idx === 0) return { x: boardW/2-tileW/2, y: boardH/2-tileH/2 }
-      const ring = idx <= 12 ? 90 : 152
+      const ring = idx <= 12 ? 74 : 124
       const ringIdx = idx <= 12 ? idx - 1 : idx - 13
       const ringCount = idx <= 12 ? 12 : Math.max(1, tiles.length - 13)
       const angle = -Math.PI / 2 + (ringIdx / ringCount) * Math.PI * 2
@@ -538,35 +538,59 @@ export default function MapGame() {
     setOngoings(os=>os.map(o=>({...o,turnsLeft:o.turnsLeft-1})).filter(o=>o.turnsLeft>0))
   }
 
-  if(!players.length)return null
+  if(!players.length) {
+    return (
+      <GameShell
+        mode={isFamily ? 'family' : 'friends'}
+        header={
+          <div className="flex items-center gap-2">
+            <BackButton onClick={() => navigate('/')} />
+            <h1 className="flex-1 text-center text-lg font-black text-white">{isFamily ? 'Modo Família' : 'Modo Amigos'}</h1>
+            <div className="w-10" />
+          </div>
+        }
+        footer={
+          <NightCta accent={isFamily ? '#4ade80' : '#8b5cf6'} onClick={() => navigate(isFamily ? '/GameSetup?mode=family' : '/GameSetup?mode=friends')}>
+            Configurar mesa
+          </NightCta>
+        }
+      >
+        <p className="px-4 pt-16 text-center text-sm text-white/60">Não há jogo guardado. Volta ao setup para começar.</p>
+      </GameShell>
+    )
+  }
   const player=players[currentPlayer]
   const maxScore=Math.max(...scores,0)
+  const accent = isFamily ? '#4ade80' : '#8b5cf6'
+
+  const launchDice = () => {
+    if (rolled || moving) return
+    handleRoll(Math.floor(Math.random() * 6) + 1)
+  }
 
   return(
     <GameShell
       mode={isFamily ? 'family' : 'friends'}
       header={
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <BackButton onClick={() => navigate('/')} />
-          <div className="flex items-center gap-2 min-w-0">
-            <Trophy className="text-amber-400 w-4 h-4 shrink-0"/>
-            <span className="text-white font-bold text-sm truncate">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta: ${WINNING} pts`}</span>
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="truncate text-lg font-black leading-tight text-white">{isFamily ? 'Modo Família' : 'Modo Amigos'}</h1>
+            <p className="text-sm text-slate-300">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta ${WINNING} pts`}</p>
           </div>
           <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} accent={isFamily ? 'sky' : 'amber'} />
         </div>
       }
       footer={
-        rolled && !moving ? (
-          <motion.button
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={nextPlayer}
-            className={`btn-primary bg-gradient-to-r ${isFamily ? 'from-sky-500 to-indigo-600' : 'from-violet-600 to-purple-700'}`}
-          >
-            Próximo Jogador →
-          </motion.button>
+        showChallenge || miniGame || specialNotice || specialPicker || impostorRound ? null
+        : !rolled ? (
+          <NightCta accent={accent} onClick={launchDice} disabled={moving}>
+            {moving ? 'A andar…' : '🎲 Lançar dado'}
+          </NightCta>
+        ) : !moving ? (
+          <NightCta accent={accent} onClick={nextPlayer}>
+            Próximo jogador
+          </NightCta>
         ) : null
       }
     >
@@ -600,7 +624,7 @@ export default function MapGame() {
                 return(
                   <div key={cat} className="rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-xs font-bold text-slate-300">{CATEGORY_CONFIG[cat]?.emoji || '🎴'} {cat}</span>
+                      <span className="truncate text-xs font-bold text-slate-300">{CATEGORY_CONFIG[cat]?.emoji || '🎴'} {CATEGORY_CONFIG[cat]?.label || cat}</span>
                       <span className={`text-xs font-black ${count>=3?'text-emerald-300':'text-white'}`}>{count}/3</span>
                     </div>
                       <div className={`mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]`}>
@@ -625,25 +649,15 @@ export default function MapGame() {
       </div>
 
       {/* Player card */}
-      <div className="flex-1 flex flex-col items-center px-4 pb-6 max-w-lg mx-auto w-full gap-3">
-        <motion.div layout className="surface rounded-3xl p-5 w-full">
-          <div className="flex items-center gap-4 mb-4">
-            <motion.div layout className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl flex-shrink-0`}>{player?.name?.[0]}</motion.div>
-            <div>
-              <p className="text-slate-300 text-xs">Vez de</p>
-              <motion.h2 key={currentPlayer} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} className="text-white font-black text-xl">{player?.name}</motion.h2>
-              <p className="text-slate-300 text-xs">Casa {positions[currentPlayer]} · {scores[currentPlayer]}/{WINNING} pts</p>
-              {shields[currentPlayer]>0&&<p className="text-emerald-400 text-xs">🛡️ Proteção ativa</p>}
-            </div>
-            {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="text-amber-400 w-5 h-5 ml-auto flex-shrink-0"/>}
+      <div className="px-4 pb-3 max-w-lg mx-auto w-full">
+        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#1c1c21] px-2.5 py-2">
+          <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-full bg-gradient-to-br ${player?.color} text-white font-black`}>{player?.name?.[0]}</div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-bold text-white">Vez de {player?.name}</p>
+            <p className="text-[12px] text-white/45">Casa {positions[currentPlayer]} · {scores[currentPlayer]}/{WINNING} pts{shields[currentPlayer]>0 ? ' · proteção' : ''}</p>
           </div>
-          {!rolled
-            ?<BoardDie onRoll={handleRoll} disabled={moving} color={isFamily ? '#0ea5e9' : '#7c3aed'} whiteDice={true}/>
-            :!moving&&(
-              <p className="text-slate-300 text-sm text-center">Movimento concluído — avança em baixo.</p>
-            )
-          }
-        </motion.div>
+          {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="h-4 w-4 shrink-0 text-amber-400"/>}
+        </div>
       </div>
 
       <AnimatePresence>
@@ -696,7 +710,7 @@ export default function MapGame() {
                 {cats.map(cat=>(
                   <button key={cat} onClick={()=>{setSpecialPicker(null);void openSpecialChallenge(specialPicker.tile, cat)}}
                     className="rounded-2xl border border-white/[0.08] bg-white/[0.05] p-3 text-left text-white font-bold">
-                    <span className="mr-2">{CATEGORY_CONFIG[cat]?.emoji || '🎴'}</span>{cat}
+                    <span className="mr-2">{CATEGORY_CONFIG[cat]?.emoji || '🎴'}</span>{CATEGORY_CONFIG[cat]?.label || cat}
                   </button>
                 ))}
               </div>

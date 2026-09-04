@@ -1,40 +1,53 @@
 import { useNavigate } from 'react-router-dom'
-import { Smartphone, Wifi, Users } from 'lucide-react'
-import PageShell from '../components/layout/PageShell'
-import ModeHeader from '../components/layout/ModeHeader'
-import ModeCard from '../components/layout/ModeCard'
-import InfoBox from '../components/layout/InfoBox'
+import { Search, Smartphone, Wifi } from 'lucide-react'
+import NightShell, { GlowDisc, NightTitle } from '../components/layout/NightShell'
+
+const GOLD = '#fbbf24'
 
 export default function MisterWhiteHub() {
   const navigate = useNavigate()
 
   return (
-    <PageShell mode="misterwhite">
-      <ModeHeader
-        onBack={() => navigate('/')}
-        title="👁️ Mister White"
-        subtitle="Como queres jogar?"
-      />
+    <NightShell onBack={() => navigate('/')}>
+      <NightTitle>Mister White</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Como queres jogar?</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Mínimo 3 pessoas.</p>
 
-      <ModeCard
-        icon={Smartphone}
-        title="Um telemóvel"
-        description="Passa o telemóvel à volta da mesa para ver os papéis"
-        onClick={() => navigate('/MisterWhiteGame')}
-      />
+      <div className="my-8 flex justify-center">
+        <GlowDisc color={GOLD} size={76}>
+          <Search className="h-[30px] w-[30px]" style={{ color: GOLD }} strokeWidth={1.75} />
+        </GlowDisc>
+      </div>
 
-      <ModeCard
-        icon={Wifi}
-        title="Sala online"
-        description="Cada jogador no seu telemóvel — código da sala"
-        variant="violet"
-        delay={0.06}
-        onClick={() => navigate('/MisterWhiteLobby')}
-      />
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => navigate('/MisterWhiteGame')}
+          className="flex items-center gap-3.5 rounded-[1.75rem] border border-white/10 bg-[#1c1c21] px-4 py-3.5 text-left active:scale-[0.98]"
+        >
+          <GlowDisc color="#22d3ee" size={56}>
+            <Smartphone className="h-[22px] w-[22px] text-[#22d3ee]" strokeWidth={1.75} />
+          </GlowDisc>
+          <span>
+            <span className="block text-[17px] font-extrabold text-white">Um telemóvel</span>
+            <span className="mt-0.5 block text-xs text-slate-400">Passa à volta da mesa. Vê os papéis.</span>
+          </span>
+        </button>
 
-      <InfoBox icon={Users}>
-        Mínimo 3 jogadores. Na sala online, o host controla votação e eliminações; cada um vê só o seu papel.
-      </InfoBox>
-    </PageShell>
+        <button
+          type="button"
+          onClick={() => navigate('/MisterWhiteLobby')}
+          className="flex items-center gap-3.5 rounded-[1.75rem] border border-white/10 bg-[#1c1c21] px-4 py-3.5 text-left active:scale-[0.98]"
+        >
+          <GlowDisc color="#8b5cf6" size={56}>
+            <Wifi className="h-[22px] w-[22px] text-[#8b5cf6]" strokeWidth={1.75} />
+          </GlowDisc>
+          <span>
+            <span className="block text-[17px] font-extrabold text-white">Sala online</span>
+            <span className="mt-0.5 block text-xs text-slate-400">Cada um no seu. Código da sala.</span>
+          </span>
+        </button>
+      </div>
+    </NightShell>
   )
 }

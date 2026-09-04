@@ -1,22 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RotateCcw, Copy, Check, Users, Wifi, Share2 } from 'lucide-react'
+import { Crown, RotateCcw, Copy, Check, Share2 } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import GameShell from '../components/layout/GameShell'
+import NightShell, {
+  NightTitle, NightCta, GlowCode, NightPlayerChip, NameField, pessoaLabel,
+} from '../components/layout/NightShell'
 import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
-import ShareRoomLink from '../components/layout/ShareRoomLink'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { shareNight } from '../utils/shareNight'
 import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
 const API_URL = getSocketUrl()
+const ICE = '#e2e8f0'
 
 // ── CARD PACKS (original content) ────────────────────────────
 const PACKS = {
@@ -53,149 +56,132 @@ const ALL_PACKS = Object.values(PACKS)
 // ── SETUP SCREEN ─────────────────────────────────────────────
 function SetupScreen({ onCreateOnline, initialName }) {
   const navigate = useNavigate()
-  const [selPacks, setSelPacks] = useState(['base','festa','dark'])
+  const [selPacks, setSelPacks] = useState(['base', 'festa', 'dark'])
   const [includeCommunity, setIncludeCommunity] = useState(true)
   const [creating, setCreating] = useState(false)
   const [playerName, setPlayerName] = useState(initialName || '')
 
-  // Preencher quando vier de CardsLobby
   useEffect(() => {
     if (typeof initialName === 'string') setPlayerName(initialName)
   }, [initialName])
 
-  const togglePack = id => setSelPacks(s=>s.includes(id)?(s.length>1?s.filter(x=>x!==id):s):[...s,id])
+  const togglePack = (id) => setSelPacks((s) => s.includes(id) ? (s.length > 1 ? s.filter((x) => x !== id) : s) : [...s, id])
+
+  const create = async () => {
+    setCreating(true)
+    try {
+      let black = shuffle(selPacks.flatMap((id) => PACKS[id]?.black || []))
+      let white = shuffle(selPacks.flatMap((id) => PACKS[id]?.white || []))
+      if (includeCommunity) {
+        try {
+          const rows = await api.getCards({ pack: 'community' })
+          if (Array.isArray(rows)) {
+            black = shuffle([...black, ...rows.filter((c) => c.is_black).map((c) => c.text)])
+            white = shuffle([...white, ...rows.filter((c) => !c.is_black).map((c) => c.text)])
+          }
+        } catch { /* offline — só packs locais */ }
+      }
+      onCreateOnline({ black, white }, playerName.trim())
+    } finally {
+      setCreating(false)
+    }
+  }
 
   return (
-    <PageShell mode="cards" innerClassName="space-y-6">
-        <div className="flex items-center gap-3">
-          <BackButton onClick={() => navigate('/')} />
-          <div><h1 className="text-white font-black text-2xl">🃏 Modo Cartas</h1><p className="text-slate-300 text-sm">Cria sala e partilha o código no telemóvel</p></div>
-        </div>
+    <NightShell
+      onBack={() => navigate('/CardsLobby')}
+      footer={(
+        <NightCta accent={ICE} onClick={create} disabled={selPacks.length === 0 || !playerName.trim() || creating}>
+          {creating ? 'A preparar…' : 'Criar sala'}
+        </NightCta>
+      )}
+    >
+      <NightTitle>Cartas</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Baralhos</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Escolhe o que entra nesta sala.</p>
 
-        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
-          <p className="text-slate-400 text-sm mb-2">Modo apenas online</p>
-          <p className="text-white font-semibold">Cada jogador abre <span className="text-amber-300">/CardsLobby</span> no seu telemóvel e usa o código da sala.</p>
-        </div>
+      {!initialName && <NameField value={playerName} onChange={setPlayerName} />}
 
-        <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
-          <label className="block text-slate-400 text-xs uppercase tracking-wider mb-2">O teu nome</label>
-          <input
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Como te chamas?"
-            maxLength={20}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-3 outline-none focus:border-violet-500 text-lg placeholder-slate-500"
-          />
-        </div>
-
-        {/* Packs */}
-        <div>
-          <h3 className="text-white font-semibold mb-3">Baralhos</h3>
-          <div className="space-y-2">
-            {ALL_PACKS.map(pack=>(
-              <button key={pack.id} onClick={()=>togglePack(pack.id)}
-                className={`w-full p-4 rounded-2xl border flex items-start gap-3 text-left transition-all ${selPacks.includes(pack.id)?'bg-amber-500/10 border-amber-500/40':'bg-white/[0.04] border-white/[0.07]'}`}>
-                <div className="flex-1">
-                  <p className={`font-bold ${selPacks.includes(pack.id)?'text-white':'text-slate-400'}`}>{pack.name}</p>
-                  <p className="text-slate-500 text-xs mt-0.5">{pack.desc} · {pack.black.length} pretas + {pack.white.length} brancas</p>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${selPacks.includes(pack.id)?'bg-amber-500 border-amber-400':'border-white/[0.2]'}`}>
-                  {selPacks.includes(pack.id)&&<div className="w-2 h-2 bg-black rounded-full"/>}
-                </div>
-              </button>
-            ))}
-          </div>
-          <p className="text-slate-600 text-xs mt-2 text-center">
-            Total: {selPacks.reduce((s,id)=>s+(PACKS[id]?.black.length||0),0)} pretas + {selPacks.reduce((s,id)=>s+(PACKS[id]?.white.length||0),0)} brancas
-            {includeCommunity ? ' + comunidade' : ''}
-          </p>
-          <label className="flex items-center gap-3 mt-3 cursor-pointer">
-            <button type="button" onClick={() => setIncludeCommunity((v) => !v)}
-              className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-amber-500' : 'bg-white/[0.12]'}`}>
-              <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
+      <div className="mt-5 space-y-2.5">
+        {ALL_PACKS.map((pack) => {
+          const on = selPacks.includes(pack.id)
+          return (
+            <button
+              key={pack.id}
+              type="button"
+              onClick={() => togglePack(pack.id)}
+              className="w-full rounded-[1.4rem] border bg-[#1c1c21] p-4 text-left active:scale-[0.98]"
+              style={on
+                ? { borderColor: `${ICE}66`, boxShadow: `0 8px 24px -8px ${ICE}88` }
+                : { borderColor: 'rgba(255,255,255,.1)' }}
+            >
+              <p className={`font-bold ${on ? 'text-white' : 'text-slate-400'}`}>{pack.name}</p>
+              <p className="mt-0.5 text-xs text-slate-500">{pack.desc} · {pack.black.length} pretas + {pack.white.length} brancas</p>
             </button>
-            <span className="text-slate-300 text-sm">Incluir cartas da comunidade (BD)</span>
-          </label>
-        </div>
+          )
+        })}
+      </div>
 
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-          onClick={async () => {
-            setCreating(true)
-            try {
-              let black = shuffle(selPacks.flatMap(id => PACKS[id]?.black || []))
-              let white = shuffle(selPacks.flatMap(id => PACKS[id]?.white || []))
-              if (includeCommunity) {
-                try {
-                  const rows = await api.getCards({ pack: 'community' })
-                  if (Array.isArray(rows)) {
-                    black = shuffle([...black, ...rows.filter((c) => c.is_black).map((c) => c.text)])
-                    white = shuffle([...white, ...rows.filter((c) => !c.is_black).map((c) => c.text)])
-                  }
-                } catch { /* offline — só packs locais */ }
-              }
-              onCreateOnline({ black, white }, playerName.trim())
-            } finally {
-              setCreating(false)
-            }
-          }}
-          disabled={selPacks.length===0 || !playerName.trim() || creating}
-          className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40">
-          {creating ? 'A preparar…' : '📡 Criar Sala Online'}
-        </motion.button>
-    </PageShell>
+      <p className="mt-3 text-center text-xs text-slate-500">
+        {selPacks.reduce((s, id) => s + (PACKS[id]?.black.length || 0), 0)} pretas + {selPacks.reduce((s, id) => s + (PACKS[id]?.white.length || 0), 0)} brancas
+        {includeCommunity ? ' + comunidade' : ''}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => setIncludeCommunity((v) => !v)}
+        className="mt-3 w-full rounded-full border bg-[#1c1c21] px-4 py-3 text-sm font-bold text-white"
+        style={includeCommunity
+          ? { borderColor: `${ICE}66`, boxShadow: `0 8px 24px -8px ${ICE}88` }
+          : { borderColor: 'rgba(255,255,255,.12)' }}
+      >
+        Cartas da comunidade {includeCommunity ? 'ligadas' : 'desligadas'}
+      </button>
+    </NightShell>
   )
 }
 
-// ── ONLINE LOBBY ─────────────────────────────────────────────
-function OnlineLobby({ socket, room, playerName, packs, onStart }) {
+function OnlineLobby({ room, playerName, onStart }) {
+  const navigate = useNavigate()
   const isHost = room?.host === playerName
-  const nonSelf = (room?.players||[]).filter(p=>p.name!==playerName)
+  const count = room?.players?.length || 0
 
   if (!room) {
     return (
-      <PageShell mode="cards" className="justify-center" innerClassName="text-center space-y-4 p-6 surface rounded-3xl">
-          <p className="text-white font-bold text-xl">A carregar a sala...</p>
-          <p className="text-slate-400 text-sm">A sala está a ser criada. Aguarda um momento e não feches a página.</p>
-      </PageShell>
+      <NightShell onBack={() => navigate('/CardsLobby')}>
+        <NightTitle>Cartas</NightTitle>
+        <p className="mt-8 text-center text-sm text-white/45">A criar a sala…</p>
+      </NightShell>
     )
   }
 
   return (
-    <PageShell mode="cards" innerClassName="space-y-6">
-        <div className="flex items-center gap-2">
-          <Wifi className="text-green-400 w-5 h-5"/>
-          <h2 className="text-white font-black text-xl">Sala Online</h2>
-        </div>
-
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
-          <ShareRoomLink mode="cards" code={room?.code} codeSize="xl" />
-        </div>
-
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Users className="text-slate-400 w-4 h-4"/>
-            <p className="text-slate-400 text-sm font-semibold">{room?.players?.length||1} jogador{room?.players?.length!==1?'es':''}</p>
-            <motion.div animate={{rotate:360}} transition={{repeat:Infinity,duration:2,ease:'linear'}} className="ml-auto w-3 h-3 border border-violet-500 border-t-transparent rounded-full"/>
-          </div>
-          {(room?.players||[]).map((p,i)=>(
-            <div key={i} className={`flex items-center gap-3 mb-2 ${p.disconnected ? 'opacity-40' : ''}`}>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${p.name===room?.host?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
-              <span className={`text-white font-medium ${p.disconnected ? 'line-through' : ''}`}>{p.name}{p.name===playerName?' (Tu)':''}</span>
-              {p.name===room?.host&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
-            </div>
-          ))}
-        </div>
-
-        {isHost?(
-          <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={onStart}
-            disabled={(room?.players?.length||0)<2}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-black rounded-2xl py-5 text-xl disabled:opacity-40">
-            ▶ Iniciar Jogo ({room?.players?.length} jogadores)
-          </motion.button>
-        ):(
-          <p className="text-slate-400 text-center py-4">⏳ À espera que o host inicie...</p>
-        )}
-    </PageShell>
+    <NightShell
+      onBack={() => navigate('/CardsLobby')}
+      footer={isHost ? (
+        <NightCta accent={ICE} onClick={onStart} disabled={count < 2}>
+          Começar com {pessoaLabel(count)}
+        </NightCta>
+      ) : (
+        <p className="py-2 text-center text-sm text-white/45">À espera que o host inicie…</p>
+      )}
+    >
+      <NightTitle>Cartas</NightTitle>
+      <GlowCode code={room.code} accent={ICE} mode="cards" />
+      <div className="mt-5 space-y-2.5">
+        {(room.players || []).map((p, i) => (
+          <NightPlayerChip
+            key={i}
+            name={p.name}
+            index={i}
+            host={p.name === room.host}
+            mine={p.name === playerName}
+            disconnected={p.disconnected}
+            accent={ICE}
+          />
+        ))}
+      </div>
+    </NightShell>
   )
 }
 
@@ -678,6 +664,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
 // ── ROOT COMPONENT ────────────────────────────────────────────
 export default function CardsGame() {
   const location = useLocation()
+  const navigate = useNavigate()
   const [phase,      setPhase]      = useState('setup')  // setup | lobby | game
   const [gameMode,   setGameMode]   = useState('local')
   const [socket,     setSocket]     = useState(null)
@@ -792,12 +779,11 @@ export default function CardsGame() {
 
   if(phase==='setup') return <SetupScreen onCreateOnline={handleCreateOnline} initialName={playerName}/>
   if(phase==='connecting') return (
-    <PageShell mode="cards" className="justify-center" innerClassName="text-center space-y-4">
-        <div className="mx-auto w-16 h-16 rounded-full border-4 border-violet-500 border-t-transparent animate-spin" />
-        <h1 className="text-white font-black text-2xl">A criar sala...</h1>
-        <p className="text-slate-400">Aguarda enquanto a sala é gerada e os outros jogadores se podem juntar.</p>
-    </PageShell>
+    <NightShell onBack={() => navigate('/CardsLobby')}>
+      <NightTitle>Cartas</NightTitle>
+      <p className="mt-8 text-center text-sm text-white/45">A criar a sala…</p>
+    </NightShell>
   )
-  if(phase==='lobby') return <OnlineLobby socket={socket} room={room} playerName={playerName} packs={packs} onStart={handleStartOnlineGame}/>
+  if(phase==='lobby') return <OnlineLobby room={room} playerName={playerName} onStart={handleStartOnlineGame}/>
   return <GameScreen mode={gameMode} socket={socket} room={room} playerName={playerName} players={localPlayers} packs={packs} initialHand={initialHand} initialGameState={gameState} isHost={isHost}/>
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, RotateCcw } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
 import PlayerScoreChips from '../components/layout/PlayerScoreChips'
@@ -137,7 +137,22 @@ export default function ChallengesOnly() {
     setResult(null)
   }
 
-  if (!players.length) return null
+  if (!players.length) {
+    return (
+      <GameShell
+        mode="challenges"
+        header={
+          <div className="flex items-center gap-2">
+            <BackButton onClick={() => navigate('/')} />
+            <h1 className="flex-1 text-center text-lg font-black text-white">⚡ Só desafios</h1>
+            <div className="w-10" />
+          </div>
+        }
+      >
+        <p className="px-4 pt-16 text-center text-sm text-white/60">Não há jogo guardado. Volta ao setup para começar.</p>
+      </GameShell>
+    )
+  }
 
   const player  = players[currentPlayer]
   const maxScore = Math.max(...scores)
@@ -147,11 +162,11 @@ export default function ChallengesOnly() {
     <GameShell
       mode="challenges"
       header={
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <BackButton onClick={() => navigate('/')} />
-          <div className="flex items-center gap-2">
-            <Trophy className="text-amber-400 w-4 h-4"/>
-            <span className="text-white font-bold text-sm">Ronda {round}</span>
+          <div className="min-w-0 flex-1 text-center">
+            <h1 className="truncate text-lg font-black text-white">⚡ Só desafios</h1>
+            <p className="text-sm text-slate-300">Ronda {round}</p>
           </div>
           <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} accent="violet" />
         </div>

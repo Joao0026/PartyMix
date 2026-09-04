@@ -1,17 +1,18 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { ImagePlus, Trash2, Users, X } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import { ImagePlus, Trash2, X } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, clearGlobalSocket, setMmLobbyHandoff } from '../utils/socketStore'
 import { saveMmSession, loadMmSession, clearMmSession } from '../utils/mmSession'
 import { compressImageFile, fullMemeUrl } from '../utils/mememixImage'
-import ShareRoomLink from '../components/layout/ShareRoomLink'
+import { loadNightRoster } from '../utils/nightRoster'
+import NightShell, {
+  NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, NightBox, NightChip, pessoaLabel,
+} from '../components/layout/NightShell'
 
 const API_URL = getSocketUrl()
+const PINK = '#fb7185'
 
 const LEGENDA_PACK_LABELS = {
   todas: 'Todas',
@@ -38,8 +39,9 @@ export default function MemeMixLobby() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams] = useSearchParams()
+  const rosterNames = useMemo(() => loadNightRoster().names, [])
   const [tab, setTab] = useState('create')
-  const [name, setName] = useState('')
+  const [name, setName] = useState(() => loadMmSession()?.playerName || loadNightRoster().names[0] || '')
   const [code, setCode] = useState('')
   const [error, setError] = useState(null)
   const [room, setRoom] = useState(null)
@@ -250,7 +252,6 @@ export default function MemeMixLobby() {
   useEffect(() => {
     const saved = loadMmSession()
     if (saved?.playerName) setName(saved.playerName)
-    if (saved?.code) setCode(saved.code)
     if (location.state?.returnToLobby && saved) {
       connectAnd((s) => {
         bindSocket(s, saved.playerName, !!saved.isHost)
@@ -508,258 +509,213 @@ export default function MemeMixLobby() {
     )
   }
 
+  const liveCount = room?.players?.filter((p) => !p.disconnected)?.length || 0
+  const chip = (on) => ({ className: 'w-full justify-center', selected: on, accent: PINK })
+
   if (room) {
     return (
-      <PageShell mode="mememix" innerClassName="space-y-4">
-          <div className="flex items-center gap-3">
-            <BackButton onClick={() => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/') }} />
-            <h1 className="text-white font-black text-xl">MemeMix · {room.code}</h1>
-          </div>
+      <NightShell
+        wide
+        onBack={() => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/') }}
+        footer={isHost ? (
+          <>
+            <NightCta
+              accent={PINK}
+              onClick={startGame}
+              disabled={starting || liveCount < 2 || (room.memeCount || 0) < 3}
+            >
+              {starting ? 'A iniciar…' : `Começar · ${pessoaLabel(room.players?.length || 0)} · ${room.memeCount || 0} fotos`}
+            </NightCta>
+            <button type="button" onClick={closeRoom} className="mt-2 flex w-full items-center justify-center gap-1 py-1.5 text-xs font-bold text-red-400/80">
+              <Trash2 className="h-3.5 w-3.5" /> Fechar sala
+            </button>
+          </>
+        ) : (
+          <p className="py-2 text-center text-sm text-white/45">À espera que o host inicie…</p>
+        )}
+      >
+        <NightTitle>MemeMix</NightTitle>
+        <GlowCode code={room.code} accent={PINK} mode="mememix" />
+        <p className="mt-2 text-center text-[13px] text-white/45">
+          {room.memeCount || 0} fotos · tu {myMemes}/{maxPer}
+        </p>
 
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-5">
-            <ShareRoomLink mode="mememix" code={room.code} />
-            <p className="text-slate-600 text-sm mt-4 text-center">
-              {room.memeCount || 0} fotos na sala · Tu: {myMemes}/{maxPer}
-            </p>
-            <p className="text-slate-600 text-xs mt-1 flex items-center justify-center gap-1">
-              <Users className="w-3 h-3" /> {room.players?.length || 0}/15 jogadores
-            </p>
-          </div>
+        <div className="mt-5 space-y-2.5">
+          {(room.players || []).map((p, i) => (
+            <NightPlayerChip
+              key={p.id || p.name || i}
+              name={p.name}
+              index={i}
+              host={p.name === room.host}
+              mine={p.name === playerName}
+              disconnected={p.disconnected}
+              accent={PINK}
+              onRemove={p.name === playerName ? () => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/') } : undefined}
+              removeLabel="Sair da sala"
+            />
+          ))}
+        </div>
 
-          <div className="bg-white/[0.03] rounded-2xl p-3 space-y-1">
-            <p className="text-slate-600 text-xs font-semibold uppercase tracking-wide">Quem enviou</p>
-            {(room.memeUploadSummary || []).length === 0 ? (
-              <p className="text-slate-600 text-xs">Ainda sem fotos</p>
-            ) : (
-              room.memeUploadSummary.map(({ name: n, count }) => (
-                <div key={n} className="flex justify-between text-sm">
-                  <span className={n === playerName ? 'text-pink-300' : 'text-slate-400'}>{n}</span>
-                  <span className="text-slate-600">{count}/{maxPer}</span>
+        <NightBox title="Quem enviou" className="mt-5">
+          {(room.memeUploadSummary || []).length === 0 ? (
+            <p className="text-[13px] text-white/45">Ainda sem fotos</p>
+          ) : (
+            <div className="space-y-1">
+              {room.memeUploadSummary.map(({ name: n, count }) => (
+                <div key={n} className="flex justify-between text-[13px]">
+                  <span className={n === playerName ? 'font-bold text-white' : 'text-white/70'}>{n}</span>
+                  <span className="text-white/45">{count}/{maxPer}</span>
                 </div>
-              ))
-            )}
-          </div>
-
-          {isHost && (
-            <div className="bg-white/[0.04] rounded-2xl p-4 space-y-3">
-              <div>
-                <p className="text-slate-400 text-xs mb-2">Pontos para ganhar</p>
-                <div className="flex gap-2 flex-wrap">
-                  {[3, 4, 5, 6, 7].map((n) => (
-                    <button key={n} type="button" onClick={() => setMaxPoints(n)}
-                      className={`px-4 py-2 rounded-xl font-bold ${maxPoints === n ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-slate-400 text-xs mb-2">Máx. fotos por jogador</p>
-                <p className="text-slate-600 text-[10px] mb-2">Escolhe antes de enviar — aplica a todos na sala</p>
-                <div className="flex gap-2 flex-wrap">
-                  {[5, 10, 15, 20, 30, 40, 50].map((n) => (
-                    <button key={n} type="button" onClick={() => {
-                      setMaxMemesPerPlayer(n)
-                      pushSettings({ maxMemesPerPlayer: n })
-                    }}
-                      className={`px-4 py-2 rounded-xl font-bold text-sm ${maxMemesPerPlayer === n ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-slate-400 text-xs mb-2">Baralho de memes</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: false, label: 'Só fotos da sala' },
-                    { id: true, label: 'Fotos + oficiais' },
-                  ].map(({ id, label }) => (
-                    <button key={String(id)} type="button" onClick={() => {
-                      setIncludeOfficialMemes(id)
-                      pushSettings({ includeOfficialMemes: id })
-                    }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold leading-tight ${includeOfficialMemes === id ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-slate-600 text-[10px] mt-1.5">
-                  {includeOfficialMemes
-                    ? 'Inclui memes do pack (public/memes + memes-pack.json).'
-                    : 'Só entram fotos enviadas pelos jogadores nesta sala.'}
-                </p>
-              </div>
-              <div>
-                <p className="text-slate-400 text-xs mb-2">Legendas</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'pack', label: 'Do pack' },
-                    { id: 'escritas', label: 'Escritas na hora' },
-                  ].map(({ id, label }) => (
-                    <button key={id} type="button" onClick={() => {
-                      setLegendaMode(id)
-                      pushSettings({ legendaMode: id })
-                    }}
-                      className={`py-2 px-2 rounded-xl text-xs font-bold leading-tight ${legendaMode === id ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-slate-600 text-[10px] mt-1.5">
-                  {legendaMode === 'escritas'
-                    ? 'Cada jogador escreve a própria legenda na hora.'
-                    : 'Cada jogador recebe uma mão de legendas do pack.'}
-                </p>
-              </div>
-              {legendaMode !== 'escritas' && (
-                <div>
-                  <p className="text-slate-400 text-xs mb-2">Packs de legendas</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {['todas', ...availablePacks.filter((p) => p !== 'community')].map((p) => (
-                      <button key={p} type="button" onClick={() => toggleLegendaPack(p)}
-                        className={`px-3 py-2 rounded-xl text-xs font-bold ${legendaPacks.includes(p) ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                        {LEGENDA_PACK_LABELS[p] || p}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-slate-600 text-[10px] mt-1.5">
-                    {legendaPacks.includes('todas')
-                      ? 'Mistura todos os packs de legendas disponíveis.'
-                      : `Mistura: ${legendaPacks.map((p) => LEGENDA_PACK_LABELS[p] || p).join(', ')}.`}
-                  </p>
-                </div>
-              )}
-              <div>
-                <p className="text-slate-400 text-xs mb-2">Quem envia fotos</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'all', label: 'Todos' },
-                    { id: 'host', label: 'Só o host' },
-                  ].map(({ id, label }) => (
-                    <button key={id} type="button" onClick={() => {
-                      setUploadsMode(id)
-                      pushSettings({ uploads: id })
-                    }}
-                      className={`py-2 rounded-xl text-sm font-bold ${uploadsMode === id ? 'bg-pink-600 text-white' : 'bg-white/[0.05] text-slate-400'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           )}
+        </NightBox>
 
-          {canRemoveMemes && (
-            <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
-              <p className="text-slate-300 text-sm font-semibold">As tuas fotos ({myMemes}/{maxPer})</p>
-              <p className="text-slate-600 text-xs">Toca no ✕ vermelho para remover</p>
-              <div className="grid grid-cols-4 gap-3 pt-2">
-                {myMemesList.map((m) => (
-                  <MemeThumb key={m.id || m.url} meme={m} removable />
+        {isHost && (
+          <div className="mt-3 space-y-3">
+            <NightBox title="Pontos para ganhar">
+              <div className="grid grid-cols-5 gap-1.5">
+                {[3, 4, 5, 6, 7].map((n) => (
+                  <NightChip key={n} {...chip(maxPoints === n)} onClick={() => setMaxPoints(n)}>{n}</NightChip>
                 ))}
               </div>
-            </div>
-          )}
-
-          {canUpload ? (
-            <div className="bg-pink-900/10 border border-pink-500/20 rounded-2xl p-4 space-y-3">
-              <p className="text-pink-200 text-sm font-semibold">Memes da festa</p>
-              <p className="text-slate-600 text-xs">
-                {uploadsSetting === 'host'
-                  ? 'Só tu (host) podes enviar fotos nesta sala.'
-                  : `Cada jogador pode enviar até ${maxPer} fotos.`}
-                {' '}Comprimidas automaticamente (máx. 1200px, 5 MB).
-              </p>
-              <label className="flex items-start gap-2 text-xs text-slate-400">
-                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
-                Tenho permissão das pessoas nas fotos
-              </label>
-              <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
-              <button type="button" disabled={uploading || atPhotoLimit} onClick={() => fileRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 bg-pink-600/80 text-white rounded-xl py-3 font-bold disabled:opacity-50">
-                <ImagePlus className="w-5 h-5" />
-                {uploading ? 'A enviar…' : atPhotoLimit ? `Limite ${maxPer} fotos` : 'Adicionar fotos'}
-              </button>
-              {uploadStatus && <p className="text-green-400 text-xs text-center">{uploadStatus}</p>}
-              {otherMemesList.length > 0 && (
-                <div>
-                  <p className="text-slate-600 text-xs mb-2">Outras fotos na sala ({otherMemesList.length})</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {otherMemesList.map((m) => (
-                      <MemeThumb key={m.id} meme={m} />
-                    ))}
-                  </div>
+            </NightBox>
+            <NightBox title="Máx. fotos por jogador">
+              <p className="mb-2 text-[12px] text-white/45">Escolhe antes de enviar — aplica a todos.</p>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[5, 10, 15, 20, 30, 40, 50].map((n) => (
+                  <NightChip key={n} {...chip(maxMemesPerPlayer === n)} onClick={() => {
+                    setMaxMemesPerPlayer(n)
+                    pushSettings({ maxMemesPerPlayer: n })
+                  }}>{n}</NightChip>
+                ))}
+              </div>
+            </NightBox>
+            <NightBox title="Baralho de memes">
+              <div className="grid grid-cols-2 gap-1.5">
+                <NightChip {...chip(includeOfficialMemes === false)} onClick={() => { setIncludeOfficialMemes(false); pushSettings({ includeOfficialMemes: false }) }}>Só fotos da sala</NightChip>
+                <NightChip {...chip(includeOfficialMemes === true)} onClick={() => { setIncludeOfficialMemes(true); pushSettings({ includeOfficialMemes: true }) }}>Fotos + oficiais</NightChip>
+              </div>
+            </NightBox>
+            <NightBox title="Legendas">
+              <div className="grid grid-cols-2 gap-1.5">
+                <NightChip {...chip(legendaMode === 'pack')} onClick={() => { setLegendaMode('pack'); pushSettings({ legendaMode: 'pack' }) }}>Do pack</NightChip>
+                <NightChip {...chip(legendaMode === 'escritas')} onClick={() => { setLegendaMode('escritas'); pushSettings({ legendaMode: 'escritas' }) }}>Escritas na hora</NightChip>
+              </div>
+            </NightBox>
+            {legendaMode !== 'escritas' && (
+              <NightBox title="Packs de legendas">
+                <div className="grid grid-cols-2 gap-1.5">
+                  {['todas', ...availablePacks.filter((p) => p !== 'community')].map((p) => (
+                    <NightChip key={p} {...chip(legendaPacks.includes(p))} onClick={() => toggleLegendaPack(p)}>
+                      {LEGENDA_PACK_LABELS[p] || p}
+                    </NightChip>
+                  ))}
                 </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white/[0.03] rounded-2xl p-4 text-center">
-              <p className="text-slate-600 text-sm">
-                {room.uploadsLocked ? 'Uploads fechados — jogo em curso.' : 'Só o host envia fotos nesta sala.'}
-              </p>
-              {(room.memes?.length || 0) > 0 && (
-                <p className="text-slate-600 text-xs mt-2">{room.memeCount} foto(s) já na sala</p>
-              )}
-            </div>
-          )}
+              </NightBox>
+            )}
+            <NightBox title="Quem envia fotos">
+              <div className="grid grid-cols-2 gap-1.5">
+                <NightChip {...chip(uploadsMode === 'all')} onClick={() => { setUploadsMode('all'); pushSettings({ uploads: 'all' }) }}>Todos</NightChip>
+                <NightChip {...chip(uploadsMode === 'host')} onClick={() => { setUploadsMode('host'); pushSettings({ uploads: 'host' }) }}>Só o host</NightChip>
+              </div>
+            </NightBox>
+          </div>
+        )}
 
-          {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+        {canRemoveMemes && (
+          <NightBox title={`As tuas fotos (${myMemes}/${maxPer})`} className="mt-3">
+            <p className="mb-2 text-[12px] text-white/45">Toca no ✕ para remover</p>
+            <div className="grid grid-cols-4 gap-2">
+              {myMemesList.map((m) => (
+                <MemeThumb key={m.id || m.url} meme={m} removable />
+              ))}
+            </div>
+          </NightBox>
+        )}
 
-          {isHost ? (
-            <>
-              <button type="button" onClick={startGame}
-                disabled={starting || (room.players?.filter((p) => !p.disconnected)?.length || 0) < 2 || (room.memeCount || 0) < 3}
-                className="w-full bg-gradient-to-r from-pink-600 to-rose-600 text-white font-black rounded-2xl py-4 disabled:opacity-40">
-                {starting ? 'A iniciar…' : `Começar (${room.players?.length} jog., ${room.memeCount} fotos)`}
-              </button>
-              <button type="button" onClick={closeRoom}
-                className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/30 text-red-300 rounded-2xl py-3 text-sm font-semibold">
-                <Trash2 className="w-4 h-4" /> Fechar sala (apaga fotos)
-              </button>
-            </>
-          ) : (
-            <p className="text-center text-slate-300 text-sm animate-pulse">À espera do host…</p>
-          )}
-      </PageShell>
+        {canUpload ? (
+          <NightBox title="Memes da festa" className="mt-3">
+            <p className="text-[12px] text-white/45">
+              {uploadsSetting === 'host'
+                ? 'Só tu (host) podes enviar fotos nesta sala.'
+                : `Cada um pode enviar até ${maxPer} fotos.`}
+            </p>
+            <label className="mt-3 flex items-start gap-2 text-[13px] text-white/70">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
+              Tenho permissão das pessoas nas fotos
+            </label>
+            <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
+            <button
+              type="button"
+              disabled={uploading || atPhotoLimit}
+              onClick={() => fileRef.current?.click()}
+              className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl border text-[14px] font-bold text-white disabled:opacity-40"
+              style={{ borderColor: `${PINK}66`, boxShadow: uploading || atPhotoLimit ? 'none' : `0 8px 20px -10px ${PINK}88`, background: '#141419' }}
+            >
+              <ImagePlus className="h-4 w-4" />
+              {uploading ? 'A enviar…' : atPhotoLimit ? `Limite ${maxPer} fotos` : 'Adicionar fotos'}
+            </button>
+            {uploadStatus && <p className="mt-2 text-center text-xs text-green-400">{uploadStatus}</p>}
+            {otherMemesList.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-2 text-[12px] text-white/45">Outras fotos ({otherMemesList.length})</p>
+                <div className="grid grid-cols-4 gap-2">
+                  {otherMemesList.map((m) => (
+                    <MemeThumb key={m.id} meme={m} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </NightBox>
+        ) : (
+          <NightBox className="mt-3">
+            <p className="text-center text-[13px] text-white/45">
+              {room.uploadsLocked ? 'Uploads fechados — jogo em curso.' : 'Só o host envia fotos nesta sala.'}
+            </p>
+          </NightBox>
+        )}
+
+        {error && (
+          <p className="mt-4 rounded-2xl border border-red-400/40 bg-red-900/30 p-3 text-center text-sm text-red-300">{error}</p>
+        )}
+      </NightShell>
     )
   }
 
   return (
-    <PageShell mode="mememix" innerClassName="space-y-5">
-        <BackButton onClick={() => navigate('/')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
-        <div>
-          <h1 className="text-white font-black text-2xl">😂 MemeMix</h1>
-          <p className="text-slate-300 text-sm mt-1">Cria uma sala ou entra com o código dos amigos.</p>
-        </div>
-        <div>
-          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Como te chamas?" maxLength={20}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-pink-500 text-lg placeholder-slate-500" />
-        </div>
-        <div>
-          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
-          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (e.target.value) setTab('join') }}
-            placeholder="ABC234" maxLength={6}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-pink-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600" />
-        </div>
-        {savedSession?.code && (
-          <button type="button" onClick={rejoinSaved} disabled={connecting}
-            className="w-full bg-white/[0.06] border border-pink-500/30 text-pink-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
-            Voltar à sala {savedSession.code} ({savedSession.playerName})
-          </button>
-        )}
-        {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
-        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={createRoom}
-          disabled={connecting || !name.trim()}
-          className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
-          {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
-        </motion.button>
-        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={joinRoom}
-          disabled={connecting || !name.trim() || !code.trim()}
-          className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
-          {connecting && tab === 'join' ? 'A ligar…' : 'Tenho um código'}
-        </motion.button>
-    </PageShell>
+    <NightShell
+      onBack={() => navigate('/')}
+      footer={(
+        <>
+          {savedSession?.code && (
+            <button type="button" onClick={rejoinSaved} disabled={connecting} className="mb-2 w-full py-1.5 text-center text-xs font-bold text-white/40 disabled:opacity-40">
+              Voltar à sala {savedSession.code}
+            </button>
+          )}
+          {tab === 'create' ? (
+            <NightCta accent={PINK} onClick={createRoom} disabled={connecting || !name.trim()}>
+              {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
+            </NightCta>
+          ) : (
+            <NightCta accent={PINK} onClick={joinRoom} disabled={connecting || !name.trim() || !code.trim()}>
+              {connecting && tab === 'join' ? 'A ligar…' : 'Entrar na sala'}
+            </NightCta>
+          )}
+        </>
+      )}
+    >
+      <NightTitle>MemeMix</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Sala online</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Quem és tu nesta mesa?</p>
+
+      <RosterChips names={rosterNames} value={name} onChange={setName} accent={PINK} />
+      <NameField value={name} onChange={setName} />
+      <NightTabs tab={tab} onChange={setTab} />
+      {tab === 'join' && <CodeField value={code} onChange={setCode} />}
+      {error && (
+        <p className="mt-4 rounded-2xl border border-red-400/40 bg-red-900/30 p-3 text-center text-sm text-red-300">{error}</p>
+      )}
+    </NightShell>
   )
 }

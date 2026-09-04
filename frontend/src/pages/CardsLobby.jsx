@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
 import { io } from 'socket.io-client'
-import { setGlobalSocket, setCardsLobbyHandoff } from '../utils/socketStore'
+import { setGlobalSocket, setCardsLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { getSocketUrl } from '../utils/api'
 import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
-import ShareRoomLink from '../components/layout/ShareRoomLink'
+import { loadNightRoster } from '../utils/nightRoster'
+import NightShell, {
+  NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip,
+} from '../components/layout/NightShell'
 
 const API_URL = getSocketUrl()
+const ICE = '#e2e8f0'
 
 function pickRoomForHandoff(r) {
   if (!r || typeof r !== 'object') return null
@@ -49,7 +50,9 @@ function pickGameStateForHandoff(s) {
 export default function CardsLobby() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const [name,    setName]    = useState('')
+  const rosterNames = useMemo(() => loadNightRoster().names, [])
+  const [tab, setTab] = useState('create')
+  const [name,    setName]    = useState(() => loadCardsSession()?.playerName || loadNightRoster().names[0] || '')
   const [code,    setCode]    = useState('')
   const [error,   setError]   = useState(null)
   const [joining, setJoining] = useState(false)
@@ -63,12 +66,14 @@ export default function CardsLobby() {
   useEffect(() => {
     const saved = loadCardsSession()
     if (saved?.playerName) setName(saved.playerName)
-    if (saved?.code) setCode(saved.code)
   }, [])
 
   useEffect(() => {
     const q = searchParams.get('code')
-    if (q) setCode(q.trim().toUpperCase())
+    if (q) {
+      setCode(q.trim().toUpperCase())
+      setTab('join')
+    }
   }, [searchParams])
 
   const savedSession = loadCardsSession()
@@ -189,70 +194,71 @@ export default function CardsLobby() {
     })
   }
 
-  return (
-    <PageShell mode="cards" innerClassName="space-y-6">
-        <div className="flex items-center gap-3">
-          <BackButton onClick={() => navigate('/')} />
-          <div>
-            <h1 className="text-white font-black text-xl">Cartas</h1>
-            <p className="text-slate-300 text-sm">Cria uma sala ou entra com um código</p>
-          </div>
-        </div>
+  const leaveRoom = () => {
+    socket?.disconnect()
+    clearGlobalSocket()
+    setRoom(null)
+    setSocket(null)
+    setJoining(false)
+  }
 
-        {!room ? (
-          <div className="space-y-4">
-            <div>
-              <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
-              <input value={name} onChange={e=>setName(e.target.value)}
-                placeholder="Como te chamas?" maxLength={20}
-                className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-lg placeholder-slate-500"/>
-            </div>
-            <div>
-              <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
-              <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())}
-                placeholder="ABC234" maxLength={6}
-                className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600"/>
-            </div>
-            {savedSession?.code && (
-              <button type="button" onClick={rejoinSaved} disabled={joining}
-                className="w-full bg-white/[0.06] border border-violet-500/30 text-violet-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
-                Voltar à sala {savedSession.code} ({savedSession.playerName})
-              </button>
-            )}
-            {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
-            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-              onClick={() => navigate('/CardsGame', { state: { presetPlayerName: name.trim() } })}
-              disabled={!name.trim()}
-              className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+  return (
+    <NightShell
+      onBack={() => { if (room) leaveRoom(); navigate('/') }}
+      footer={!room ? (
+        <>
+          {savedSession?.code && (
+            <button type="button" onClick={rejoinSaved} disabled={joining} className="mb-2 w-full py-1.5 text-center text-xs font-bold text-white/40 disabled:opacity-40">
+              Voltar à sala {savedSession.code}
+            </button>
+          )}
+          {tab === 'create' ? (
+            <NightCta accent={ICE} onClick={() => navigate('/CardsGame', { state: { presetPlayerName: name.trim() } })} disabled={!name.trim()}>
               Criar sala
-            </motion.button>
-            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-              onClick={join} disabled={joining||!name.trim()||!code.trim()}
-              className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
-              {joining ? 'A entrar…' : 'Tenho um código'}
-            </motion.button>
+            </NightCta>
+          ) : (
+            <NightCta accent={ICE} onClick={join} disabled={joining || !name.trim() || !code.trim()}>
+              {joining ? 'A entrar…' : 'Entrar na sala'}
+            </NightCta>
+          )}
+        </>
+      ) : (
+        <p className="py-2 text-center text-sm text-white/45">À espera que o host inicie…</p>
+      )}
+    >
+      <NightTitle>Cartas</NightTitle>
+      {!room ? (
+        <>
+          <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Sala online</p>
+          <p className="mt-1.5 text-center text-[13px] text-white/45">Quem és tu nesta mesa?</p>
+          <RosterChips names={rosterNames} value={name} onChange={setName} accent={ICE} />
+          <NameField value={name} onChange={setName} />
+          <NightTabs tab={tab} onChange={setTab} />
+          {tab === 'join' && <CodeField value={code} onChange={setCode} />}
+          {error && (
+            <p className="mt-4 rounded-2xl border border-red-400/40 bg-red-900/30 p-3 text-center text-sm text-red-300">{error}</p>
+          )}
+        </>
+      ) : (
+        <>
+          <GlowCode code={room.code} accent={ICE} mode="cards" />
+          <div className="mt-5 space-y-2.5">
+            {(room.players || []).map((p, i) => (
+              <NightPlayerChip
+                key={i}
+                name={p.name}
+                index={i}
+                host={p.name === room.host}
+                mine={p.name === name}
+                disconnected={p.disconnected}
+                accent={ICE}
+                onRemove={p.name === name ? leaveRoom : undefined}
+                removeLabel="Sair da sala"
+              />
+            ))}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
-              <ShareRoomLink mode="cards" code={room.code} codeSize="xl" />
-            </div>
-            <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
-              <p className="text-slate-400 text-sm font-semibold">{room.players?.length} jogador{room.players?.length!==1?'es':''}</p>
-              {(room.players||[]).map((p,i)=>(
-                <div key={i} className={`flex items-center gap-3 ${p.disconnected ? 'opacity-40' : ''}`}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm ${p.name===room.host?'bg-gradient-to-br from-violet-500 to-purple-600':'bg-gradient-to-br from-slate-600 to-slate-700'}`}>{p.name[0]}</div>
-                  <span className={`text-white font-medium ${p.disconnected ? 'line-through' : ''}`}>{p.name}{p.name===name?' (Tu)':''}</span>
-                  {p.name===room.host&&<span className="ml-auto text-xs text-violet-400 font-bold">HOST</span>}
-                </div>
-              ))}
-            </div>
-            <div className="text-center py-4 space-y-2">
-              <p className="text-white text-lg font-black">À espera que o host inicie</p>
-              <p className="text-slate-300 text-sm">Quando o host carregar em Iniciar, o jogo começa aqui.</p>
-            </div>
-          </div>
-        )}
-    </PageShell>
+        </>
+      )}
+    </NightShell>
   )
 }

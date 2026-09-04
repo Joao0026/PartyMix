@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { loadNightRoster, saveNightRoster, clearNightRoster } from '../utils/nightRoster'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Heart, Users, Dices, Layers, Search, Beer, Pencil, Users2, Moon, Laugh, Info, Plus, Trash2 } from 'lucide-react'
+import { Heart, Users, Dices, Layers, Search, Beer, Pencil, Users2, Moon, Laugh, Info } from 'lucide-react'
 import { useLang } from '../contexts/LangContext'
 import LegalLinks from '../components/legal/LegalLinks'
+import MesaNoite from '../components/layout/MesaNoite'
 import { isUnder18 } from '../utils/ageGate'
 
 const MODE_ICONS = { couple: Heart, friends: Users, family: Dices, drink: Beer, cards: Layers, mister: Search, aldeia: Moon, mememix: Laugh }
@@ -34,11 +35,11 @@ const HUB_SHORT = {
   couple: 'Casal',
 }
 const MODE_BLURB = {
-  drink: 'Um telemóvel. Cartas para beber até a mesa parar.',
-  mememix: 'Cada um no seu. Legendam as fotos do grupo.',
-  cards: 'Cada um no seu. Cartas brancas contra uma preta.',
-  aldeia: 'Cada um no seu. Lobos, noite e votação.',
-  mister: 'Dedução. Quem é o infiltrado? Local ou online.',
+  drink: 'Um telemóvel. Cartas para beber até desmaiar.',
+  mememix: 'Cada um no seu telemóvel. Transforma fotos do grupo em Memes',
+  cards: 'Cada um no seu telemóvel. Humor antigo aguenta se conseguires.',
+  aldeia: 'Cada um no seu telemóvel. Loucura na aldeia.',
+  mister: 'Local ou online. Quem é o infiltrado?',
   friends: 'Um telemóvel. Mapa, desafios e mini-jogos.',
   family: 'Um telemóvel. Igual aos amigos, sem conteúdo adulto.',
   couple: 'Um telemóvel. Dois jogadores, desafios de casal.',
@@ -172,7 +173,8 @@ export default function Home() {
   const { t } = useLang()
   const [roster, setRoster] = useState(() => loadNightRoster())
   const [editOpen, setEditOpen] = useState(false)
-  const [draftNames, setDraftNames] = useState(['', '', ''])
+  const [draftNames, setDraftNames] = useState([])
+  const [draftGenders, setDraftGenders] = useState([])
   const [infoId, setInfoId] = useState(null)
   const under18 = isUnder18()
   const rosterNames = roster.names || []
@@ -180,15 +182,9 @@ export default function Home() {
   const hasGroup = rosterNames.length >= 2
 
   const openRoster = () => {
-    setDraftNames(hasGroup ? [...rosterNames] : ['', '', ''])
+    setDraftNames(hasGroup ? [...rosterNames] : [])
+    setDraftGenders(hasGroup ? [...(roster.genders || [])] : [])
     setEditOpen(true)
-  }
-
-  const saveRosterDraft = () => {
-    const names = draftNames.map((n) => n.trim()).filter(Boolean)
-    if (names.length < 2) return
-    setRoster(saveNightRoster(names, roster.genders))
-    setEditOpen(false)
   }
 
   return (
@@ -326,71 +322,28 @@ export default function Home() {
       <LegalLinks />
 
       {editOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/80 backdrop-blur-sm sm:items-center">
-          <div className="w-full max-w-lg rounded-t-[1.6rem] border border-white/10 bg-[#16161a] p-5 sm:rounded-[1.6rem]">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Esta noite</p>
-            <p className="mt-1 text-lg font-black text-white">{hasGroup ? 'Editar grupo' : 'Adicionar jogadores'}</p>
-            <div className="mt-4 max-h-[50vh] space-y-2 overflow-y-auto">
-              {draftNames.map((name, i) => (
-                <div key={i} className="flex gap-2">
-                  <input
-                    value={name}
-                    onChange={(e) => setDraftNames((list) => list.map((n, j) => (j === i ? e.target.value : n)))}
-                    placeholder={`Jogador ${i + 1}`}
-                    className="min-h-[48px] flex-1 rounded-2xl border border-white/10 bg-[#1c1c21] px-3 text-sm text-white outline-none focus:border-white/25"
-                  />
-                  {draftNames.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => setDraftNames((list) => list.filter((_, j) => j !== i))}
-                      className="grid h-12 w-12 place-items-center rounded-2xl border border-white/10 text-slate-400 active:scale-95"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {draftNames.length < MAX_ROSTER && (
-              <button
-                type="button"
-                onClick={() => setDraftNames((list) => [...list, ''])}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 py-3 text-sm font-bold text-slate-300 active:scale-95"
-              >
-                <Plus className="h-4 w-4" /> Adicionar nome
-              </button>
-            )}
-            <p className="mt-3 text-center text-xs text-slate-500">Mínimo 2 nomes para gravar.</p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setEditOpen(false)}
-                className="min-h-[48px] rounded-2xl border border-white/10 bg-[#1c1c21] font-bold text-slate-300 active:scale-95"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={saveRosterDraft}
-                disabled={draftNames.map((n) => n.trim()).filter(Boolean).length < 2}
-                className="min-h-[48px] rounded-2xl bg-[#ffb04f] font-black text-slate-950 active:scale-95 disabled:opacity-40"
-              >
-                Guardar
-              </button>
-            </div>
-            {hasGroup && (
-              <button
-                type="button"
-                onClick={() => {
-                  setRoster(clearNightRoster())
-                  setEditOpen(false)
-                }}
-                className="mt-2 w-full py-2 text-xs font-bold text-slate-500"
-              >
-                Esquecer nomes
-              </button>
-            )}
-          </div>
+        <div className="fixed inset-0 z-50 h-[var(--app-vh,100dvh)] overflow-hidden">
+          <MesaNoite
+            names={draftNames}
+            genders={draftGenders}
+            max={MAX_ROSTER}
+            onBack={() => setEditOpen(false)}
+            onChange={(nextNames, nextGenders) => {
+              setDraftNames(nextNames)
+              setDraftGenders(nextGenders)
+            }}
+            onConfirm={(nextNames, nextGenders) => {
+              if (nextNames.length < 2) return
+              setRoster(saveNightRoster(nextNames, nextGenders))
+              setEditOpen(false)
+            }}
+            onForget={() => {
+              setRoster(clearNightRoster())
+              setDraftNames([])
+              setDraftGenders([])
+              setEditOpen(false)
+            }}
+          />
         </div>
       )}
     </div>

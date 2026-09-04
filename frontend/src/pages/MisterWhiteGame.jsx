@@ -1,9 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus, Eye, EyeOff, Users } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import { Plus, Eye, EyeOff } from 'lucide-react'
+import NightShell, { NightTitle, NightCta, NightPlayerChip, pessoaLabel } from '../components/layout/NightShell'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import {
@@ -28,13 +27,8 @@ export default function MisterWhiteGame() {
     }).catch(() => {})
   }, [])
   const [step, setStep] = useState('setup')
-  const [playerNames, setPlayerNames] = useState(() => {
-    const { names } = loadNightRoster()
-    if (names.length < 3) return ['', '', '', '']
-    const take = names.slice(0, 15)
-    while (take.length < 4) take.push('')
-    return take
-  })
+  const [playerNames, setPlayerNames] = useState(() => loadNightRoster().names.slice(0, 15))
+  const [draft, setDraft] = useState('')
   const [numUndercover, setNumUndercover] = useState(1)
   const [numMW, setNumMW] = useState(0)
   const [wordPack, setWordPack] = useState('geral')
@@ -201,108 +195,134 @@ export default function MisterWhiteGame() {
     }
   }
 
+  const addPlayer = () => {
+    const clean = draft.trim().slice(0, 20)
+    if (!clean || playerNames.length >= 15) return
+    if (playerNames.some((n) => n.toLocaleLowerCase('pt-PT') === clean.toLocaleLowerCase('pt-PT'))) return
+    setPlayerNames([...playerNames, clean])
+    setDraft('')
+  }
+
   const resetGame = () => {
-    const { names } = loadNightRoster()
-    const take = names.length >= 3 ? names.slice(0, 15) : ['', '', '', '']
-    while (take.length < 4) take.push('')
     setStep('setup')
-    setPlayerNames(take)
+    setPlayerNames(loadNightRoster().names.slice(0, 15))
     setNumMW(0)
     setNumUndercover(1)
   }
 
-  const remainingActive = roles.filter((_, i) => !eliminated.includes(i))
+  const GOLD = '#fbbf24'
 
   return (
-    <PageShell
-      mode="misterwhite"
-      innerClassName="space-y-0 w-full"
-      style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.20) 0%, #111827 45%, #050711 100%)' }}
+    <NightShell
+      onBack={() => (step === 'setup' ? navigate('/MisterWhite') : setStep('setup'))}
+      footer={step === 'setup' ? (
+        <NightCta accent={GOLD} onClick={startGame} disabled={valid.length < 3}>
+          Começar com {pessoaLabel(valid.length)}
+        </NightCta>
+      ) : null}
     >
-      <div className="w-full max-w-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <BackButton onClick={() => (step === 'setup' ? navigate('/MisterWhite') : setStep('setup'))} />
-          <div>
-            <h1 className="text-white font-bold text-xl">👁️ Mister White</h1>
-            {step !== 'setup' && <p className="text-slate-500 text-xs">Ronda {roundNum} · {remainingActive.length} jogadores activos</p>}
-          </div>
-        </div>
-        <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
 
-          {/* ── SETUP ── */}
-          {step==='setup'&&(
-            <motion.div key="setup" initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-                <h3 className="text-white font-semibold mb-3 flex items-center gap-2"><Users className="w-4 h-4 text-slate-400"/>Jogadores (mín. 3)</h3>
-                {playerNames.map((n,i)=>(
-                  <div key={i} className="flex items-center gap-2 mb-2">
-                    <input value={n} onChange={e=>setPlayerNames(ps=>ps.map((x,j)=>j===i?e.target.value:x))}
-                      placeholder={`Jogador ${i+1}`}
-                      className="flex-1 bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm"/>
-                    {playerNames.length>3&&<button onClick={()=>setPlayerNames(ps=>ps.filter((_,j)=>j!==i))} className="text-slate-600 hover:text-red-400 transition-colors"><Minus className="w-4 h-4"/></button>}
-                  </div>
+          {step === 'setup' && (
+            <motion.div key="setup" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <NightTitle>Mister White</NightTitle>
+              <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Um telemóvel</p>
+              <p className="mt-1.5 text-center text-[13px] text-white/45">Passa à volta da mesa. Mínimo 3 pessoas.</p>
+
+              <form
+                className="mt-6"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  addPlayer()
+                }}
+              >
+                <div className="flex gap-2">
+                  <input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    placeholder="Nome"
+                    maxLength={20}
+                    autoComplete="off"
+                    className="h-12 min-w-0 flex-1 rounded-full border border-white/10 bg-[#1c1c21] px-5 text-[15px] text-white outline-none placeholder:text-slate-500"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!draft.trim() || playerNames.length >= 15}
+                    className="flex h-12 shrink-0 items-center gap-1 rounded-full border border-white/10 bg-[#2a2a2e] px-3.5 text-[13px] font-bold text-white disabled:opacity-35"
+                  >
+                    <Plus className="h-4 w-4 text-[#ffb04f]" strokeWidth={2.5} />
+                    Adicionar
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-4 space-y-2.5">
+                {playerNames.map((n, i) => (
+                  <NightPlayerChip
+                    key={`${n}-${i}`}
+                    name={n}
+                    index={i}
+                    accent={GOLD}
+                    onRemove={() => setPlayerNames((ps) => ps.filter((_, j) => j !== i))}
+                  />
                 ))}
-                <button onClick={()=>setPlayerNames(p=>[...p,''])} className="text-slate-500 hover:text-white text-sm flex items-center gap-1 mt-1 transition-colors">
-                  <Plus className="w-3 h-3"/> Adicionar
-                </button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[{label:'Infiltrados',val:numUndercover,role:'undercover'},{label:'Mister Whites',val:numMW,role:'mw'}].map(({label,val,role})=>(
-                  <div key={label} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
-                    <p className="text-slate-400 text-xs mb-2">{label}</p>
-                    <div className="flex items-center justify-center gap-3">
-                      <button type="button" onClick={()=>adjustRole(role,-1)}
-                        disabled={val===0||numMW+numUndercover<=1}
-                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-25"><Minus className="w-3 h-3"/></button>
-                      <span className="text-white font-black text-xl w-6 text-center">{val}</span>
-                      <button type="button" onClick={()=>adjustRole(role,1)}
-                        disabled={maxSpec===0||(numMW+numUndercover>=maxSpec&&(role==='mw'?numUndercover:numMW)===0)}
-                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-25"><Plus className="w-3 h-3"/></button>
+
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                {[{ label: 'Infiltrados', val: numUndercover, role: 'undercover' }, { label: 'Mister Whites', val: numMW, role: 'mw' }].map(({ label, val, role }) => (
+                  <div key={label} className="rounded-2xl border border-white/10 bg-[#1c1c21] p-3 text-center">
+                    <p className="mb-1 text-xs text-slate-500">{label}</p>
+                    <div className="flex items-center justify-center gap-2">
+                      <button type="button" onClick={() => adjustRole(role, -1)}
+                        disabled={val === 0 || numMW + numUndercover <= 1}
+                        className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-25">−</button>
+                      <span className="font-black text-white">{val}</span>
+                      <button type="button" onClick={() => adjustRole(role, 1)}
+                        disabled={maxSpec === 0 || (numMW + numUndercover >= maxSpec && (role === 'mw' ? numUndercover : numMW) === 0)}
+                        className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-25">+</button>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-center text-slate-500 text-xs">
+              <p className="mt-2 text-center text-xs text-slate-500">
                 {valid.length < 3
                   ? 'Adiciona pelo menos 3 jogadores para escolher os papéis.'
                   : `${maxSpec === 1 ? '1 papel especial' : `${maxSpec} papéis especiais`} no máximo · ficam sempre 2 civis.`}
               </p>
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
-                <h3 className="text-white font-semibold">Tema e dificuldade</h3>
-                <select value={wordPack} onChange={e=>setWordPack(e.target.value)}
-                  className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
-                  {Object.entries(wordPacks).map(([id, pack]) => <option key={id} value={id}>{pack.label}</option>)}
-                </select>
-                <div className="grid grid-cols-3 gap-2">
-                  {[['facil','Fácil'],['normal','Normal'],['dificil','Difícil']].map(([id,label])=>(
-                    <button key={id} onClick={()=>setDifficulty(id)}
-                      className={`rounded-xl border px-3 py-2 text-xs font-bold ${difficulty===id?'bg-slate-500/30 border-slate-400 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-slate-400 text-xs mb-2">Timer de discussão</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[60,90,120].map(seconds=>(
-                      <button key={seconds} onClick={()=>setDiscussionSeconds(seconds)}
-                        className={`rounded-xl border px-3 py-2 text-xs font-bold ${discussionSeconds===seconds?'bg-violet-600/30 border-violet-500 text-violet-200':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                        {seconds}s
-                      </button>
-                    ))}
-                  </div>
-                </div>
+
+              <select
+                value={wordPack}
+                onChange={(e) => setWordPack(e.target.value)}
+                className="mt-4 h-12 w-full appearance-none rounded-full border border-white/10 bg-[#1c1c21] px-5 text-sm text-white outline-none"
+              >
+                {Object.entries(wordPacks).map(([id, pack]) => (
+                  <option key={id} value={id}>{pack.label}</option>
+                ))}
+              </select>
+              <div className="mt-3 flex gap-2">
+                {[['facil', 'Fácil'], ['normal', 'Normal'], ['dificil', 'Difícil']].map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setDifficulty(id)}
+                    className={`min-h-[48px] flex-1 rounded-full border text-xs font-bold ${difficulty === id ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <div className="bg-slate-800/40 border border-white/[0.06] rounded-2xl p-4 text-sm text-slate-400 space-y-1">
-                <p>📖 <span className="text-white">Civis</span> conhecem a palavra. <span className="text-blue-400">Infiltrados</span> têm palavra similar. <span className="text-red-400">Mister White</span> não tem palavra.</p>
-                <p>🗳️ Grupo discute, vota num suspeito, e o dono do telemóvel confirma a eliminação.</p>
-                <p>⏱️ Usa o timer para limitar a discussão antes da votação.</p>
-                <p>🔄 Após a primeira ronda, o turno de revelar avança um para a direita.</p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {[60, 90, 120].map((seconds) => (
+                  <button
+                    key={seconds}
+                    type="button"
+                    onClick={() => setDiscussionSeconds(seconds)}
+                    className={`rounded-full border py-2 text-xs font-bold ${discussionSeconds === seconds ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
+                  >
+                    {seconds}s
+                  </button>
+                ))}
               </div>
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startGame} disabled={valid.length<3}
-                className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4 disabled:opacity-40">
-                Começar 👁️
-              </motion.button>
             </motion.div>
           )}
 
@@ -473,7 +493,6 @@ export default function MisterWhiteGame() {
           )}
 
         </AnimatePresence>
-      </div>
-    </PageShell>
+    </NightShell>
   )
 }

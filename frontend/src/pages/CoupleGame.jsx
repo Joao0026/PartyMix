@@ -5,9 +5,10 @@ import { loadGame } from '../utils/game'
 import { api } from '../utils/api'
 import DailyScratch from './DailyScratch'
 import CoupleMap from '../components/game/CoupleMap'
-import { Dice6, Heart, Film, HelpCircle, Ticket, Map, Lock, Check } from 'lucide-react'
+import { Dice6, Heart, Film, HelpCircle, Ticket, Map, Lock } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
+import NightShell, { NightTitle, NightCta, NightChip, NightChoice, GlowDisc, NightBox } from '../components/layout/NightShell'
 
 // ── EROTIC DICE ──────────────────────────────────────────────
 const BODY_OPTIONS=['Lábios','Pescoço','Orelhas','Ombros','Costas','Barriga','Pés','Mãos','Pulsos','Clavícula','Joelhos','Tornozelos','Nuca','Cotovelos','Dedos','Testa','Bochechas','Queixo','Peito','Cintura']
@@ -265,13 +266,13 @@ function RoleplaySection({onNext}){
 
 // ── ACTIVITIES CONFIG ─────────────────────────────────────────
 const ACTIVITIES=[
-  {id:'map',        icon:Map,        label:'Mapa do Casal',    desc:'Board erótico — Snakes & Ladders',    color:'from-rose-500 to-pink-600',    premium:false,once:true},
-  {id:'dice',       icon:Dice6,      label:'Dados Eróticos',   desc:'20 ações × 20 partes do corpo',       color:'from-rose-500 to-pink-600',    premium:false},
-  {id:'challenges', icon:Heart,      label:'Desafios',          desc:'Físicos, sensoriais e emocionais',    color:'from-red-500 to-rose-600',     premium:false},
-  {id:'quiz',       icon:HelpCircle, label:'Quiz do Casal',    desc:'Conheces bem o teu parceiro?',         color:'from-violet-600 to-purple-700',premium:false},
-  {id:'roleplay',   icon:Film,       label:'Roleplay',          desc:'10 cenários com timer',               color:'from-slate-600 to-slate-800',  premium:false},
-  {id:'scratch',    icon:Ticket,     label:'Posição do Dia',   desc:'Raspadinha diária Kamasutra',          color:'from-amber-500 to-orange-500', premium:false,once:true},
-  {id:'kinky',      icon:Lock,       label:'Modo Intenso 🔒',  desc:'Desafios para os mais corajosos',     color:'from-red-700 to-rose-900',     premium:true},
+  {id:'map',        icon:Map,        label:'🗺️ Mapa do Casal',    desc:'Tabuleiro a dois',    color:'#f87171',    premium:false,once:true},
+  {id:'dice',       icon:Dice6,      label:'🎲 Dados',            desc:'Ação × parte do corpo',       color:'#f87171',    premium:false},
+  {id:'challenges', icon:Heart,      label:'💕 Desafios',          desc:'Físicos, sensoriais e emocionais',    color:'#fb7185',     premium:false},
+  {id:'quiz',       icon:HelpCircle, label:'💬 Quiz do Casal',    desc:'Conheces bem o teu parceiro?',         color:'#8b5cf6',premium:false},
+  {id:'roleplay',   icon:Film,       label:'🎬 Roleplay',          desc:'Cenários com timer',               color:'#94a3b8',  premium:false},
+  {id:'scratch',    icon:Ticket,     label:'🎟️ Posição do Dia',   desc:'Raspadinha diária',          color:'#fbbf24', premium:false,once:true},
+  {id:'kinky',      icon:Lock,       label:'🔒 Modo Intenso',  desc:'Em breve',     color:'#64748b',     premium:true},
 ]
 
 // When multiple activities selected (excluding map/scratch), rotate randomly
@@ -334,111 +335,89 @@ export default function CoupleGame(){
   }
 
   // ── MENU ──────────────────────────────────────────────────
+  const ROSE = '#f87171'
   if(phase==='menu')return(
-    <GameShell mode="couple">
-      <div className="p-4 flex items-center gap-3 max-w-lg mx-auto w-full">
-        <BackButton onClick={() => navigate('/')} />
-        <div><h1 className="text-white font-black text-xl">💕 Modo Casal</h1><p className="text-slate-500 text-sm">Escolhe o que queres jogar</p></div>
+    <NightShell
+      onBack={() => navigate('/')}
+      footer={(
+        <NightCta accent={ROSE} onClick={start} disabled={selected.filter(s=>s!=='scratch').length===0}>
+          Começar 💕
+        </NightCta>
+      )}
+    >
+      <NightTitle>Modo Casal</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">O que jogam esta noite?</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Podes juntar várias atividades.</p>
+
+      <div className="mt-6">
+        <NightBox title="Intensidade">
+          <div className="grid grid-cols-3 gap-1.5">
+            {Object.entries(INTENSITIES).map(([id, opt]) => (
+              <NightChip key={id} className="w-full justify-center" selected={intensity === id} accent={ROSE} onClick={() => setIntensity(id)}>
+                {opt.label}
+              </NightChip>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] text-white/45">{INTENSITIES[intensity]?.desc}</p>
+        </NightBox>
       </div>
-      <div className="flex-1 px-4 pb-8 max-w-lg mx-auto w-full space-y-2.5">
-        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
-          <h3 className="text-white font-bold">Intensidade</h3>
-          {Object.entries(INTENSITIES).map(([id,opt])=>(
-            <button key={id} onClick={()=>setIntensity(id)}
-              className={`w-full rounded-xl border p-3 text-left transition-all ${intensity===id?'bg-rose-500/15 border-rose-500/45':'bg-white/[0.03] border-white/[0.07]'}`}>
-              <p className={intensity===id?'text-white font-bold':'text-slate-400 font-bold'}>{opt.label}</p>
-              <p className="text-slate-500 text-xs">{opt.desc}</p>
-            </button>
-          ))}
-        </div>
-        {ACTIVITIES.map((act,i)=>{
-          const isSel=selected.includes(act.id)
-          return(
-            <motion.button key={act.id}
-              initial={{opacity:0,x:-12}} animate={{opacity:1,x:0}} transition={{delay:i*0.05}}
-              whileHover={!act.premium?{scale:1.01}:{}} whileTap={!act.premium?{scale:0.98}:{}}
-              onClick={()=>toggle(act.id)}
-              className={`w-full rounded-2xl p-4 flex items-center gap-4 border transition-all text-left
-                ${act.premium?'opacity-50 cursor-not-allowed border-white/[0.04] bg-white/[0.02]'
-                  :isSel?'border-rose-500/40 bg-rose-500/8 shadow-lg'
-                  :'border-white/[0.06] bg-white/[0.03] hover:border-white/[0.15]'}`}
-              style={isSel&&!act.premium?{boxShadow:`0 0 20px rgba(225,29,72,0.12)`}:{}}>
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${act.color} flex items-center justify-center flex-shrink-0 shadow-lg ${!isSel&&!act.premium?'opacity-50':''}`}>
-                <act.icon className="text-white w-6 h-6"/>
-              </div>
-              <div className="flex-1">
-                <p className={`font-bold ${isSel||act.premium?'text-white':'text-slate-400'}`}>{act.label}</p>
-                <p className="text-slate-500 text-sm">{act.desc}</p>
-                {act.premium&&<p className="text-amber-600 text-xs mt-0.5">Em breve disponível</p>}
-              </div>
-              {act.premium?<Lock className="text-slate-600 w-5 h-5 flex-shrink-0"/>
-                :act.once?<span className="text-amber-400 text-xs font-bold flex-shrink-0">{act.id==='map'?isSel?'✓ Incluído':'INCLUIR':isSel?'✓':'ABRIR →'}</span>
-                :<div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSel?'border-rose-400 bg-rose-500':'border-white/[0.15]'}`}>
-                  {isSel&&<Check className="text-white w-3.5 h-3.5"/>}
-                </div>
-              }
-            </motion.button>
+
+      <NightBox title="Atividades" className="mt-3">
+        <div className="space-y-1.5">
+        {ACTIVITIES.map((act) => {
+          const isSel = selected.includes(act.id)
+          const color = act.premium ? '#64748b' : (isSel ? ROSE : act.color)
+          return (
+            <NightChoice
+              key={act.id}
+              selected={isSel && !act.premium}
+              accent={ROSE}
+              onClick={() => toggle(act.id)}
+              title={act.premium ? `${act.label} · em breve` : act.label}
+              desc={act.desc}
+              icon={(
+                <GlowDisc color={color} size={36}>
+                  <act.icon className="h-4 w-4" style={{ color }} strokeWidth={1.75} />
+                </GlowDisc>
+              )}
+            />
           )
         })}
-        {playableActs.length>1&&(
-          <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-2xl p-3 text-center">
-            <p className="text-cyan-400 text-xs">🎲 Com {playableActs.length} atividades selecionadas, vão sair aleatoriamente!</p>
-          </div>
-        )}
-        {selected.includes('map')&&(
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-4">
-            <div>
-              <p className="text-white font-bold text-sm mb-3">💕 Objetivo do Loop</p>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  {id:'free',label:'Sem vencedor',desc:'Jogam até parar'},
-                  {id:'laps',label:'Por voltas',desc:'Ganha quem completar primeiro'},
-                ].map(opt=>(
-                  <button key={opt.id} onClick={()=>setLoopGoal(opt.id)}
-                    className={`rounded-xl border p-3 text-left transition-all ${loopGoal===opt.id?'bg-rose-500/15 border-rose-500/45 text-white':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                    <p className="font-bold text-sm">{opt.label}</p>
-                    <p className="text-xs text-slate-500">{opt.desc}</p>
-                  </button>
+        </div>
+      </NightBox>
+
+      {playableActs.length > 1 && (
+        <p className="mt-3 text-center text-[13px] text-white/45">Com {playableActs.length} atividades, saem à vez.</p>
+      )}
+
+      {selected.includes('map') && (
+        <div className="mt-3 space-y-3">
+          <NightBox title="Objetivo do mapa">
+            <div className="grid grid-cols-2 gap-1.5">
+              <NightChip className="w-full justify-center" selected={loopGoal === 'free'} accent={ROSE} onClick={() => setLoopGoal('free')}>🌙 Sem vencedor</NightChip>
+              <NightChip className="w-full justify-center" selected={loopGoal === 'laps'} accent={ROSE} onClick={() => setLoopGoal('laps')}>🏁 Por voltas</NightChip>
+            </div>
+            {loopGoal === 'laps' && (
+              <div className="mt-2 grid grid-cols-4 gap-1.5">
+                {[1, 2, 3, 5].map((n) => (
+                  <NightChip key={n} className="w-full justify-center" selected={targetLaps === n} accent={ROSE} onClick={() => setTargetLaps(n)}>
+                    {n}
+                  </NightChip>
                 ))}
               </div>
-              {loopGoal==='laps'&&(
-                <div className="flex gap-2 mt-3">
-                  {[1,2,3,5].map(n=>(
-                    <button key={n} onClick={()=>setTargetLaps(n)}
-                      className={`flex-1 rounded-xl border py-2 text-sm font-bold ${targetLaps===n?'bg-rose-500/20 border-rose-500/50 text-rose-200':'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
-                      {n} volta{n>1?'s':''}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="text-slate-500 text-xs mt-2">Ao completar uma volta, sai sempre um prémio de volta.</p>
-            </div>
-            <p className="text-white font-bold text-sm mb-3">🎲 Máximo no Dado</p>
-            <div className="flex gap-2 justify-center mb-3">
-              {[3,4,5,6].map(num=>(
-                <motion.button key={num} whileHover={{scale:1.08}} whileTap={{scale:0.92}}
-                  onClick={()=>setMaxDice(num)}
-                  className={`w-12 h-12 rounded-xl font-black text-lg transition-all ${
-                    maxDice===num
-                      ?'bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/40 scale-105'
-                      :'bg-white/[0.08] border border-white/[0.15] text-slate-400 hover:border-white/[0.25]'
-                  }`}>
-                  {num}
-                </motion.button>
+            )}
+          </NightBox>
+          <NightBox title="Máximo no dado">
+            <div className="grid grid-cols-4 gap-1.5">
+              {[3, 4, 5, 6].map((num) => (
+                <NightChip key={num} className="w-full justify-center" selected={maxDice === num} accent={ROSE} onClick={() => setMaxDice(num)}>{num}</NightChip>
               ))}
             </div>
-            <p className="text-slate-400 text-xs text-center">Máximo: {maxDice} casas</p>
-          </div>
-        )}
-        <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={start}
-          disabled={selected.filter(s=>s!=='scratch').length===0}
-          className="w-full text-white font-black rounded-2xl py-5 text-lg mt-2 disabled:opacity-40"
-          style={{background:'linear-gradient(135deg,#e11d48,#9d174d)',boxShadow:'0 4px 24px rgba(225,29,72,0.3)'}}>
-          Começar 💕
-        </motion.button>
-      </div>
-      <AnimatePresence>{showScratch&&<DailyScratch onClose={()=>setShowScratch(false)}/>}</AnimatePresence>
-    </GameShell>
+          </NightBox>
+        </div>
+      )}
+      <AnimatePresence>{showScratch && <DailyScratch onClose={() => setShowScratch(false)} />}</AnimatePresence>
+    </NightShell>
   )
 
   // ── MAP MODE ──────────────────────────────────────────────
@@ -448,8 +427,8 @@ export default function CoupleGame(){
       header={
         <div className="flex items-center justify-between">
           <BackButton onClick={leaveMap} />
-          <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
-          <div className="w-5"/>
+          <h1 className="text-lg font-black text-white">💕 Mapa do Casal</h1>
+          <div className="w-10"/>
         </div>
       }
     >
@@ -465,7 +444,7 @@ export default function CoupleGame(){
         <div className="flex items-center justify-between">
           <BackButton onClick={() => setPhase('menu')} />
           <div className="text-center">
-            <p className="text-white font-bold text-sm">💕 Modo Casal</p>
+            <p className="text-white font-bold text-sm">Modo Casal</p>
             <p className="text-slate-500 text-xs">Turno {turn+1} · {player?.name}</p>
           </div>
           <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black`}>{player?.name?.[0]}</div>

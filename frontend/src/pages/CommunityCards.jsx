@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ThumbsUp, Send, Sparkles, CheckCircle, Lightbulb } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import { ThumbsUp, Send, CheckCircle, Lightbulb } from 'lucide-react'
+import NightShell, { NightTitle } from '../components/layout/NightShell'
 import { api } from '../utils/api'
+import { DRINK_BARALHOS, DRINK_ESPECIAL_TYPES, DRINK_BARALHO_PLACEHOLDERS, drinkBaralhoLabel } from '../utils/drinkBaralhos'
 import { isUnder18 } from '../utils/ageGate'
 
 const MODES = [
@@ -115,10 +115,11 @@ export default function CommunityCards() {
   const [iAuthor, setIAuthor] = useState('')
 
   const visibleModes = isUnder18() ? MODES.filter((m) => m.id === 'family') : MODES
+  const selectedModeObj = MODES.find((m) => m.id === cMode)
   const isCardsMode     = cMode === 'cards'
   const isMisterMode    = cMode === 'mister'
   const isMememixMode   = cMode === 'mememix'
-  const needsCardType   = cMode && !isCardsMode && !isMisterMode && selectedModeObj?.cardTypes.length > 0
+  const needsCardType   = cMode && !isCardsMode && !isMisterMode && (selectedModeObj?.cardTypes?.length > 0)
   // Show answer field when type is a question type
   const showAnswerField = selectedModeObj?.showAnswer && ANSWER_TYPES.includes(cType)
   const showForbiddenField = cType === 'proibido'
@@ -282,37 +283,30 @@ export default function CommunityCards() {
   }
 
   return (
-    <PageShell mode="cards" maxWidth="3xl" innerClassName="space-y-0 w-full flex flex-col">
-      <div className="px-0 pt-0 pb-4 flex items-center gap-3 w-full">
-        <BackButton onClick={() => navigate('/')} />
-        <div className="flex-1">
-          <h1 className="text-white font-black text-xl flex items-center gap-2"><Sparkles className="text-violet-400 w-5 h-5"/>Cartas da Comunidade</h1>
-          <p className="text-slate-500 text-sm">Vota nas melhores ideias — clica outra vez para retirar. Só o admin aprova para entrar no jogo.</p>
-        </div>
-      </div>
+    <NightShell wide onBack={() => navigate('/')}>
+      <NightTitle>Comunidade</NightTitle>
+      <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Cartas da comunidade</p>
+      <p className="mt-1.5 text-center text-[13px] text-white/45">Vota nas melhores. Só o admin aprova para o jogo.</p>
 
       <AnimatePresence>
         {submitted&&(
           <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} exit={{opacity:0}}
-            className="mx-4 mb-2 max-w-lg md:max-w-3xl mx-auto w-full bg-green-500/15 border border-green-500/30 rounded-2xl p-3 text-center">
-            <p className="text-green-400 font-bold">✅ Submetido! A aguardar votos da comunidade.</p>
+            className="mt-4 rounded-2xl border border-green-500/30 bg-green-500/15 p-3 text-center">
+            <p className="font-bold text-green-400">Submetido. A aguardar votos da comunidade.</p>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Tabs */}
-      <div className="px-4 max-w-lg md:max-w-3xl mx-auto w-full mb-4">
-        <div className="flex bg-white/[0.04] border border-white/[0.06] rounded-2xl p-1 gap-1">
-          {[['browse','🃏 Ver'],['submit_card','✏️ Carta'],['submit_idea','💡 Ideia']].map(([id,label])=>(
-            <button key={id} onClick={()=>setTab(id)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${tab===id?'bg-violet-600 text-white':'text-slate-400 hover:text-white'}`}>
-              {label}
-            </button>
-          ))}
-        </div>
+      <div className="mt-5 flex rounded-full border border-white/10 bg-[#1c1c21] p-1">
+        {[['browse','Ver'],['submit_card','Carta'],['submit_idea','Ideia']].map(([id,label])=>(
+          <button key={id} type="button" onClick={()=>setTab(id)}
+            className={`flex-1 rounded-full py-2.5 text-[13px] font-extrabold ${tab===id?'bg-[#141419] text-white':'text-slate-400'}`}>
+            {label}
+          </button>
+        ))}
       </div>
 
-      <div className="flex-1 px-4 pb-8 max-w-lg md:max-w-3xl mx-auto w-full">
+      <div className="mt-5 pb-4">
         <AnimatePresence mode="wait">
 
           {/* ── BROWSE ── */}
@@ -729,6 +723,6 @@ export default function CommunityCards() {
 
         </AnimatePresence>
       </div>
-    </PageShell>
+    </NightShell>
   )
 }
