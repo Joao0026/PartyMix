@@ -20,6 +20,9 @@ const s = new mongoose.Schema({
   ideaType: { type: String, enum: ['mode','minigame','feature','other'] },
   // Common
   votes:    { type: Number, default: 0 },
+  // Additive migration: old documents keep their aggregate vote count and start
+  // tracking only new, attributable votes here.
+  voters:   { type: [String], default: [], select: false },
   status:   { type: String, enum: ['pending','approved','rejected'], default: 'pending' },
   author:   { type: String, default: 'Anónimo', maxlength: 50 },
   pack:     { type: String, default: '', maxlength: 60 },

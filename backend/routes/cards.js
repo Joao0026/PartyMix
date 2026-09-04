@@ -11,7 +11,14 @@ router.get('/', asyncRoute(async (req, res) => {
   const f = {};
   if (req.query.is_black !== undefined) f.is_black = bool(req.query.is_black);
   if (req.query.category) f.category = oneOf(req.query.category, CARD_CATEGORIES, { field: 'category' });
-  if (req.query.pack) f.pack = buildPackFilter(req.query.pack, req.query.include_community);
+  if (req.query.mode_type) f.mode_type = cleanString(req.query.mode_type, { field: 'mode_type', max: 30, required: true });
+  if (req.query.pack) {
+    const packFilter = buildPackFilter(req.query.pack, req.query.include_community);
+    f.pack = packFilter;
+    if (packFilter === 'community' || packFilter?.$in?.includes('community')) {
+      f.mode_type = 'cards';
+    }
+  }
   res.json(await Card.find(f));
 }));
 

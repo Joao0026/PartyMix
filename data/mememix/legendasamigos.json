@@ -1,10 +1,11 @@
 {
   "name": "MemeMix — Legendas Amigos",
-  "pack": "community",
+  "pack": "amigos",
   "mode": "mememix",
-  "description": "Legendas grupo de amigos.",
+  "audience": "all",
+  "description": "Legendas próprias para grupos de amigos.",
   "legendas": [
-    "Quando o Jel diz que vai para o 16 projeto de Verão",
+    "Quando o Jel diz que vai para o 107º projeto de Verão",
     "Quando a Guids diz que gostava de voltar aos tempos antigos mas todos sabemos a cor dela"
   ]
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { loadGame } from '../utils/game'
+import { isUnder18 } from '../utils/ageGate'
 import { fetchChallenges, fetchRandomChallenge } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 import ChallengeCard from '../components/game/ChallengeCard'
@@ -47,6 +48,13 @@ const FAMILY_SPECIALS = [
   { type:'special', special:'all_play', emoji:'👨‍👩‍👧', color:'#7c3aed', label:'Todos' },
 ]
 
+const VALID_MINI_GAMES = new Set(['maior_menor', 'grupo', 'espio', '10_segundos', 'batalha', 'sync', 'password'])
+
+function normalizeMiniGameId(value) {
+  const id = typeof value === 'string' ? value : value?.id
+  return VALID_MINI_GAMES.has(id) ? id : null
+}
+
 function fallbackChallenge(category, mode = 'friends') {
   const shared = {
     telepatia: { text:'Tema: coisas que existem numa cozinha. Dois jogadores dizem uma palavra ao mesmo tempo.', category:'telepatia', time_limit:10, sips_penalty:2 },
@@ -55,28 +63,38 @@ function fallbackChallenge(category, mode = 'friends') {
     proibido: { text:'Palavra: Férias. Faz a equipa adivinhar sem dizer as palavras proibidas.', category:'proibido', forbiddenWords:['praia','viagem','hotel','avião','verão'], sips_penalty:2 },
     caos: { text:'Regra temporária: durante 2 turnos, quem disser nomes próprios perde/bebe.', category:'caos', is_ongoing:true, ongoing_rounds:2, ongoing_instruction:'Sem nomes próprios até acabar a regra.', sips_penalty:2 },
   }
+  let row
   if (category === 'perguntas') {
-    return mode === 'family'
+    row = mode === 'family'
       ? { text:'Qual é o maior oceano do mundo?', category:'perguntas', answer:'Oceano Pacífico', choices:['Atlântico','Índico','Pacífico','Ártico'], difficulty:'facil' }
       : { text:'Que país ganhou o Euro 2016?', category:'perguntas', answer:'Portugal', choices:['França','Portugal','Espanha','Alemanha'], difficulty:'facil', sips_penalty:2 }
+  } else {
+    row = shared[category] || { text:'Completa um desafio escolhido pelo grupo.', category:category || 'acao', sips_penalty:2 }
   }
-  return shared[category] || { text:'Completa um desafio escolhido pelo grupo.', category:category || 'acao', sips_penalty:2 }
+  if (mode === 'family') {
+    const { sips_penalty, ...rest } = row
+    if (typeof rest.text === 'string') rest.text = rest.text.replace(/\/bebe/g, '')
+    return rest
+  }
+  return row
 }
 
 function pickMiniGame(miniGames) {
-  if (!miniGames?.length) return null
-  const weights = miniGames.map((id) => (id === 'maior_menor' ? 1 : 3))
+  const validGames = (miniGames || []).map(normalizeMiniGameId).filter(Boolean)
+  if (!validGames.length) return null
+  const weights = validGames.map((id) => (id === 'maior_menor' ? 1 : 3))
   const total = weights.reduce((sum, w) => sum + w, 0)
   let roll = Math.random() * total
-  for (let i = 0; i < miniGames.length; i += 1) {
+  for (let i = 0; i < validGames.length; i += 1) {
     roll -= weights[i]
-    if (roll <= 0) return miniGames[i]
+    if (roll <= 0) return validGames[i]
   }
-  return miniGames[miniGames.length - 1]
+  return validGames[validGames.length - 1]
 }
 
 function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30) {
   const isMiniOnly = friendsMode === 'map_mini'
+  const playableMiniGames = (miniGames || []).map(normalizeMiniGameId).filter(Boolean)
   return Array.from({ length: n }, (_, i) => {
     if (i === 0) return { type:'start', emoji:'🏁', color:'#059669', label:'Início' }
     if (mapStyle === 'special' && i > 2 && i < n - 2) {
@@ -85,21 +103,20 @@ function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30
       if (Math.random() < chance) return specials[Math.floor(Math.random()*specials.length)]
     }
     if (isMiniOnly) {
-      if (!miniGames?.length) return { type:'minigame', mini:{id:'random',label:'Mini-jogo aleatório'}, emoji:'🎮', color:'#6d28d9' }
-      const mg = pickMiniGame(miniGames)
+      const mg = pickMiniGame(playableMiniGames) || 'grupo'
       return { type:'minigame', mini:mg, emoji:'🎮', color:'#7c3aed' }
     }
     if (rotation === 'random') {
-      if (miniGames?.length && Math.random() < 0.5) {
-        const mg = pickMiniGame(miniGames)
+      if (playableMiniGames.length && Math.random() < 0.5) {
+        const mg = pickMiniGame(playableMiniGames)
         return { type:'minigame', mini:mg, emoji:'🎮', color:'#d97706' }
       }
       const cat = cats[Math.floor(Math.random()*cats.length)]
       const cfg = CATEGORY_CONFIG[cat] || { emoji:'⭐', color:'#6d28d9' }
       return { type:'challenge', category:cat, emoji:cfg.emoji, color:cfg.color }
     }
-    if (i%5===0 && miniGames?.length) {
-      return { type:'minigame', mini:pickMiniGame(miniGames), emoji:'🎮', color:'#d97706' }
+    if (i%5===0 && playableMiniGames.length) {
+      return { type:'minigame', mini:pickMiniGame(playableMiniGames), emoji:'🎮', color:'#d97706' }
     }
     const cat = cats[i%cats.length]
     const cfg = CATEGORY_CONFIG[cat] || { emoji:'⭐', color:'#6d28d9' }
@@ -110,15 +127,15 @@ function buildMap(cats, miniGames, friendsMode, rotation, mapStyle, mode, n = 30
 // Snake layout grid
 function MapGrid({ tiles, positions, players, currentPlayer, layout = 'classic' }) {
   const COLS = 6
-  const tileW = 50, tileH = 48, gapX = 6, gapY = 10
+  const tileW = 56, tileH = 54, gapX = 6, gapY = 10
   const rows  = Math.ceil(tiles.length / COLS)
-  const boardW = layout === 'party' ? 340 : COLS*(tileW+gapX)-gapX
-  const boardH = layout === 'party' ? 340 : rows*(tileH+gapY)-gapY
+  const boardW = layout === 'party' ? 360 : COLS*(tileW+gapX)-gapX
+  const boardH = layout === 'party' ? 360 : rows*(tileH+gapY)-gapY
 
   function tilePos(idx) {
     if (layout === 'party') {
       if (idx === 0) return { x: boardW/2-tileW/2, y: boardH/2-tileH/2 }
-      const ring = idx <= 12 ? 86 : 145
+      const ring = idx <= 12 ? 90 : 152
       const ringIdx = idx <= 12 ? idx - 1 : idx - 13
       const ringCount = idx <= 12 ? 12 : Math.max(1, tiles.length - 13)
       const angle = -Math.PI / 2 + (ringIdx / ringCount) * Math.PI * 2
@@ -208,8 +225,8 @@ export default function MapGame() {
   const friendsMode = game?.friendsMode || 'map_cats'
   const mapRotation = game?.mapRotation || 'random'
   const mapStyle    = game?.mapStyle || 'classic'
-  const penaltyType = game?.penaltyType || 'sips'
   const isFamily    = game?.mode === 'family'
+  const penaltyType = isFamily ? 'none' : (game?.penaltyType || 'sips')
   const WINNING     = game?.winningScore || 5
 
   const MAP = useRef(buildMap(cats, miniGames, friendsMode, mapRotation, mapStyle, game?.mode || 'friends', 30)).current
@@ -266,7 +283,10 @@ export default function MapGame() {
     return []
   }
 
-  useEffect(() => { if (!game) navigate('/') }, [])
+  useEffect(() => {
+    if (!game) navigate('/')
+    else if (isUnder18() && game.mode !== 'family') navigate('/', { replace: true })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -295,7 +315,12 @@ export default function MapGame() {
     const tile=MAP[final]
     setTimeout(async()=>{
       if(tile.type==='special'){handleSpecialTile(tile);return}
-      if(tile.type==='minigame'){setMiniGame(tile.mini);return}
+      if(tile.type==='minigame'){
+        const miniGameId = normalizeMiniGameId(tile.mini)
+        if (miniGameId) setMiniGame(miniGameId)
+        else nextPlayer()
+        return
+      }
       if(tile.type==='challenge'||tile.type==='start'){
         const category = tile.category || cats[0]
         try{
@@ -390,6 +415,10 @@ export default function MapGame() {
   const finishImpostorRound = ({ guessedCorrect, impostorIndex }) => {
     const impostorName = players[impostorIndex]?.name
     setImpostorRound(null)
+    if (isFamily) {
+      setTimeout(nextPlayer, 800)
+      return
+    }
     if (guessedCorrect) {
       triggerPenalty(impostorName, null, impostorIndex)
       setFails((f) => f.map((v, i) => (i === impostorIndex ? v + 1 : v)))
@@ -523,7 +552,7 @@ export default function MapGame() {
             <Trophy className="text-amber-400 w-4 h-4 shrink-0"/>
             <span className="text-white font-bold text-sm truncate">R{round} · {usesCategoryProgress ? '3 por categoria' : `Meta: ${WINNING} pts`}</span>
           </div>
-          <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} />
+          <PlayerScoreChips players={players} scores={scores} currentPlayer={currentPlayer} accent={isFamily ? 'sky' : 'amber'} />
         </div>
       }
       footer={
@@ -534,7 +563,7 @@ export default function MapGame() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={nextPlayer}
-            className="btn-primary bg-gradient-to-r from-violet-600 to-purple-700"
+            className={`btn-primary bg-gradient-to-r ${isFamily ? 'from-sky-500 to-indigo-600' : 'from-violet-600 to-purple-700'}`}
           >
             Próximo Jogador →
           </motion.button>
@@ -563,7 +592,7 @@ export default function MapGame() {
           <div className="mb-3 surface p-3">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-white text-xs font-black uppercase tracking-[0.18em]">Falta a {player?.name}</p>
-              <p className="text-slate-500 text-xs">{scores[currentPlayer]}/{cats.length*3}</p>
+              <p className="text-slate-300 text-xs">{scores[currentPlayer]}/{cats.length*3}</p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {cats.map(cat=>{
@@ -574,8 +603,8 @@ export default function MapGame() {
                       <span className="truncate text-xs font-bold text-slate-300">{CATEGORY_CONFIG[cat]?.emoji || '🎴'} {cat}</span>
                       <span className={`text-xs font-black ${count>=3?'text-emerald-300':'text-white'}`}>{count}/3</span>
                     </div>
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
-                      <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-500" style={{width:`${Math.min(100,(count/3)*100)}%`}}/>
+                      <div className={`mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]`}>
+                      <div className={`h-full rounded-full bg-gradient-to-r ${isFamily ? 'from-sky-400 to-indigo-500' : 'from-violet-500 to-cyan-500'}`} style={{width:`${Math.min(100,(count/3)*100)}%`}}/>
                     </div>
                   </div>
                 )
@@ -590,7 +619,7 @@ export default function MapGame() {
               <motion.div animate={{width:`${(scores[i]/WINNING)*100}%`}}
                 className={`h-full rounded-full bg-gradient-to-r ${p.color}`} transition={{type:'spring',damping:12}}/>
             </div>
-            <span className="text-xs text-slate-500 w-12 text-right">{scores[i]}/{WINNING}</span>
+            <span className="text-xs text-slate-300 w-12 text-right">{scores[i]}/{WINNING}</span>
           </div>
         ))}
       </div>
@@ -601,17 +630,17 @@ export default function MapGame() {
           <div className="flex items-center gap-4 mb-4">
             <motion.div layout className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${player?.color} flex items-center justify-center text-white font-black text-2xl shadow-xl flex-shrink-0`}>{player?.name?.[0]}</motion.div>
             <div>
-              <p className="text-slate-500 text-xs">Vez de</p>
+              <p className="text-slate-300 text-xs">Vez de</p>
               <motion.h2 key={currentPlayer} initial={{opacity:0,y:6}} animate={{opacity:1,y:0}} className="text-white font-black text-xl">{player?.name}</motion.h2>
-              <p className="text-slate-600 text-xs">Casa {positions[currentPlayer]} · {scores[currentPlayer]}/{WINNING} pts</p>
+              <p className="text-slate-300 text-xs">Casa {positions[currentPlayer]} · {scores[currentPlayer]}/{WINNING} pts</p>
               {shields[currentPlayer]>0&&<p className="text-emerald-400 text-xs">🛡️ Proteção ativa</p>}
             </div>
             {scores[currentPlayer]===maxScore&&maxScore>0&&<Trophy className="text-amber-400 w-5 h-5 ml-auto flex-shrink-0"/>}
           </div>
           {!rolled
-            ?<BoardDie onRoll={handleRoll} disabled={moving} color="#7c3aed" whiteDice={true}/>
+            ?<BoardDie onRoll={handleRoll} disabled={moving} color={isFamily ? '#0ea5e9' : '#7c3aed'} whiteDice={true}/>
             :!moving&&(
-              <p className="text-slate-500 text-sm text-center">Movimento concluído — avança em baixo.</p>
+              <p className="text-slate-300 text-sm text-center">Movimento concluído — avança em baixo.</p>
             )
           }
         </motion.div>
@@ -638,7 +667,7 @@ export default function MapGame() {
         )}
         {showChallenge&&challenge&&(
           <ChallengeCard challenge={challenge} player={player} mode={game?.mode} penaltyType={isFamily?'none':penaltyType}
-            competitors={competitiveOptions()} onResult={handleResult} onClose={()=>setShowChallenge(false)}/>
+            competitors={competitiveOptions()} onResult={handleResult}/>
         )}
         {miniGame&&<MiniGameModal type={miniGame} players={players} currentPlayer={currentPlayer} onClose={nextPlayer}/>}
         {specialNotice&&(

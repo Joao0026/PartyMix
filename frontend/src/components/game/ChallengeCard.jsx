@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Clock } from 'lucide-react'
 import { playSuccessSound, playFailSound } from '../../utils/sounds'
 
-export default function ChallengeCard({ challenge, player, mode, penaltyType = 'sips', competitors = [], onResult, onClose }) {
+export default function ChallengeCard({ challenge, player, mode, penaltyType = 'sips', competitors = [], onResult }) {
   const [timeLeft,   setTimeLeft]   = useState(null)
   const [timerDone,  setTimerDone]  = useState(false)
   const [showResult, setShowResult] = useState(false)
+  const resultSubmittedRef = useRef(false)
+  const resultTimeoutRef = useRef(null)
   const [questionVisible, setQuestionVisible] = useState(() => challenge?.category !== 'perguntas')
   const [answerVisible, setAnswerVisible] = useState(false)
   const [selectedChoice, setSelectedChoice] = useState(null)
   const [choiceFeedback, setChoiceFeedback] = useState('')
+  const [confirmClose, setConfirmClose] = useState(false)
 
   const isFamily  = mode === 'family'
   const hasTimer  = challenge?.time_limit && challenge.time_limit > 0
@@ -21,11 +24,19 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
   }, [challenge])
 
   useEffect(() => {
+    resultSubmittedRef.current = false
+    setShowResult(false)
+    setTimerDone(false)
     setQuestionVisible(challenge?.category !== 'perguntas')
     setAnswerVisible(false)
     setSelectedChoice(null)
     setChoiceFeedback('')
+    setConfirmClose(false)
   }, [challenge])
+
+  useEffect(() => () => {
+    if (resultTimeoutRef.current) clearTimeout(resultTimeoutRef.current)
+  }, [])
 
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) { if (timeLeft === 0) { setTimerDone(true); handleResult('fail'); } return }
@@ -72,10 +83,17 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
     : ''
 
   const handleResult = (res, options = {}) => {
+    if (resultSubmittedRef.current) return
+    resultSubmittedRef.current = true
     if (res === 'success') playSuccessSound()
     else if (res === 'fail') playFailSound()
     setShowResult(true)
-    setTimeout(() => { onResult(res, options) }, 800)
+    resultTimeoutRef.current = setTimeout(() => { onResult(res, options) }, 800)
+  }
+
+  const handleClose = () => {
+    if (showResult) return
+    setConfirmClose(true)
   }
 
   const getPenaltyText = () => {
@@ -111,7 +129,14 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
               </span>
             </div>
           )}
-          <button onClick={onClose} className="text-white/50 hover:text-white w-8 h-8 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={handleClose}
+            disabled={showResult}
+            aria-label="Fechar e registar desafio como falhado"
+            title="Fechar conta como falha"
+            className="text-white/80 hover:text-white disabled:opacity-30 hit-48 flex items-center justify-center rounded-xl"
+          >
             <X className="w-5 h-5"/>
           </button>
         </div>
@@ -171,7 +196,7 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
                           : getPenaltyText() || 'Falhou!')
                         setTimeout(() => handleResult(isCorrect ? 'success' : 'fail', { autoNext: true }), 1200)
                       }}
-                      className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-all ${
+                      className={`flex items-center gap-2 rounded-xl border px-3 py-3.5 min-h-[48px] text-left text-base transition-all ${
                         selectedChoice === null
                           ? 'border-blue-400/20 bg-blue-500/10 text-slate-100 hover:border-blue-300/50'
                           : String(choice || '').trim().toLowerCase() === normalizedAnswer
@@ -238,7 +263,19 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
 
           {/* Result buttons */}
           <AnimatePresence>
-            {isContinuousOnly && !showResult ? (
+            {confirmClose && !showResult ? (
+              <div className="space-y-2 rounded-2xl border border-red-400/30 bg-red-950/40 p-3">
+                <p className="text-white text-sm font-bold text-center">Fechar conta como falha?</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setConfirmClose(false)} className="rounded-2xl border border-white/15 bg-white/10 py-4 min-h-[52px] text-white font-black">
+                    Cancelar
+                  </button>
+                  <button type="button" onClick={() => handleResult('fail', { autoNext: true, closed: true })} className="rounded-2xl bg-red-500 py-4 min-h-[52px] text-white font-black">
+                    Falhou
+                  </button>
+                </div>
+              </div>
+            ) : isContinuousOnly && !showResult ? (
               <button onClick={() => handleResult('accepted')}
                 className="w-full bg-orange-500/15 border border-orange-500/30 text-orange-400 rounded-2xl py-4 text-sm font-black">
                 🔁 Aceitar desafio contínuo
@@ -249,12 +286,12 @@ export default function ChallengeCard({ challenge, player, mode, penaltyType = '
                 <div className="grid gap-2">
                   {(competitors.length ? competitors : [{label:'Conseguiu', result:'success'}]).map((opt, idx)=>(
                     <button key={idx} onClick={() => handleResult('success', {...opt, autoNext:true})}
-                      className="w-full rounded-2xl border border-emerald-500/30 bg-emerald-500/15 py-3 text-emerald-300 font-black">
+                      className="w-full rounded-2xl border border-emerald-500/30 bg-emerald-500/15 py-3.5 min-h-[48px] text-emerald-300 font-black">
                       ✅ {opt.label}
                     </button>
                   ))}
                   <button onClick={() => handleResult('fail', {autoNext:true})}
-                    className="w-full rounded-2xl border border-red-500/30 bg-red-500/15 py-3 text-red-300 font-black">
+                    className="w-full rounded-2xl border border-red-500/30 bg-red-500/15 py-3.5 min-h-[48px] text-red-300 font-black">
                     ✕ Ninguém conseguiu
                   </button>
                 </div>

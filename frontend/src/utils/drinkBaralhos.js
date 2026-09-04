@@ -14,7 +14,6 @@ export const DRINK_BARALHOS = [
   { id: 'maldicao', label: '🔮 Maldição' },
   { id: 'historia', label: '🎬 História' },
   { id: 'cadeia', label: '🔗 Cadeia' },
-  { id: 'extreme', label: '💣 Extremo' },
 ]
 
 export const DRINK_ESPECIAL_TYPES = [
@@ -37,7 +36,6 @@ export const DRINK_BARALHO_PLACEHOLDERS = {
   picante: 'Ex: Revela o crush mais embaraçoso da tua vida. Ou bebe 3 goles.',
   poder: 'Ex: Distribui 4 goles como quiseres pelo grupo.',
   preferias: 'Minoria bebe 1',
-  extreme: 'Ex: Bebe 3 goles ou responde à pergunta mais incómoda que o grupo inventar.',
   alliance: 'Ex: Dupla com o jogador à tua direita. Se um beber, o outro bebe metade.',
   miniboss: 'Ex: Em 25 segundos, nomeiem 12 programas de TV portugueses. Sucesso → mesa distribui 6 goles. Falha → mesa bebe 6 goles.',
 }
@@ -54,6 +52,28 @@ export function normalizeDrinkCategories(categories) {
     const official = DRINK_BARALHOS.find((b) => b.id === cat.id)?.label
       || DRINK_ESPECIAL_TYPES.find((b) => b.id === cat.id)?.label
     return official ? { ...cat, label: official } : cat
+  })
+}
+
+/** Junta categorias de vários packs (mesmo baralho = cartas concatenadas). */
+export function mergeDrinkCategories(deckResults) {
+  const byId = new Map()
+  for (const result of deckResults || []) {
+    if (result?.blocked || result?.unavailable) continue
+    for (const cat of result.categories || []) {
+      const prev = byId.get(cat.id)
+      if (!prev) {
+        byId.set(cat.id, { ...cat, premium: false, cards: [...(cat.cards || [])] })
+      } else {
+        prev.cards = prev.cards.concat(cat.cards || [])
+      }
+    }
+  }
+  const order = DRINK_BARALHOS.map((b) => b.id)
+  return [...byId.values()].sort((a, b) => {
+    const ia = order.indexOf(a.id)
+    const ib = order.indexOf(b.id)
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib)
   })
 }
 

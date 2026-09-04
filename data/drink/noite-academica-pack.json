@@ -1,0 +1,2935 @@
+{
+  "name": "Noite Académica",
+  "mode": "drink",
+  "pack": "noite-academica",
+  "description": "Para grupos grandes, jantares académicos e pré-saídas.",
+  "premium": false,
+  "intensity": "moderada",
+  "ageRating": "18+",
+  "teaser": "Desafios de grupo, histórias universitárias e rivalidades entre cursos.",
+  "decks": {
+    "waterfall": {
+      "label": "🌊 Waterfall & Beber",
+      "desc": "Quem bebe, bebe muito",
+      "premium": false,
+      "cards": [
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Redes Sociais!",
+          "text": "Toda a gente com redes sociais instaladas bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Mais velho / Mais novo!",
+          "text": "O mais novo bebe 2 golos. O mais velho distribui 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "💪",
+          "title": "Ginásio!",
+          "text": "Quem foi ao ginásio esta semana não bebe. Os outros bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🏁",
+          "title": "Corrida!",
+          "text": "Vira o copo — quem acabar primeiro distribui 3 golos. O último bebe mais 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "😴",
+          "title": "Dorminhoco!",
+          "text": "Quem acordou depois das 10h hoje bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🎵",
+          "title": "Música!",
+          "text": "O último a nomear uma música portuguesa bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "📱",
+          "title": "Ecrã partido!",
+          "text": "Quem tem o ecrã do telemóvel partido bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👈",
+          "title": "Esquerda bebe!",
+          "text": "As pessoas à tua esquerda bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👉",
+          "title": "Direita bebe!",
+          "text": "As pessoas à tua direita bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍾",
+          "title": "Direto da garrafa",
+          "text": "Inclina a cabeça para trás e bebe com alguém a dar-te da garrafa.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🌊",
+          "title": "Cascata!",
+          "text": "Bebe 1 golo, a pessoa à tua esquerda bebe 2, a seguinte 3, e assim sucessivamente até voltar a ti.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🦸",
+          "title": "Herói da mesa",
+          "text": "Dá um golinho da bebida de cada jogador, como o herói que és.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👑",
+          "title": "Tratado a rei",
+          "text": "Todos te oferecem a bebida deles. Escolhe uma e dá um golinho, mesmo a rei.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🧍",
+          "title": "Todos de pé",
+          "text": "Todos de pé! O último a levantar-se bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🛌",
+          "title": "Todos deitados",
+          "text": "Todos deitados no chão! O último a deitar-se bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "♈",
+          "title": "Mesmo signo",
+          "text": "Quem for do mesmo signo que tu bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "⚽",
+          "title": "Penáltis!",
+          "text": "Penáltis para todos! Toda a gente bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "➡️",
+          "title": "Passa e bebe",
+          "text": "Todos passam a bebida para a pessoa à esquerda e bebem 1 golo dela.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👃",
+          "title": "Olhar para o nariz",
+          "text": "Todos olham para a ponta do próprio nariz e bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "😜",
+          "title": "Careta e golo",
+          "text": "Todos fazem a careta mais parva que conseguirem e bebem 1 golo assim mesmo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👴",
+          "title": "Mais velhos bebem",
+          "text": "Todos os jogadores mais velhos que tu bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👶",
+          "title": "Mais novos refrescam",
+          "text": "Todos os jogadores mais novos que tu bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "⚖️",
+          "title": "Homens vs Mulheres",
+          "text": "Se houver mais homens que mulheres, elas bebem 2 golos. Se houver mais mulheres que homens, eles bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🤙",
+          "title": "Mindinhos",
+          "text": "Comparem os mindinhos: quem o tiver mais pequeno e quem o tiver maior bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "📏",
+          "title": "Mais baixos",
+          "text": "Todos os jogadores mais baixos que tu bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "📐",
+          "title": "Mais altos",
+          "text": "Todos os jogadores mais altos que tu bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👴",
+          "title": "Mais velho",
+          "text": "O jogador mais velho da mesa bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👶",
+          "title": "Mais novo",
+          "text": "O jogador mais novo da mesa bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🥂",
+          "title": "Cheira a brinde",
+          "text": "Cheira-me a festa... BRINDEEE! Todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🏆",
+          "title": "Recorde mundial",
+          "text": "Se estiverem mais de 7 a jogar, é recorde mundial: BRINDEEE! Todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🪑",
+          "title": "Mais longe",
+          "text": "O jogador sentado mais longe de ti bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👃",
+          "title": "Maior nariz",
+          "text": "O jogador com o maior... nariz bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍹",
+          "title": "Mesma bebida",
+          "text": "Todos os que estiverem a beber a mesma bebida que tu bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🧭",
+          "title": "Guias na sala",
+          "text": "Há guias na sala? Bebem 1 golo, se faz favor.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🥂",
+          "title": "Copos ao alto",
+          "text": "Copos ao alto! Alguém faz um brinde e todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🔢",
+          "title": "Idade par",
+          "text": "Quem tiver idade par bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🔤",
+          "title": "Letras do nome",
+          "text": "Bebe 1 golo por cada letra do teu primeiro nome.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🥃",
+          "title": "Enche e esvazia",
+          "text": "Enche o teu copo e esvazia-o logo a seguir.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🔁",
+          "title": "Déjà vu",
+          "text": "Déjà vu! Quem foi o último a beber bebe outra vez, 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "📱",
+          "title": "No telemóvel",
+          "text": "Quem estiver com o telemóvel na mão agora bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍻",
+          "title": "Penalidades!",
+          "text": "Todos mandam abaixo! Bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍻",
+          "title": "Todos",
+          "text": "Todos bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👉",
+          "title": "Escolha",
+          "text": "Escolhe alguém para beber 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🥤",
+          "title": "Copo cheio",
+          "text": "Quem tiver mais bebida no copo bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👈",
+          "title": "Esquerda",
+          "text": "Bebe 1 golo e distribui 2 para a tua esquerda.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "👉",
+          "title": "Direita",
+          "text": "Bebe 1 golo e distribui 2 para a tua direita.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🔤",
+          "title": "Nome mais longo",
+          "text": "Quem tiver o nome mais longo bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍑",
+          "title": "Dedo curioso",
+          "text": "Todos os que já tiveram um dedo no rabo... sabem o que fazer, bebem 1 golo. O resto bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🤮",
+          "title": "Mente marota",
+          "text": "Quem pensou em fazer coisas erótico-badalhocas esta semana bebe 4 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🎂",
+          "title": "Mês de aniversário",
+          "text": "reader, bebe golos equivalentes ao número do teu mês de aniversário a dividir por 2 (arredonda para cima).",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "💭",
+          "title": "Fantasias na sala",
+          "text": "reader, vamos ser honestos... bebe 1 golo por cada pessoa aqui com quem já tiveste uma fantasia sexual.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍆",
+          "title": "Pilas na sala",
+          "text": "Todos os jogadores bebem 1 golo por cada pila nesta sala.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🌸",
+          "title": "Vaginas na sala",
+          "text": "Todos os jogadores bebem 1 golo por cada vagina nesta sala.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🌊",
+          "title": "Waterfall!",
+          "text": "O da esquerda começa a beber. Só podes parar quando a pessoa à tua esquerda parar!",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        }
+      ]
+    },
+    "eununca": {
+      "label": "🙅 Eu Nunca",
+      "desc": "Confissões garantidas",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA li as mensagens de outra pessoa sem ela saber.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙈",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA inventei uma desculpa para faltar a um plano. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📵",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA ignorei uma chamada porque não me apetecia falar. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "✈️",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui viajar, enganei-me no voo e acabei a fazer voluntariado no Congo. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📍",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA mandei uma localização errada a um amigo. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤥",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA inventei uma história para parecer mais interessante. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎂",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA me esqueci do aniversário de alguém importante. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥂",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA mandei um BRINDEEE do nada, tipo agora. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙊",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA me enganei no nome de alguém. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💇",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA me arrependi depois de um corte de cabelo. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💨",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA levei um peido na boca. Quem já fez, bebe 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎉",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA... nem sei o quê. BRINDEEEE! Todos bebem 1 golo!",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "regras": {
+      "label": "📜 Regras",
+      "desc": "Cria caos",
+      "premium": false,
+      "cards": [
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Quem disser \"sim\" ou \"não\" bebe 1 golo até ao fim do jogo!",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Toda a gente fala com sotaque britânico até à próxima regra.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Não podes apontar com o dedo. Usa o cotovelo. Quem apontar bebe.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "O teu nome agora é \"Rei/Rainha [apelido]\". Quem não usar o título bebe.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Fala em voz de pato durante as próximas 3 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Beber só após contar até 3 em voz alta. Quem se esquecer bebe extra.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "📜",
+          "title": "Nova Regra!",
+          "text": "Ninguém pode dizer o nome de ninguém. Só alcunhas. Quem errar bebe.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🙈",
+          "title": "Um olho tapado",
+          "text": "Todos ficam com um olho tapado com a mão. Se apanhares alguém destapado, manda-o beber 2.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🙊",
+          "title": "Nem sim nem não",
+          "text": "Na próxima volta, quem disser «sim» ou «não» bebe 1 golo por cada falha.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "👉",
+          "title": "Dedo proibido",
+          "text": "Quem apontar com o dedo bebe 1 golo, até sair outra regra.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🙋",
+          "title": "Com licença",
+          "text": "Quem se levantar sem pedir permissão reader_a bebe 1 golo. Dura 7 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🙅",
+          "title": "Braços à solta",
+          "text": "Quem cruzar os braços bebe 1 golo. Dura 2 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🥂",
+          "title": "Brinde obrigatório",
+          "text": "A partir de agora, antes de beber têm de brindar com alguém. Dura 2 voltas. Quem beber sem brindar bebe mais 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "👃",
+          "title": "Comichão no nariz",
+          "text": "Quem tocar na própria cara bebe 1 golo, até sair outra regra. Já estás a sentir aquela comichão no nariz?",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🥁",
+          "title": "Baterista da mesa",
+          "text": "Sempre que alguém beber, reader tem de bater uma vez na mesa. Se falhar, bebe 2 golos. Dura 5 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "☝️",
+          "title": "Dedo no ar",
+          "text": "Antes de falar, tens de levantar um dedo e escolher mais 2 pessoas para fazerem o mesmo contigo. Quem falar sem o fazer bebe 2 golos. Dura uma volta.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "👆",
+          "title": "Ok = nariz",
+          "text": "Sempre que alguém disser «ok», todos têm de tocar no nariz. O último bebe 2 golos. Dura uma volta.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🥤",
+          "title": "Copo flutuante",
+          "text": "reader, o teu copo nunca pode tocar diretamente na mesa. Se o pousares sem apoio, bebes 2. Dura uma volta.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🤔",
+          "title": "Boa pergunta",
+          "text": "Sempre que te fizerem uma pergunta, tens de dizer «boa pergunta» antes de responder. Se falhares, bebes 1. Dura uma volta.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "😂",
+          "title": "Riso contagioso",
+          "text": "Sempre que alguém se rir, todos têm de rir também. Quem não acompanhar bebe mais 1 golo. Dura 5 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "👈",
+          "title": "Todos apontam",
+          "text": "Sempre que alguém disser «não», todos apontam para essa pessoa. Se ninguém apontar, todos bebem 1 golo. Dura 5 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🎤",
+          "title": "Copo microfone",
+          "text": "A partir de agora o vosso copo é um microfone: sempre que lhe pegarem têm de dizer «teste, teste». Quem esquecer bebe mais 1, até sair outra regra.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "👑",
+          "title": "Princesa da mesa",
+          "text": "reader é agora uma pequena princesa. Quem não a tratar como tal bebe 4 golos. Dura 3 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "regra",
+          "emoji": "🤧",
+          "title": "Espirros contam",
+          "text": "Durante 4 rondas, sempre que alguém espirrar, tossir ou limpar a garganta, bebes 1.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        }
+      ]
+    },
+    "caos": {
+      "label": "💥 Caos",
+      "desc": "Regras temporárias e viragens de mesa",
+      "premium": false,
+      "cards": [
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "O grupo cria uma palavra proibida. Quem a disser bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Todos escolhem uma alcunha. Até ao fim da ronda, usar nomes reais faz beber.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "💪",
+          "title": "Caos!",
+          "text": "Durante uma volta à mesa só podes usar os cotovelos. Se falhares, bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🤐",
+          "title": "Caos!",
+          "text": "Não podes falar durante 2 rondas. Sussurra à pessoa à tua esquerda, que diz em voz alta. Se falhares, bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🏴‍☠️",
+          "title": "Caos!",
+          "text": "Fala como um pirata durante uma volta à mesa. Se falhares, bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🎬",
+          "title": "Caos!",
+          "text": "Escolhe um nome de ator porno para cada jogador. Durante uma volta à mesa, tratam-se por esses nomes. Quem se esquecer bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🪞",
+          "title": "Caos!",
+          "text": "Espelho meu, espelho meu: copia tudo o que o jogador à tua direita fizer durante 2 rondas. Se falhares, bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "👀",
+          "title": "Caos!",
+          "text": "Vemos a dobrar! Durante uma volta à mesa, todas as penalizações contam a dobrar.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🗿",
+          "title": "Caos!",
+          "text": "Ficas como uma estátua durante 2 rondas, na pose que o grupo escolher. Se te mexeres, bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🙋",
+          "title": "Caos!",
+          "text": "Durante as próximas 6 rondas, sempre que te mandarem beber tens de pedir autorização ao jogador à tua direita. Se ele deixar, bebes.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🚷",
+          "title": "Caos!",
+          "text": "Durante 4 rondas, toda a gente te ignora. Quem falar contigo ou reagir a ti bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🔄",
+          "title": "Caos!",
+          "text": "Durante uma volta à mesa, todos se tratam pelo nome dito ao contrário. Quem falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🗣️",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos só podem responder com uma palavra. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🇧🇷",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos falam com sotaque brasileiro. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "✋",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos têm de manter uma mão na mesa. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🚫",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, ninguém pode dizer «tipo». Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "😠",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos falam como se estivessem zangados. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🦁",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos falam como narradores de documentários de vida selvagem. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "📸",
+          "title": "Caos!",
+          "text": "Durante 5 minutos, todos respondem como celebridades a fugir de paparazzi. Quem falhar bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "📱",
+          "title": "Caos!",
+          "text": "Durante uma volta à mesa, sempre que se ouvir um telemóvel (a vibrar, a tocar, etc.), todos têm de se levantar e aplaudir. O último a fazê-lo bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "especiais": {
+      "label": "🛡️ Especiais",
+      "desc": "Alianças, mini bosses e impostor",
+      "premium": false,
+      "cards": [
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "O jogador à tua esquerda. Durante 2 voltas: se um beber, o outro bebe 1; se um falhar um desafio, sofrem juntos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Dupla com o jogador à tua direita. Se um beber, o outro bebe é praxe.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, nomeiem 10 marcas de carros. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, nomeiem 10 marcas de roupa. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "A mesa tem 30 segundos para listar 8 capitais. Sucesso → quem leu a carta distribui 4 golos. Falha → todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 15 segundos, cada um diz uma palavra que rima com «festa». Quem repetir ou travar bebe 2 golos. Resto distribui 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Mini boss: contem de 1 a 15 em coro sem errar. Se falharem, todos bebem 2 golos. Se acertarem, todos escolhem 1 pessoa para beber 1.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 25 segundos, nomeiem 12 programas de TV portugueses. Sucesso → mesa distribui 6 golos. Falha → mesa bebe 6 (1 cada).",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Desafio mímica em cadeia: cada um imita o anterior em 5 s. Se a cadeia partir, todos bebem 2 golos. Se aguentar, distribuem 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, nomeiem 10 filmes da Disney. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Boss da ronda: todos dizem o pior hábito de alguém da mesa (sem nome). Quem quiser saber joga pedra-papel-tesoura com quem disse — perdedor bebe 1 golo. No fim: se ninguém quiser adivinhar → quem disse o hábito distribui 1 golo. Se alguém ganhar o PPT, a pessoa diz quem era e bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, a mesa nomeia 10 posições sexuais. Conseguem → todos distribuem 2 golos. Falham → todos bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 15 segundos, digam 8 nomes de brinquedos sexuais. Sucesso → distribuem 4 golos. Falha → todos bebem 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Todos ao mesmo tempo imitam a sua própria cara de prazer. O grupo elege a pior: essa pessoa bebe 3, o resto distribui 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        }
+      ]
+    },
+    "desafios": {
+      "label": "⚡ Desafios",
+      "desc": "Mini-jogos relâmpago",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Rima!",
+          "text": "Diz uma palavra. Cada um diz uma rima. Quem falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Thumbmaster",
+          "text": "Quando quiseres pões o polegar na mesa. O último bebe.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Contagem 21",
+          "text": "Contam até 21, cada um diz 1, 2 ou 3 números. Quem diz 21 bebe e cria regra.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Mímica Rápida",
+          "text": "30s para imitar o que o jogador à esquerda escreve em papel.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Confissão Anónima",
+          "text": "Todos escrevem uma confissão. Lê em voz alta. Grupo vota em quem é.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "Copos!",
+          "text": "Bate a mesa 3 vezes. Toda a gente bebe. Quem bater 4 vezes distribui mais 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😃",
+          "title": "Recria o emoji",
+          "text": "Escolhe um emoji. Todos tentam recriá-lo com a cara. Quem fizer pior bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😂",
+          "title": "Conta uma piada",
+          "text": "Conta uma piada. O grupo decide se teve piada. Se não, bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📸",
+          "title": "Foto a dois",
+          "text": "Tira uma foto com a pessoa à tua direita. Depois, bebem os dois 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📷",
+          "title": "Foto de grupo",
+          "text": "Tirem uma foto de grupo. Depois, todos bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🐾",
+          "title": "Som de animal",
+          "text": "Todos fazem um som de animal ao mesmo tempo e depois bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📞",
+          "title": "Telefone estragado",
+          "text": "Sussurra uma frase ao ouvido do jogador à tua esquerda. Se chegar errada ao fim da roda, todos bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "✋",
+          "title": "Dedos iguais",
+          "text": "Todos de punho fechado. À contagem de três mostram 1 a 5 dedos. Quem calhar com o mesmo número que outra pessoa bebe golos iguais ao número de dedos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎤",
+          "title": "Rimas em cadeia",
+          "text": "Escolhe uma palavra. À vez, cada um diz uma que rime. Quem repetir ou falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎨",
+          "title": "Cor favorita",
+          "text": "Todos dizem a sua cor favorita ao mesmo tempo. Quem disser igual a outra pessoa bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "✊",
+          "title": "Pedra-papel-tesoura",
+          "text": "Pedra-papel-tesoura com a pessoa à tua esquerda e à direita. Quem perder bebe 2 golos. Se ganhares às duas, distribuis 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🕺",
+          "title": "És o juiz da dança",
+          "text": "És o juiz! Todos dançam para ti. Quem se recusar bebe 2 e quem dançar pior bebe 2 — tu decides.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🐒",
+          "title": "Imita o animal",
+          "text": "Escolhe um animal. Todos o imitam. Quem imitar pior (tu decides) bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍾",
+          "title": "Roda a garrafa",
+          "text": "Girem uma garrafa no centro da mesa. Aquele para quem apontar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👐",
+          "title": "Gestos em cadeia",
+          "text": "Faz um gesto. A pessoa à tua esquerda repete-o e acrescenta outro. Continuem até alguém falhar. Quem falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👀",
+          "title": "Toca no objeto",
+          "text": "Diz um objeto que estejas a ver na sala. Todos correm a tocar-lhe. O último a tocar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎭",
+          "title": "Imita alguém",
+          "text": "Imita alguém da mesa durante 10 segundos. Se ninguém adivinhar quem é, bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🐒",
+          "title": "Que animal sou?",
+          "text": "Imita um animal. A mesa tem 10 segundos para adivinhar. Se ninguém acertar, bebes 1 — e bebe como esse animal.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🗣️",
+          "title": "Fala sem parar",
+          "text": "Fala 30 segundos, sem parar, sobre um tema dado pelo grupo. Se travares, bebes 1.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎙️",
+          "title": "Imita a voz",
+          "text": "Imita a forma de falar de alguém da mesa. Se não adivinharem, bebes 1.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤳",
+          "title": "Influencer",
+          "text": "Imita um influencer. A mesa decide se foi convincente. Se não, bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💃",
+          "title": "Pose de modelo",
+          "text": "Faz uma pose de modelo. A mesa vota. Menos de metade dos votos = bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍔",
+          "title": "Duelo dos gostos",
+          "text": "reader e o jogador à tua direita duelam: quem acertar primeiro a comida favorita do outro ganha. O perdedor bebe 3 golos. Se em 10 segundos ninguém acertar, ambos bebem 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🩲",
+          "title": "Duelo íntimo",
+          "text": "reader e o jogador à tua esquerda duelam: quem adivinhar primeiro a cor da roupa interior do outro distribui 3 golos. Sem vencedor em 10 segundos? Ambos bebem 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😋",
+          "title": "Néctar dos deuses",
+          "text": "Bebe 2 golos e mostra a todos que a tua bebida é a mais deliciosa que já provaste na vida.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🕶️",
+          "title": "Passerelle",
+          "text": "Finge que estás num desfile de moda e convence toda a gente de que a tua roupa é a próxima tendência. Ou bebe 4, claro.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🖍️",
+          "title": "Concurso de arte",
+          "text": "Todos pegam num pedaço de papel e desenham um pénis, com alma e personalidade. O artista com o melhor desenho distribui 4 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "poder": {
+      "label": "👑 Poder & Sorte",
+      "desc": "Distribui e recebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "Poder!",
+          "text": "Distribui 4 golos como quiseres pelo grupo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "sorte",
+          "emoji": "🍀",
+          "title": "Sorte!",
+          "text": "Escolhes o que o jogador à tua esquerda bebe.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🚫",
+          "title": "Banir palavra",
+          "text": "Bane uma palavra à tua escolha durante 7 rondas. Quem a disser bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "📜",
+          "title": "Cria uma regra",
+          "text": "Cria uma regra nova à tua escolha. Escolhe se dura 1 ou 2 voltas à mesa. Quem a quebrar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "👑",
+          "title": "És o rei",
+          "text": "És o rei! Manda toda a gente fazer algo à tua escolha. Quem se recusar bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🍻",
+          "title": "Três vítimas",
+          "text": "Escolhe 3 jogadores para beberem 2 golos cada um.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "azar",
+          "emoji": "⚰️",
+          "title": "Sacrifício",
+          "text": "Sacrifício: ou bebes tu de penálti, ou todos os outros bebem 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "poder",
+          "emoji": "👯",
+          "title": "Dose dupla",
+          "text": "Fazes duas pessoas beberem 2 golos cada.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "✖️",
+          "title": "Dobro marcado",
+          "text": "Escolhe quem bebe o dobro na próxima carta.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🎭",
+          "title": "Imitador forçado",
+          "text": "Obrigas alguém a imitar uma pessoa famosa ou do grupo durante 5 rondas. Se falhar, mandas beber 2.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🌧️",
+          "title": "Chuva de golos",
+          "text": "Distribuis 6 golos como quiseres entre os jogadores.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🍻",
+          "title": "Companhia de copos",
+          "text": "Escolhe alguém para beber 2 golos contigo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🥂",
+          "title": "Brinde real",
+          "text": "Fazes todos darem um brinde contigo e beber 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🥵",
+          "title": "Castigo pesado",
+          "text": "Escolhe alguém para beber 5 golos.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🤫",
+          "title": "Bebe e cala",
+          "text": "Escolhe alguém para beber 2 golos e ficar em silêncio 1 ronda.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🍸",
+          "title": "Rodada para todos",
+          "text": "Distribuis 2 golos a cada pessoa da mesa.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🧮",
+          "title": "Conta a mesa",
+          "text": "Escolhe alguém para beber 1 golo por cada 2 pessoas na mesa.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🥂",
+          "title": "Bebe e brinda",
+          "text": "Escolhe alguém para beber 2 golos e dar um brinde ao grupo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🔀",
+          "title": "Copos trocados",
+          "text": "Forças duas pessoas a trocarem de copo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🗣️",
+          "title": "Boca de trapos",
+          "text": "Escolhe quem bebe 1 golo sempre que falar nas próximas 2 rondas.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "⏱️",
+          "title": "Ao mesmo tempo",
+          "text": "Escolhe alguém para beber 3 golos contigo, ao mesmo tempo.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🌊",
+          "title": "Dilúvio de golos",
+          "text": "Distribuis 8 golos como quiseres.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "poder",
+          "emoji": "🙇",
+          "title": "Duble",
+          "text": "Forças alguém a jogar o próximo desafio por ti.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "azar",
+          "emoji": "🌊",
+          "title": "Sem distribuir",
+          "text": "Distribuis zero: tudo o que devias dar aos outros, bebes tu. Encharca-te em 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🍀",
+          "title": "Sorte roubada",
+          "text": "Perdes a próxima carta que te daria um benefício (mesmo que seja Sorte).",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "👥",
+          "title": "Um por cabeça",
+          "text": "Bebes 1 golo por cada pessoa na mesa.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "💔",
+          "title": "Vulnerável",
+          "text": "Ficas vulnerável: nas próximas 4 rondas, bebes o dobro de tudo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "poder",
+          "emoji": "🍺",
+          "title": "Rei da Taberna",
+          "text": "És o rei da taberna! Durante uma volta à mesa, sempre que alguém tiver de beber podes acrescentar ou retirar golos, se te sentires generoso.",
+          "pack": "noite-academica",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        }
+      ]
+    },
+    "preferias": {
+      "label": "🤔 Preferias?",
+      "desc": "Would you rather — escolhas impossíveis",
+      "premium": false,
+      "cards": [
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Falar só a sussurrar",
+            "Falar só a gritar"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Viver no universo Harry Potter como muggle",
+            "Viver em Star Wars como cidadão qualquer"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Gin",
+            "Whisky"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Masturbar-te na frente do teu mais que tudo",
+            "Observar o teu mais que tudo a masturbar-se"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Virar mulher por um dia em todas as semanas e os teus amigos mais próximos te comerem",
+            "Os teus amigos mais próximos virarem mulher e tu comeres todos"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer 69 onde recebem prazer mutuamente",
+            "Nunca fazer 69 e dar prazer um de cada vez"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Ter o magnífico coito todos os dias pelo resto da tua vida",
+            "Ter magnífico coito apenas uma vez a cada 3 semanas pelo resto da tua vida"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer vídeos de porn mas só com mulheres com pénis",
+            "Fazer vídeos porn mas só com homens com vagina"
+          ],
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "provavel": {
+      "label": "👉 Quem é mais provável?",
+      "desc": "Apontem dedos — quem receber mais bebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "👉",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de mandar mensagem a alguém indevido bêbado? Mais dedos = bebe 2 golos. Empate = todos bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤓",
+          "title": "Quem é mais provável?",
+          "text": "Quem é o mais nerd do grupo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤑",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ficar rico com uma ideia duvidosa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👮",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de passar um tempo na prisão? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎉",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de invadir uma festa ou casamento para o qual não foi convidado? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍺",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de participar num desafio de bebida sem hesitar? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📖",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ter uma história incrível que ninguém no grupo ouviu ainda? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👴",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de mamar um/a velho/a? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔀",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de namorar dois homens ao mesmo tempo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚫",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de não usar proteção? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💸",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de gastar todo o dinheiro num dia? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔦",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de perder o telemóvel na própria casa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛫",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de perder um voo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⭐",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser o mais famoso da mesa no futuro? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍀",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ficar rico por sorte? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🦥",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser o mais preguiçoso da mesa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛂",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de perder o passaporte em viagem? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎭",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser o mais dramático da mesa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤏",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ficar rico e ainda assim ser mão de vaca? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚌",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser expulso de uma viagem de grupo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "bluff": {
+      "label": "🎭 Bluff",
+      "desc": "Convence-me — verdade ou mentira?",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🤯",
+          "title": "Bluff!",
+          "text": "Diz algo absurdo que já fizeste, verdade ou mentira. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤩",
+          "title": "Bluff!",
+          "text": "Diz que já conheceste alguém famoso e convence a mesa. Acreditam: distribuis 3; não acreditam: bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😱",
+          "title": "Bluff!",
+          "text": "Diz 3 medos teus. Um é falso. Se o grupo não acertar o falso, distribuis 3; se acertarem, bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤐",
+          "title": "Bluff!",
+          "text": "Diz algo que nunca contaste a ninguém na mesa, verdade ou mentira. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👯",
+          "title": "Bluff!",
+          "text": "Diz que já foste confundido com alguém famoso e convence a mesa. Acreditam: distribuis 3; não acreditam: bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙊",
+          "title": "Bluff!",
+          "text": "Diz que já fizeste algo picante num local público e convence a mesa. Acreditam: distribuis 3; não acreditam e for verdade: bebes 3.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "maldicao": {
+      "label": "🔮 Maldição",
+      "desc": "Regras absurdas que passam de jogador em jogador",
+      "premium": false,
+      "cards": [
+        {
+          "type": "maldicao",
+          "emoji": "🔁",
+          "title": "Maldição do Eco",
+          "text": "Tens de repetir a última palavra de cada frase, tipo eco. Falhas? Bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🙅",
+          "title": "Maldição dos Braços",
+          "text": "Não podes cruzar os braços. Se cruzares, bebes 2 e passas a maldição ao jogador à tua direita. Acaba quando sair outra Maldição.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🎙️",
+          "title": "Maldição do Sotaque",
+          "text": "Só podes falar com um sotaque à escolha da mesa. Quebras? Bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "👉",
+          "title": "Maldição do Dedo",
+          "text": "Tens de apontar sempre que falas de alguém. Esqueces-te? Bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🙈",
+          "title": "Maldição do Olhar Esquivo",
+          "text": "Não podes olhar diretamente para ninguém enquanto falas. Falhas? Bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "😏",
+          "title": "Maldição do Desejo",
+          "text": "Sempre que beberes, tens de dizer em voz alta a última pessoa em quem pensaste de forma marota. Falhas? Bebes 2 e passas a maldição.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🖐️",
+          "title": "Maldição do Toque",
+          "text": "Não podes tirar a mão do joelho do jogador à tua direita. Se tirares, bebes 2 e passas a maldição.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "👅",
+          "title": "Maldição do Gemido",
+          "text": "Sempre que beberes, tens de gemer alto. Esqueces-te? Bebes 2 e passas a maldição.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🍑",
+          "title": "Maldição do Colo",
+          "text": "Passas a próxima ronda sentado no colo de alguém à tua escolha. Recusas? Bebes 2 e passas a maldição.",
+          "pack": "noite-academica",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🐱",
+          "title": "Maldição do Gatinho",
+          "text": "reader, durante 4 rondas, sempre que alguém mencionar comida, bebida ou snacks tens de miar como um gatinho fofo. Se falhares, bebes 5.",
+          "pack": "noite-academica",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "historia": {
+      "label": "🎬 História",
+      "desc": "Constrói uma história absurda em grupo",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "História",
+          "text": "Começa: «Era uma vez numa festa em Portugal…» Sentido horário, cada um acrescenta UMA frase. Quem travar, repetir ou rir até perder bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "História",
+          "text": "Tema: terror cómico. Cada um uma frase. Palavra proibida: «normal». Quem disser «normal» bebe 1 golo. História incoerente 5 frases seguidas = todos bebem 1 golo.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "História",
+          "text": "Conta uma história tua de 30 segundos sem dizeres «eu». Se falhares, bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "História",
+          "text": "Conta uma história que use as palavras «pato», «avião» e «pizza». Se travares, bebes 2.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙈",
+          "title": "Pior date",
+          "text": "Conta o teu pior date, do mais erótico ao mais badalhoco. Ou bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤥",
+          "title": "Mentira de date",
+          "text": "Conta uma mentira que já disseste num date para impressionar. Ou bebe 3 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🎉",
+          "title": "História da Festa",
+          "text": "Tema: uma festa que correu mal. À vez, cada jogador diz 1 palavra para construir a história. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🏦",
+          "title": "História do Assalto",
+          "text": "Tema: um assalto ao banco que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🧟",
+          "title": "História do Apocalipse",
+          "text": "Tema: um apocalipse zombie em Portugal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🧳",
+          "title": "História da Viagem",
+          "text": "Tema: uma viagem que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "💒",
+          "title": "História do Casamento",
+          "text": "Tema: um casamento caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "👽",
+          "title": "História da Invasão",
+          "text": "Tema: uma invasão alienígena. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🎰",
+          "title": "História do Casino",
+          "text": "Tema: uma noite no casino. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🚓",
+          "title": "História da Fuga",
+          "text": "Tema: uma fuga à polícia. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🎪",
+          "title": "História do Festival",
+          "text": "Tema: um festival que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🌃",
+          "title": "História de Lisboa",
+          "text": "Tema: uma noite em Lisboa completamente perdida. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🕵️",
+          "title": "História da Missão",
+          "text": "Tema: uma missão secreta falhada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🏖️",
+          "title": "História da Praia",
+          "text": "Tema: um dia de praia caótico. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🍕",
+          "title": "História da Pizza",
+          "text": "Tema: um roubo de pizza. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🎓",
+          "title": "História da Universidade",
+          "text": "Tema: uma universidade maldita. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "👻",
+          "title": "História Assombrada",
+          "text": "Tema: uma casa assombrada. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🛋️",
+          "title": "História do IKEA",
+          "text": "Tema: um grupo perdido no IKEA. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🏋️",
+          "title": "História do Ginásio",
+          "text": "Tema: uma ida ao ginásio que deu para o torto. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🏫",
+          "title": "História da Escola",
+          "text": "Tema: uma fuga da escola. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🔪",
+          "title": "História do Crime",
+          "text": "Tema: um crime impossível. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🌙",
+          "title": "História da Noite",
+          "text": "Tema: uma noite que nunca devia ter acontecido. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🔮",
+          "title": "História do Espiritismo",
+          "text": "Tema: uma sessão de espiritismo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🎤",
+          "title": "História do Concerto",
+          "text": "Tema: um concerto que se descontrolou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "cadeia": {
+      "label": "🔗 Cadeia",
+      "desc": "Tema fixo — sentido horário, quem falhar bebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: géneros musicais. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: artistas ou bandas portuguesas. Começa por ti, sentido horário. Quem repetir ou não souber bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: músicas portuguesas (título). Sentido horário, uma cada. Quem repetir ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: clubes de futebol portugueses. Começa quem tirou a carta. Quem falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: seleções nacionais de futebol. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: marcas de carros. Sentido horário, uma cada. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: personagens Disney ou Pixar. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: filmes (qualquer). Sentido horário. Quem repetir o título bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: capitais europeias. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: cidades de Portugal. Começa por ti. Quem travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: comidas ou pratos portugueses. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: apps ou redes sociais. Começa por ti. Quem falhar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: videojogos famosos. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: marcas de roupa. Sentido horário. Quem repetir bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: géneros de filme. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: raças de cão. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: estilos de música. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: países. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: músicas do Michael Jackson. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: distritos de Portugal. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: marcas de carros. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: frutas. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: tipos de moeda. Começa quem tirou a carta, sentido horário. Cada um diz um diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: capitais. Começa quem tirou a carta, sentido horário. Cada um diz uma diferente. Quem repetir, inventar ou travar bebe 2 golos.",
+          "pack": "noite-academica",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    }
+  }
+}

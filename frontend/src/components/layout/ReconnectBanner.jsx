@@ -11,7 +11,7 @@ export default function ReconnectBanner({ reconnecting, disconnected, onRetry })
     >
       <WifiOff className={`w-4 h-4 shrink-0 ${disconnected ? 'text-red-300' : 'text-amber-300'}`} />
       <p className={`flex-1 font-semibold ${disconnected ? 'text-red-200' : 'text-amber-100'}`}>
-        {disconnected ? 'Ligação perdida. A tentar voltar…' : 'A reconectar…'}
+        {disconnected ? 'Ligação perdida. Se o servidor reiniciou, a sala já não existe.' : 'A reconectar…'}
       </p>
       {disconnected && onRetry && (
         <button

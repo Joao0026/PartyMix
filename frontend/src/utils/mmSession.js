@@ -1,8 +1,15 @@
 const KEY = 'partymix_mm_session'
 
-export function saveMmSession({ code, playerName, uploadToken, isHost }) {
+export function saveMmSession({ code, playerName, uploadToken, isHost, playerToken }) {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ code, playerName, uploadToken, isHost }))
+    const prev = loadMmSession() || {}
+    sessionStorage.setItem(KEY, JSON.stringify({
+      code,
+      playerName,
+      uploadToken: uploadToken || prev.uploadToken || null,
+      isHost: !!isHost,
+      playerToken: playerToken || prev.playerToken || null,
+    }))
   } catch { /* ignore */ }
 }
 

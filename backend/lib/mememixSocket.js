@@ -1,17 +1,42 @@
 const Card = require('../models/Card')
+const { getLocalLegendas } = require('./localMememix')
 const {
   createUploadToken,
   updateTokenSocketId,
   destroyMemeMixSession,
   deleteMemeImage,
+  memeViewUrl,
 } = require('./mememixSessions')
+const {
+  allocRoomCode,
+  generatePlayerToken,
+  normalizePlayerName,
+  publicPlayers,
+  isInPlay,
+  roomsAtCapacity,
+  tokensEqual,
+  touchRoom,
+} = require('./gameAuth')
 
 const mmRooms = {}
+
+function getMmRoom(code) {
+  return mmRooms[String(code || '').toUpperCase()] || null
+}
 const MAX_MEMES_PER_PLAYER = 50
 let mmIo = null
 
 function getMmRoom(code) {
   return mmRooms[String(code || '').toUpperCase()]
+}
+
+function isAuthorizedMemeViewer(room, auth) {
+  if (!room || !auth?.socketId || !auth?.playerName) return false
+  return room.players.some((player) => (
+    !player.disconnected
+    && player.id === auth.socketId
+    && player.name === auth.playerName
+  ))
 }
 
 function clampMaxMemesPerPlayer(n) {
@@ -38,7 +63,7 @@ function normalizeLegendaPacks(input) {
 }
 const MAX_LEGENDA_LEN = 200
 
-function removeMemeFromRoom(code, memeId, { playerName, socketId } = {}) {
+function removeMemeFromRoom(code, memeId, { socketId } = {}) {
   const c = String(code || '').toUpperCase()
   const room = mmRooms[c]
   if (!room) return { ok: false, error: 'Sala não encontrada' }
@@ -47,17 +72,7 @@ function removeMemeFromRoom(code, memeId, { playerName, socketId } = {}) {
   }
 
   let player = socketId ? room.players.find((p) => p.id === socketId) : null
-  if (!player && playerName) {
-    player = room.players.find((p) => p.name === playerName)
-  }
   if (!player) return { ok: false, error: 'Não estás nesta sala — refresca a página' }
-
-  if (socketId && player.id !== socketId) {
-    migratePlayerSocket(room, player.id, socketId)
-    player.id = socketId
-    if (room.host === player.name) room.hostId = socketId
-  }
-  player.disconnected = false
 
   const id = String(memeId || '').trim()
   let idx = room.memes.findIndex((m) => m.id === id)
@@ -106,29 +121,32 @@ function sanitizeMm(room) {
   return {
     code: room.code,
     host: room.host,
-    hostId: room.hostId,
     juizIdx: room.juizIdx,
     juizName: juiz?.name,
-    juizId: juiz?.id,
-    players: room.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      score: p.score || 0,
-      disconnected: !!p.disconnected,
-    })),
+    players: publicPlayers(room.players),
     settings: room.settings,
     status: room.status,
     round: room.round,
-    memes: (room.memes || []).map((m) => ({
-      id: m.id,
-      url: m.url,
-      uploadedBy: m.uploadedBy,
-    })),
+    memes: (room.memes || []).map((m) => {
+      const file = String(m.url || '').split('/').pop()
+      return {
+        id: m.id,
+        url: file ? memeViewUrl(room.code, file) : m.url,
+        uploadedBy: m.uploadedBy,
+      }
+    }),
     memeCount: (room.memes || []).length,
     memeUploadSummary: memeUploadSummary(room),
-    currentMeme: room.currentMeme,
+    currentMeme: room.currentMeme
+      ? {
+        ...room.currentMeme,
+        url: room.currentMeme.url?.includes('/memes/')
+          ? memeViewUrl(room.code, String(room.currentMeme.url).split('/').pop())
+          : room.currentMeme.url,
+      }
+      : null,
     submissions: Object.keys(room.submissions || {}).length,
-    submissionsExpected: Math.max(0, room.players.filter((p) => !p.disconnected).length - 1),
+    submissionsExpected: memePlayersExpected(room).length,
     revealed: room.revealed,
     roundWinner: room.roundWinner,
     lastRoundWinner: room.lastRoundWinner || null,
@@ -215,14 +233,56 @@ function findNextConnectedJuizIdx(room, startIdx) {
   let idx = startIdx
   for (let i = 0; i < room.players.length; i++) {
     idx = (idx + 1) % room.players.length
-    if (!room.players[idx]?.disconnected && room.players[idx]?.id) return idx
+    if (isInPlay(room.players[idx])) return idx
   }
   return -1
 }
 
+function memePlayersExpected(room) {
+  const juiz = room.players[room.juizIdx]
+  return (room.players || []).filter((p) => isInPlay(p) && p.id !== juiz?.id)
+}
+
+function skipPendingMemePlayers(room) {
+  const juiz = room.players[room.juizIdx]
+  let n = 0
+  for (const p of room.players || []) {
+    if (!isInPlay(p) || p.id === juiz?.id) continue
+    if (!room.submissions?.[p.id]) {
+      p.sittingOut = true
+      n += 1
+    }
+  }
+  return n
+}
+
+function isMmHost(room, socketId) {
+  const actor = (room.players || []).find((p) => p.id === socketId && !p.disconnected)
+  return Boolean(actor && (room.hostId === socketId || room.host === actor.name))
+}
+
+function broadcastMm(io, room, code) {
+  io.to(code).emit('mm_round_update', sanitizeMm(room))
+  room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
+    io.to(p.id).emit('mm_state', buildGameView(room, p.id))
+  })
+}
+
+function maybeRevealMemeRound(io, room, code) {
+  ensureConnectedJuiz(room, io, code)
+  const expected = memePlayersExpected(room).length
+  if (expected <= 0 || Object.keys(room.submissions || {}).length < expected) return false
+  room.revealed = true
+  io.to(code).emit('mm_reveal_submissions', sanitizeMm(room))
+  room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
+    io.to(p.id).emit('mm_state', buildGameView(room, p.id))
+  })
+  return true
+}
+
 function ensureConnectedJuiz(room, io, code) {
   const juiz = room.players[room.juizIdx]
-  if (!juiz?.disconnected) return false
+  if (isInPlay(juiz)) return false
 
   const prevJuizIdx = room.juizIdx
   const nextIdx = findNextConnectedJuizIdx(room, prevJuizIdx)
@@ -306,7 +366,7 @@ function dealMemesToJuiz(room, playerId) {
   }
 }
 
-async function loadLegendas(includeCommunity, packsInput) {
+async function loadLegendas(includeCommunity, packsInput, difficulty) {
   const filter = { mode_type: 'mememix', category: 'legenda' }
   const packs = normalizeLegendaPacks(packsInput)
   if (!packs.includes('todas')) {
@@ -316,7 +376,8 @@ async function loadLegendas(includeCommunity, packsInput) {
     filter.pack = { $ne: 'community' }
   }
   const rows = await Card.find(filter).lean()
-  return uniqueTexts(rows)
+  const localRows = getLocalLegendas({ packs, includeCommunity, difficulty })
+  return uniqueTexts([...rows, ...localRows])
 }
 
 async function loadOfficialMemes() {
@@ -339,6 +400,7 @@ function finishRejoin(io, room, socket, player, uploadToken) {
     uploadToken,
     playerName: player.name,
     isHost: room.host === player.name,
+    playerToken: player.token,
   })
   if (room.status === 'playing' || room.status === 'ended') {
     socket.emit('mm_state', buildGameView(room, socket.id))
@@ -349,15 +411,20 @@ function registerMemeMixHandlers(io, socket) {
   mmIo = io
 
   socket.on('mm_create_room', ({ playerName, settings }) => {
-    const code = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const name = normalizePlayerName(playerName)
+    if (!name) { socket.emit('error', 'Nome inválido'); return }
+    if (roomsAtCapacity(mmRooms)) { socket.emit('error', 'Servidor cheio'); return }
+    const code = allocRoomCode(mmRooms)
+    if (!code) { socket.emit('error', 'Não foi possível criar sala'); return }
     const cfg = settings || {}
     const legendaPacks = normalizeLegendaPacks(cfg.legendaPacks ?? cfg.legendaPack)
-    mmRooms[code] = {
+    const playerToken = generatePlayerToken()
+    mmRooms[code] = touchRoom({
       code,
-      host: playerName,
+      host: name,
       hostId: socket.id,
       juizIdx: 0,
-      players: [{ id: socket.id, name: playerName, score: 0, disconnected: false }],
+      players: [{ id: socket.id, name, token: playerToken, score: 0, disconnected: false }],
       settings: {
         maxPoints: Math.min(7, Math.max(1, Number(cfg.maxPoints) || 5)),
         includeCommunity: cfg.includeCommunity !== false,
@@ -385,85 +452,73 @@ function registerMemeMixHandlers(io, socket) {
       round: 0,
       currentMeme: null,
       playerTokens: {},
-    }
+    })
     socket.join(code)
-    const token = createUploadToken(code, socket.id, playerName)
-    mmRooms[code].playerTokens[playerName] = token
-    socket.emit('mm_room_created', { code, room: sanitizeMm(mmRooms[code]), uploadToken: token })
+    const token = createUploadToken(code, socket.id, name)
+    mmRooms[code].playerTokens[name] = token
+    socket.emit('mm_room_created', { code, room: sanitizeMm(mmRooms[code]), uploadToken: token, playerToken, playerName: name })
   })
 
   socket.on('mm_join_room', ({ code, playerName }) => {
-    const c = code.toUpperCase()
+    const c = String(code || '').toUpperCase()
     const room = mmRooms[c]
     if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+    touchRoom(room)
 
-    const existing = room.players.find((p) => p.name === playerName)
-    if (existing?.disconnected) {
-      const oldId = existing.id
-      migratePlayerSocket(room, oldId, socket.id)
-      existing.id = socket.id
-      existing.disconnected = false
-      if (room.host === playerName) room.hostId = socket.id
-      let token = room.playerTokens[playerName]
-      if (token) updateTokenSocketId(token, socket.id)
-      else {
-        token = createUploadToken(c, socket.id, playerName)
-        room.playerTokens[playerName] = token
-      }
-      finishRejoin(io, room, socket, existing, token)
-      return
-    }
-
+    const name = normalizePlayerName(playerName)
+    if (!name) { socket.emit('error', 'Nome inválido'); return }
     if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou — usa o mesmo nome para voltar'); return }
-    if (room.players.find((p) => p.name === playerName)) { socket.emit('error', 'Nome já em uso'); return }
+    if (room.players.find((p) => p.name === name)) { socket.emit('error', 'Nome já em uso'); return }
     if (room.players.length >= MAX_PLAYERS) { socket.emit('error', `Sala cheia (máx. ${MAX_PLAYERS})`); return }
 
-    room.players.push({ id: socket.id, name: playerName, score: 0, disconnected: false })
+    const playerToken = generatePlayerToken()
+    room.players.push({ id: socket.id, name, token: playerToken, score: 0, disconnected: false })
     socket.join(c)
-    const token = createUploadToken(c, socket.id, playerName)
-    room.playerTokens[playerName] = token
-    socket.emit('mm_room_joined', { code: c, room: sanitizeMm(room), uploadToken: token })
+    const token = createUploadToken(c, socket.id, name)
+    room.playerTokens[name] = token
+    socket.emit('mm_room_joined', { code: c, room: sanitizeMm(room), uploadToken: token, playerToken, playerName: name })
     io.to(c).emit('mm_room_updated', sanitizeMm(room))
   })
 
-  socket.on('mm_rejoin_room', ({ code, playerName, uploadToken: oldToken }) => {
+  socket.on('mm_rejoin_room', ({ code, playerName, uploadToken: oldToken, playerToken }) => {
     const c = String(code || '').toUpperCase()
     const room = mmRooms[c]
     if (!room) { socket.emit('error', 'Sala não encontrada'); return }
 
-    const existing = room.players.find((p) => p.name === playerName)
+    const name = normalizePlayerName(playerName)
+    const existing = room.players.find((p) => p.name === name)
     if (!existing) { socket.emit('error', 'Jogador não encontrado nesta sala'); return }
+    if (!tokensEqual(existing.token, playerToken) && !tokensEqual(room.playerTokens[name], oldToken)) {
+      socket.emit('error', 'Sessão inválida')
+      return
+    }
+    if (!existing.disconnected && existing.id && existing.id !== socket.id) {
+      socket.emit('error', 'Este jogador ainda está ligado')
+      return
+    }
+    touchRoom(room)
 
-    const oldId = existing.id
+    const oldId = existing.id || existing.previousSocketId
     migratePlayerSocket(room, oldId, socket.id)
     existing.id = socket.id
     existing.disconnected = false
-    if (room.host === playerName) room.hostId = socket.id
+    existing.previousSocketId = null
+    if (room.host === name) room.hostId = socket.id
 
-    let token = room.playerTokens[playerName] || oldToken
-    if (token && updateTokenSocketId(token, socket.id)) {
-      // refreshed
-    } else {
-      token = createUploadToken(c, socket.id, playerName)
+    const stored = room.playerTokens[name]
+    if (!stored || !tokensEqual(stored, oldToken) || !updateTokenSocketId(stored, socket.id)) {
+      socket.emit('error', 'Sessão inválida')
+      return
     }
-    room.playerTokens[playerName] = token
-    finishRejoin(io, room, socket, existing, token)
+    finishRejoin(io, room, socket, existing, stored)
   })
 
-  socket.on('mm_update_settings', ({ code, settings, playerName }) => {
+  socket.on('mm_update_settings', ({ code, settings }) => {
     const room = getMmRoom(code)
     if (!room || room.status !== 'waiting') return
 
-    let player = room.players.find((p) => p.id === socket.id)
-    if (!player && playerName) {
-      player = room.players.find((p) => p.name === playerName)
-      if (player && player.id !== socket.id) {
-        migratePlayerSocket(room, player.id, socket.id)
-        player.id = socket.id
-        if (room.host === player.name) room.hostId = socket.id
-      }
-    }
-    const isHost = player && (room.hostId === socket.id || room.host === player.name)
+    const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
+    const isHost = player && room.hostId === socket.id
     if (!isHost) return
 
     if (settings?.maxPoints != null) {
@@ -486,9 +541,8 @@ function registerMemeMixHandlers(io, socket) {
     io.to(room.code).emit('mm_room_updated', sanitizeMm(room))
   })
 
-  socket.on('mm_remove_meme', ({ code, memeId, playerName }, ack) => {
+  socket.on('mm_remove_meme', ({ code, memeId }, ack) => {
     const result = removeMemeFromRoom(code, memeId, {
-      playerName,
       socketId: socket.id,
     })
     if (typeof ack === 'function') ack(result)
@@ -505,8 +559,9 @@ function registerMemeMixHandlers(io, socket) {
     const player = room.players.find((p) => p.id === socket.id)
     if (!player) return
     const id = String(meme?.id || '').trim()
-    const url = String(meme?.url || '').trim()
-    if (!id || !url) return
+    const url = String(meme?.url || '').trim().split('?')[0]
+    const prefix = `/api/mememix/rooms/${room.code}/memes/`
+    if (!id || !url.startsWith(prefix)) return
     if (room.memes.some((m) => m.id === id)) return
     const mine = countMemesByPlayer(room, player.name)
     if (mine >= room.settings.maxMemesPerPlayer) {
@@ -523,7 +578,7 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_start_game', async ({ code }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
     const active = room.players.filter((p) => !p.disconnected)
     if (active.length < 2) { socket.emit('error', 'Precisas de pelo menos 2 jogadores'); return }
@@ -535,10 +590,14 @@ function registerMemeMixHandlers(io, socket) {
     const legendaMode = normalizeLegendaMode(room.settings.legendaMode)
     let legendas = []
     if (legendaMode !== 'escritas') {
-      legendas = await loadLegendas(room.settings.includeCommunity, room.settings.legendaPacks || room.settings.legendaPack)
+      legendas = await loadLegendas(
+        room.settings.includeCommunity,
+        room.settings.legendaPacks || room.settings.legendaPack,
+        room.settings.difficulty,
+      )
       const legendasNeeded = Math.max(10, (active.length - 1) * 5)
       if (legendas.length < legendasNeeded) {
-        socket.emit('error', `Poucas legendas (${legendas.length}/${legendasNeeded}) — corre npm run seed:packs`)
+        socket.emit('error', `Poucas legendas disponíveis (${legendas.length}/${legendasNeeded}) para os packs escolhidos`)
         return
       }
     }
@@ -571,7 +630,7 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_play_meme', ({ code, memeId }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.status !== 'playing') return
     const juiz = room.players[room.juizIdx]
     if (juiz?.id !== socket.id) return
@@ -593,10 +652,11 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_submit_legenda', ({ code, text }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.status !== 'playing' || !room.currentMeme) return
+    const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
     const juiz = room.players[room.juizIdx]
-    if (juiz?.id === socket.id) return
+    if (!player || player.sittingOut || juiz?.id === socket.id) return
     if (room.submissions[socket.id]) return
 
     const legenda = String(text || '').trim().slice(0, MAX_LEGENDA_LEN)
@@ -615,26 +675,14 @@ function registerMemeMixHandlers(io, socket) {
     }
     room.submissions[socket.id] = { text: legenda, playerName: room.players.find((p) => p.id === socket.id)?.name || null }
 
-    io.to(code).emit('mm_round_update', sanitizeMm(room))
-    room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
-      io.to(p.id).emit('mm_state', buildGameView(room, p.id))
-    })
-
-    ensureConnectedJuiz(room, io, code)
-    const activeJuiz = room.players[room.juizIdx]
-    const expected = room.players.filter((p) => p.id !== activeJuiz?.id && !p.disconnected).length
-    if (Object.keys(room.submissions).length >= expected) {
+    broadcastMm(io, room, code)
+    if (!maybeRevealMemeRound(io, room, code)) {
       ensureConnectedJuiz(room, io, code)
-      room.revealed = true
-      io.to(code).emit('mm_reveal_submissions', sanitizeMm(room))
-      room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
-        io.to(p.id).emit('mm_state', buildGameView(room, p.id))
-      })
     }
   })
 
   socket.on('mm_swap_legenda', ({ code, text }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.status !== 'playing') return
     if (normalizeLegendaMode(room.settings.legendaMode) !== 'pack') return
     const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
@@ -662,7 +710,7 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_pick_winner', ({ code, winnerId }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.status !== 'playing') return
     const juiz = room.players[room.juizIdx]
     if (juiz?.id !== socket.id) return
@@ -688,10 +736,8 @@ function registerMemeMixHandlers(io, socket) {
     }
 
     const prevJuizIdx = room.juizIdx
-    room.juizIdx = (room.juizIdx + 1) % room.players.length
-    while (room.players[room.juizIdx]?.disconnected && room.players.length > 1) {
-      room.juizIdx = (room.juizIdx + 1) % room.players.length
-    }
+    const nextJuiz = findNextConnectedJuizIdx(room, room.juizIdx)
+    room.juizIdx = nextJuiz >= 0 ? nextJuiz : (room.juizIdx + 1) % room.players.length
     room.round += 1
     room.currentMeme = null
     room.submissions = {}
@@ -707,7 +753,7 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_play_again', ({ code }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room || room.hostId !== socket.id) return
     room.status = 'waiting'
     room.uploadsLocked = false
@@ -720,12 +766,12 @@ function registerMemeMixHandlers(io, socket) {
     room.hands = {}
     room.memeHands = {}
     room.stash = {}
-    room.players.forEach((p) => { p.score = 0 })
+    room.players.forEach((p) => { p.score = 0; p.sittingOut = false })
     io.to(code).emit('mm_room_updated', sanitizeMm(room))
   })
 
   socket.on('mm_end_session', ({ code }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room) return
     if (room.hostId !== socket.id) {
       socket.emit('error', 'Só o host pode fechar a sala')
@@ -737,10 +783,47 @@ function registerMemeMixHandlers(io, socket) {
   })
 
   socket.on('mm_request_state', ({ code }) => {
-    const room = mmRooms[code]
+    const room = getMmRoom(code)
     if (!room) return
     if (!room.players.some((p) => p.id === socket.id && !p.disconnected)) return
     socket.emit('mm_state', buildGameView(room, socket.id))
+  })
+
+  socket.on('mm_sit_out', ({ code, playerName }) => {
+    const room = getMmRoom(code)
+    if (!room || room.status !== 'playing') return
+    touchRoom(room)
+    const actor = room.players.find((p) => p.id === socket.id && !p.disconnected)
+    if (!actor) return
+    const targetName = normalizePlayerName(playerName) || actor.name
+    if (targetName !== actor.name && !isMmHost(room, socket.id)) return
+    const target = room.players.find((p) => p.name === targetName)
+    if (!target || target.sittingOut) return
+    target.sittingOut = true
+    ensureConnectedJuiz(room, io, code)
+    broadcastMm(io, room, code)
+    maybeRevealMemeRound(io, room, code)
+  })
+
+  socket.on('mm_sit_in', ({ code }) => {
+    const room = getMmRoom(code)
+    if (!room) return
+    touchRoom(room)
+    const actor = room.players.find((p) => p.id === socket.id && !p.disconnected)
+    if (!actor || !actor.sittingOut) return
+    actor.sittingOut = false
+    broadcastMm(io, room, code)
+  })
+
+  socket.on('mm_skip_pending', ({ code }) => {
+    const room = getMmRoom(code)
+    if (!room || room.status !== 'playing' || room.revealed || !room.currentMeme) return
+    touchRoom(room)
+    if (!isMmHost(room, socket.id)) return
+    if (!Object.keys(room.submissions || {}).length) return
+    skipPendingMemePlayers(room)
+    ensureConnectedJuiz(room, io, code)
+    if (!maybeRevealMemeRound(io, room, code)) broadcastMm(io, room, code)
   })
 }
 
@@ -785,6 +868,8 @@ function handleMemeMixDisconnect(io, socket) {
 
   const player = room.players[idx]
   player.disconnected = true
+  player.previousSocketId = socket.id
+  player.id = null
 
   if (room.hostId === socket.id) {
     promoteHostIfNeeded(room)
@@ -813,4 +898,7 @@ module.exports = {
   sanitizeMm,
   buildGameView,
   removeMemeFromRoom,
+  isAuthorizedMemeViewer,
+  memePlayersExpected,
+  skipPendingMemePlayers,
 }

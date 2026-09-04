@@ -28,6 +28,13 @@ export function stepScript(stepId) {
   return NIGHT_STEPS.find((s) => s.id === stepId)?.script || ''
 }
 
+export function nightPickVisible(step, role) {
+  if (!role || role === 'narrador') return false
+  if (step === 'wolves') return role !== 'lobo'
+  if (step === 'sheriff') return role !== 'vidente'
+  return true
+}
+
 export function roleLabel(role) {
   return ROLE_LABELS[role] || role
 }

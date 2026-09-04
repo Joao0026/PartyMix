@@ -1,15 +1,17 @@
 const router = require('express').Router()
-const jwt = require('jsonwebtoken')
 const requireAdmin = require('../middleware/requireAdmin')
+const { signAdminToken, revokeJti } = require('../middleware/requireAdmin')
+const { adminLoginLimiter } = require('../middleware/rateLimits')
 const CommunitySubmission = require('../models/CommunitySubmission')
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
 const DrinkPack = require('../models/DrinkPack')
 const { importPackObject, listPackNames, exportPackObject } = require('../lib/packImport')
+const { listDrinkAssignState, assignDrinkCard } = require('../lib/drinkPackAssign')
 const { auditContent, auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, cleanString, mongoId, oneOf } = require('../lib/validate')
 
-router.post('/login', (req, res) => {
+router.post('/login', adminLoginLimiter, (req, res) => {
   const adminPassword = process.env.ADMIN_PASSWORD
   if (!adminPassword) {
     return res.status(503).json({ error: 'ADMIN_PASSWORD not configured on server' })
@@ -24,8 +26,15 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ error: 'Invalid password' })
   }
 
-  const token = jwt.sign({ role: 'admin' }, secret, { expiresIn: '12h' })
-  res.json({ token })
+  const signed = signAdminToken()
+  if (!signed) return res.status(503).json({ error: 'JWT_SECRET not configured on server' })
+  res.json({ token: signed.token })
+})
+
+router.post('/logout', requireAdmin, (req, res) => {
+  const expMs = req.admin?.exp ? req.admin.exp * 1000 : Date.now() + 12 * 60 * 60 * 1000
+  revokeJti(req.admin?.jti, expMs)
+  res.json({ ok: true })
 })
 
 router.get('/packs', requireAdmin, asyncRoute(async (req, res) => {
@@ -76,6 +85,25 @@ router.get('/community/:id/warnings', requireAdmin, asyncRoute(async (req, res) 
   if (sub.submissionType !== 'card') return res.json({ warnings: [] })
   const warnings = await auditSubmissionWarnings(sub, { semantic: true })
   res.json({ warnings })
+}))
+
+router.get('/drink-cards', requireAdmin, asyncRoute(async (_req, res) => {
+  res.json(await listDrinkAssignState())
+}))
+
+router.post('/drink-cards/assign', requireAdmin, asyncRoute(async (req, res) => {
+  const fromPack = cleanString(req.body?.fromPack, { field: 'fromPack', max: 60, required: true })
+  const fromDeck = cleanString(req.body?.fromDeck, { field: 'fromDeck', max: 40, required: true })
+  const toPack = cleanString(req.body?.toPack, { field: 'toPack', max: 60, required: true })
+  const fingerprint = cleanString(req.body?.fingerprint, { field: 'fingerprint', max: 64, required: true })
+  const index = Number(req.body?.index)
+  if (!Number.isInteger(index) || index < 0) {
+    return res.status(400).json({ error: 'index inválido' })
+  }
+
+  const result = await assignDrinkCard({ fromPack, fromDeck, index, fingerprint, toPack })
+  if (!result.ok) return res.status(409).json({ error: result.error })
+  res.json(result)
 }))
 
 router.post('/community/:id/meta', requireAdmin, asyncRoute(async (req, res) => {

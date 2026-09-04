@@ -26,12 +26,15 @@ const VictoryScreen = lazy(() => import('./pages/VictoryScreen'))
 const CommunityCards = lazy(() => import('./pages/CommunityCards'))
 const DailyScratch = lazy(() => import('./pages/DailyScratch'))
 const Admin = lazy(() => import('./pages/Admin'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const AgeGate = lazy(() => import('./components/legal/AgeGate'))
 const JoinRoom = lazy(() => import('./pages/JoinRoom'))
 
 function PageLoader() {
   return (
     <div className="min-h-screen bg-[#080b14] flex items-center justify-center px-4">
-      <div className="flex flex-col items-center gap-3 text-slate-500">
+      <div className="flex flex-col items-center gap-3 text-slate-300">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-violet-500 border-t-transparent" />
         <p className="text-sm font-semibold">A carregar PartyMix...</p>
       </div>
@@ -96,8 +99,11 @@ export default function App() {
       <ConnectionStatus />
       <InstallPrompt />
       <Suspense fallback={<PageLoader />}>
+        <AgeGate>
         <Routes>
           <Route path="/"                element={<Home />} />
+          <Route path="/privacy"         element={<Privacy />} />
+          <Route path="/terms"           element={<Terms />} />
           <Route path="/join/:mode/:code" element={<JoinRoom />} />
           <Route path="/GameSetup"       element={<GameSetup />} />
           <Route path="/MapGame"         element={<MapGame />} />
@@ -121,6 +127,7 @@ export default function App() {
           <Route path="/daily"           element={<DailyScratch standalone />} />
           <Route path="/admin"           element={<Admin />} />
         </Routes>
+        </AgeGate>
       </Suspense>
     </LangProvider>
   )

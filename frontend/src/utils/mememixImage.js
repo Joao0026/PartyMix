@@ -27,7 +27,9 @@ export function compressImageFile(file, maxDim = 1200, quality = 0.82) {
 }
 
 export function memeUrlWithToken(url, token) {
-  if (!url || !token) return url
+  if (!url) return url
+  if (/[?&](sig|token)=/.test(url)) return url
+  if (!token) return url
   const sep = url.includes('?') ? '&' : '?'
   return `${url}${sep}token=${encodeURIComponent(token)}`
 }

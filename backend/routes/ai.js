@@ -1,5 +1,6 @@
 // routes/ai.js — Groq AI integration (server-side, key never exposed)
 // Node 18+ tem fetch nativo; node-fetch v3 não é compatível com require().
+const { sanitizeAiName, sanitizeAiDrink } = require('../lib/contentSafety')
 const fetchFn = typeof globalThis.fetch === 'function' ? globalThis.fetch.bind(globalThis) : null
 const router = require('express').Router()
 
@@ -97,7 +98,7 @@ async function callGroq(userContent, { system } = {}) {
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Groq error: ${err}`)
+    throw new Error(`Groq error ${res.status}`)
   }
 
   const data = await res.json()
@@ -111,12 +112,12 @@ function rosterFromPlayersField(players) {
   if (typeof first === 'object' && first !== null && 'name' in first) {
     return players
       .map((p) => ({
-        name: String(p?.name ?? '').trim(),
-        drink: String(p?.drink ?? '').trim(),
+        name: sanitizeAiName(p?.name),
+        drink: sanitizeAiDrink(p?.drink),
       }))
       .filter((r) => r.name)
   }
-  return players.map((n) => ({ name: String(n ?? '').trim(), drink: '' })).filter((r) => r.name)
+  return players.map((n) => ({ name: sanitizeAiName(n), drink: '' })).filter((r) => r.name)
 }
 
 // POST /api/ai/drink-cards
@@ -124,10 +125,11 @@ function rosterFromPlayersField(players) {
 router.post('/drink-cards', async (req, res) => {
   try {
     const { players = [], lang = 'pt' } = req.body
-    if (!players.length) return res.status(400).json({ error: 'No players provided' })
+    const roster = rosterFromPlayersField(players).slice(0, 12)
+    if (!roster.length) return res.status(400).json({ error: 'No players provided' })
 
-    const playerList = players.map(p => `${p.name} (${p.drink || 'bebida não especificada'})`).join(', ')
-    const names = players.map(p => p.name)
+    const playerList = roster.map((p) => `${p.name} (${p.drink || 'bebida não especificada'})`).join(', ')
+    const names = roster.map((p) => p.name)
 
     const userPrompts = {
       pt: `Jogadores e bebidas: ${playerList}
@@ -172,9 +174,9 @@ Genera 4 tarjetas distintas. Responde SOLO con un array JSON de 4 strings.
   } catch (err) {
     console.error('AI error:', err.message)
     // Return fallback cards — never fail the user
-    const { players = [] } = req.body
-    const names = players.map(p => p.name)
-    const drinks = players.map(p => p.drink).filter(Boolean)
+    const roster = rosterFromPlayersField(req.body.players).slice(0, 12)
+    const names = roster.map((p) => p.name)
+    const drinks = roster.map((p) => p.drink).filter(Boolean)
     res.json({
       cards: [
         { text: `${names[0] || 'Jogador 1'}, um gole de ${drinks[0] || 'bebida'} agora — siga siga!`, type:'ai', emoji:'🤖', title:'Carta IA', is_ai:true },
@@ -294,7 +296,7 @@ One short party challenge. Max 34 words. ONLY the challenge text, no quotes.`
 
     res.json({ text: text.replace(/^["']|["']$/g, '').trim() })
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    res.status(500).json({ error: 'Não foi possível gerar o desafio' })
   }
 })
 

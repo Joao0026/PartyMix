@@ -1,21 +1,43 @@
 const router = require('express').Router();
 const Lobby = require('../models/Lobby');
 const { asyncRoute, cleanString, jsonWithinLimit, roomCode } = require('../lib/validate');
-
-function genCode() { return Math.random().toString(36).substring(2, 6).toUpperCase(); }
+const { allocRoomCode, generateHostSecret, tokensEqual } = require('../lib/gameAuth');
 
 router.post('/create', asyncRoute(async (req, res) => {
   const host = cleanString(req.body.host, { field: 'host', max: 50, required: true });
-  let code, exists;
-  do { code = genCode(); exists = await Lobby.findOne({ code }); } while (exists);
-  const lobby = await new Lobby({ code, host, players: [{ name: host }] }).save();
-  res.status(201).json(lobby);
+  let code
+  for (let i = 0; i < 12; i += 1) {
+    const candidate = allocRoomCode({})
+    if (candidate && !(await Lobby.findOne({ code: candidate }))) {
+      code = candidate
+      break
+    }
+  }
+  if (!code) return res.status(503).json({ error: 'Não foi possível criar lobby' })
+  const hostToken = generateHostSecret()
+  const lobby = await new Lobby({ code, host, hostToken, players: [{ name: host }] }).save();
+  res.status(201).json({
+    code: lobby.code,
+    host: lobby.host,
+    status: lobby.status,
+    players: lobby.players,
+    hostToken,
+  });
 }));
+
+function publicLobby(lobby) {
+  return {
+    code: lobby.code,
+    host: lobby.host,
+    players: lobby.players,
+    status: lobby.status,
+  }
+}
 
 router.get('/:code', asyncRoute(async (req, res) => {
   const lobby = await Lobby.findOne({ code: roomCode(req.params.code), status: 'waiting' });
   if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
-  res.json(lobby);
+  res.json(publicLobby(lobby));
 }));
 
 router.post('/:code/join', asyncRoute(async (req, res) => {
@@ -27,17 +49,19 @@ router.post('/:code/join', asyncRoute(async (req, res) => {
     { new: true }
   );
   if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
-  res.json(lobby);
+  res.json(publicLobby(lobby));
 }));
 
 router.post('/:code/start', asyncRoute(async (req, res) => {
-  const lobby = await Lobby.findOneAndUpdate(
-    { code: roomCode(req.params.code) },
-    { status: 'playing', gameData: jsonWithinLimit(req.body.gameData, { field: 'gameData' }) },
-    { new: true }
-  );
+  const lobby = await Lobby.findOne({ code: roomCode(req.params.code) });
   if (!lobby) return res.status(404).json({ error: 'Lobby não encontrado' });
-  res.json(lobby);
+  if (!tokensEqual(lobby.hostToken, req.body.hostToken)) {
+    return res.status(403).json({ error: 'Só o host pode iniciar' });
+  }
+  lobby.status = 'playing'
+  lobby.gameData = jsonWithinLimit(req.body.gameData, { field: 'gameData' })
+  await lobby.save()
+  res.json(publicLobby(lobby));
 }));
 
 module.exports = router;

@@ -1,8 +1,14 @@
 const KEY = 'partymix_am_session'
 
-export function saveAmSession({ code, playerName, isHost }) {
+export function saveAmSession({ code, playerName, isHost, playerToken }) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ code, playerName, isHost }))
+    const prev = loadAmSession() || {}
+    localStorage.setItem(KEY, JSON.stringify({
+      code,
+      playerName,
+      isHost: !!isHost,
+      playerToken: playerToken || prev.playerToken || null,
+    }))
   } catch { /* ignore */ }
 }
 

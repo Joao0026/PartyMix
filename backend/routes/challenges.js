@@ -1,6 +1,8 @@
 const router = require('express').Router();
 const requireAdmin = require('../middleware/requireAdmin');
 const Challenge = require('../models/Challenge');
+const { familyChallengeMongoFilter, familyCategoryClause } = require('../lib/contentSafety')
+const { isUnder18 } = require('../lib/ageCookie')
 const { buildPackFilter } = require('../lib/packQuery');
 const { asyncRoute, bool, cleanString, intInRange, mongoId, oneOf } = require('../lib/validate');
 
@@ -15,10 +17,25 @@ function categoryFilter(value) {
     .map((c) => oneOf(c.trim(), CATEGORIES, { field: 'category' }));
 }
 
+function applyAudienceFilter(f, req, mode_type, cats) {
+  if (isUnder18(req) || mode_type === 'family') {
+    Object.assign(f, familyChallengeMongoFilter())
+    f.category = familyCategoryClause(cats)
+    return
+  }
+  if (mode_type) {
+    const mode = oneOf(mode_type, MODES, { field: 'mode_type' })
+    f.mode_type = { $in: [mode, 'all'] }
+    if (cats) f.category = { $in: cats }
+  } else if (cats) {
+    f.category = { $in: cats }
+  }
+}
+
 router.get('/packs', asyncRoute(async (req, res) => {
   const { mode_type } = req.query;
   const f = {};
-  if (mode_type) f.mode_type = { $in: [oneOf(mode_type, MODES, { field: 'mode_type' }), 'all'] };
+  applyAudienceFilter(f, req, mode_type, undefined)
   const packs = await Challenge.distinct('pack', f);
   res.json(packs.filter(Boolean).sort());
 }));
@@ -27,8 +44,7 @@ router.get('/', asyncRoute(async (req, res) => {
   const { category, mode_type, difficulty, pack } = req.query;
   const f = {};
   const cats = categoryFilter(category);
-  if (cats) f.category = { $in: cats };
-  if (mode_type) f.mode_type = { $in: [oneOf(mode_type, MODES, { field: 'mode_type' }), 'all'] };
+  applyAudienceFilter(f, req, mode_type, cats)
   if (difficulty) f.difficulty = oneOf(difficulty, DIFFICULTIES, { field: 'difficulty' });
   if (pack) f.pack = buildPackFilter(pack, req.query.include_community);
   res.json(await Challenge.find(f));
@@ -38,8 +54,7 @@ router.get('/random', asyncRoute(async (req, res) => {
   const { category, mode_type, pack } = req.query;
   const f = {};
   const cats = categoryFilter(category);
-  if (cats) f.category = { $in: cats };
-  if (mode_type) f.mode_type = { $in: [oneOf(mode_type, MODES, { field: 'mode_type' }), 'all'] };
+  applyAudienceFilter(f, req, mode_type, cats)
   if (pack) f.pack = buildPackFilter(pack, req.query.include_community);
   const count = await Challenge.countDocuments(f);
   if (!count) return res.status(404).json({ error: 'No challenges found' });

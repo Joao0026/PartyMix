@@ -6,7 +6,7 @@ export default function ModeHeader({ onBack, title, subtitle, action }) {
       {onBack && <BackButton onClick={onBack} />}
       <div className="flex-1 min-w-0">
         <h1 className="text-white font-black text-2xl leading-tight">{title}</h1>
-        {subtitle && <p className="text-slate-500 text-sm mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-slate-300 text-sm mt-0.5">{subtitle}</p>}
       </div>
       {action}
     </div>

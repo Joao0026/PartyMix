@@ -56,7 +56,16 @@ body {
     background: linear-gradient(to top, rgb(36 48 68) 65%, rgb(36 48 68 / 0.85) 85%, transparent);
   }
   .btn-primary {
-    @apply w-full rounded-2xl py-4 font-black text-white transition-transform active:scale-[0.98];
+    @apply w-full rounded-2xl py-4 font-black text-white transition-transform active:scale-[0.98] min-h-[52px];
+  }
+  .text-secondary {
+    @apply text-slate-300;
+  }
+  .text-muted {
+    @apply text-slate-400;
+  }
+  .hit-48 {
+    @apply min-h-[48px] min-w-[48px];
   }
 }
 

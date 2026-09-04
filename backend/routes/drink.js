@@ -3,12 +3,23 @@ const DrinkPack = require('../models/DrinkPack')
 const { asyncRoute, cleanString } = require('../lib/validate')
 
 router.get('/packs', asyncRoute(async (req, res) => {
-  const rows = await DrinkPack.find({}, { pack: 1, name: 1, description: 1 }).sort({ pack: 1 })
+  const rows = await DrinkPack.find({}, {
+    pack: 1,
+    name: 1,
+    description: 1,
+    premium: 1,
+    intensity: 1,
+    ageRating: 1,
+    teaser: 1,
+  }).sort({ premium: 1, pack: 1 })
   res.json(rows.map((row) => ({
     pack: row.pack,
     name: row.name || row.pack,
     description: row.description || '',
-    deckIds: Object.keys(row.decks || {}),
+    premium: false,
+    intensity: row.intensity || 'moderada',
+    ageRating: row.ageRating || '18+',
+    teaser: row.teaser || '',
   })))
 }))
 
@@ -27,6 +38,9 @@ router.get('/decks', asyncRoute(async (req, res) => {
     pack: row.pack,
     name: row.name,
     description: row.description,
+    premium: false,
+    intensity: row.intensity || 'moderada',
+    ageRating: row.ageRating || '18+',
     categories,
   })
 }))

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Trash2, ChevronRight, Users, Map, Zap, Gamepad2, Target } from 'lucide-react'
 import { PLAYER_COLORS, TEAM_COLORS, saveGame } from '../utils/game'
+import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 import PageShell from '../components/layout/PageShell'
 import ModeHeader from '../components/layout/ModeHeader'
+import { isUnder18 } from '../utils/ageGate'
 
 const MODE_CONFIG = {
   couple:  { label:'Modo Casal',   color:'from-rose-500 to-pink-600',  min:2, max:2,  cats:['romantico','picante','verdade','acao','roleplay','casal_pergunta'], hasTeams:false, hasMini:false },
@@ -53,15 +55,33 @@ export default function GameSetup() {
   const [params]  = useSearchParams()
   const navigate  = useNavigate()
   const mode      = params.get('mode') || 'friends'
+
+  useEffect(() => {
+    if (isUnder18() && mode !== 'family') navigate('/GameSetup?mode=family', { replace: true })
+  }, [mode, navigate])
   const cfg       = MODE_CONFIG[mode] || MODE_CONFIG.friends
   const accent    = ACCENT[mode] || ACCENT.friends
   const isFamily  = mode === 'family'
 
   const [step,        setStep]        = useState(0)
-  const [players,     setPlayers]     = useState([
-    {name:'Jogador 1', color:PLAYER_COLORS[0], team:0},
-    {name:'Jogador 2', color:PLAYER_COLORS[1], team:1},
-  ])
+  const [players,     setPlayers]     = useState(() => {
+    const { names } = loadNightRoster()
+    const limit = MODE_CONFIG[mode]?.max || 20
+    const min = MODE_CONFIG[mode]?.min || 2
+    if (names.length < 2) {
+      return [
+        {name:'Jogador 1', color:PLAYER_COLORS[0], team:0},
+        {name:'Jogador 2', color:PLAYER_COLORS[1], team:1},
+      ]
+    }
+    const take = names.slice(0, mode === 'couple' ? 2 : limit)
+    while (take.length < min) take.push('')
+    return take.map((name, i) => ({
+      name,
+      color: PLAYER_COLORS[i % PLAYER_COLORS.length],
+      team: i % 2,
+    }))
+  })
   const [teamsOn,    setTeamsOn]    = useState(false)
   const [teams,      setTeams]      = useState([{name:'Equipa A',color:TEAM_COLORS[0]},{name:'Equipa B',color:TEAM_COLORS[1]}])
   const [categories, setCategories] = useState(cfg.cats.slice(0,3))
@@ -73,6 +93,16 @@ export default function GameSetup() {
   const [scoreMode,  setScoreMode]  = useState('max_points')
   const [maxPoints,  setMaxPoints]  = useState(5)
 
+  const normalizedPlayerNames = players.map((player) => player.name.trim())
+  const duplicatePlayerNames = new Set(
+    normalizedPlayerNames
+      .map((name) => name.toLocaleLowerCase('pt-PT'))
+      .filter((name, index, names) => name && names.indexOf(name) !== index)
+  )
+  const hasEmptyPlayerNames = normalizedPlayerNames.some((name) => !name)
+  const hasDuplicatePlayerNames = duplicatePlayerNames.size > 0
+  const playersValid = !hasEmptyPlayerNames && !hasDuplicatePlayerNames
+
   const winningScore = isFamily
     ? categories.length * 3
     : scoreMode === '3_per_cat'
@@ -82,13 +112,21 @@ export default function GameSetup() {
   const addPlayer    = () => { if(players.length>=cfg.max)return; setPlayers(p=>[...p,{name:`Jogador ${p.length+1}`,color:PLAYER_COLORS[p.length%PLAYER_COLORS.length],team:0}]) }
   const removePlayer = i  => { if(players.length<=cfg.min)return; setPlayers(p=>p.filter((_,j)=>j!==i)) }
   const toggleCat    = c  => setCategories(cs=>cs.includes(c)?(cs.length>1?cs.filter(x=>x!==c):cs):[...cs,c])
-  const toggleMini   = m  => setMiniGames(ms=>ms.includes(m)?ms.filter(x=>x!==m):[...ms,m])
+  const toggleMini   = m  => setMiniGames(ms=>ms.includes(m)?(ms.length>1?ms.filter(x=>x!==m):ms):[...ms,m])
+  const needsMiniGames = mode === 'friends' && (friendsMode === 'map_cats' || friendsMode === 'map_mini')
+  const canStart = playersValid && (!needsMiniGames || miniGames.length > 0)
 
   const startGame = () => {
+    if (!canStart) return
+    const cleanPlayers = players.map((player, index) => ({
+      ...player,
+      name: normalizedPlayerNames[index],
+    }))
+    saveNightRoster(cleanPlayers.map((p) => p.name))
     saveGame({
-      mode, players, teams:teamsOn?teams:null,
+      mode, players:cleanPlayers, teams:teamsOn?teams:null,
       selectedCategories: friendsMode==='map_mini' ? [] : categories,
-      penaltyType:penalty,
+      penaltyType: isFamily ? 'none' : penalty,
       miniGames: isFamily ? [] : miniGames,
       friendsMode,
       mapRotation,
@@ -136,11 +174,20 @@ export default function GameSetup() {
               <span className="text-slate-500 text-xs">{players.length} / {cfg.max}</span>
             </div>
             {players.map((p, i) => (
-              <div key={i} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-3 flex items-center gap-3">
+              <div
+                key={i}
+                className={`bg-white/[0.04] border rounded-2xl p-3 flex items-center gap-3 ${
+                  !normalizedPlayerNames[i] || duplicatePlayerNames.has(normalizedPlayerNames[i].toLocaleLowerCase('pt-PT'))
+                    ? 'border-red-400/45'
+                    : 'border-white/[0.07]'
+                }`}
+              >
                 <div className={`bg-gradient-to-br ${p.color} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>{p.name[0]?.toUpperCase()}</div>
                 <input
                   value={p.name}
                   onChange={(e) => setPlayers((ps) => ps.map((pl, j) => (j === i ? { ...pl, name: e.target.value } : pl)))}
+                  onBlur={() => setPlayers((ps) => ps.map((pl, j) => (j === i ? { ...pl, name: pl.name.trim() } : pl)))}
+                  aria-invalid={!normalizedPlayerNames[i] || duplicatePlayerNames.has(normalizedPlayerNames[i].toLocaleLowerCase('pt-PT'))}
                   className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2 text-white font-medium outline-none focus:border-white/20 placeholder-slate-600"
                   placeholder="Nome"
                 />
@@ -157,11 +204,17 @@ export default function GameSetup() {
                 Adicionar jogador
               </button>
             )}
+            {!playersValid && (
+              <p role="alert" className="text-red-300 text-xs text-center">
+                {hasEmptyPlayerNames ? 'Preenche todos os nomes para continuar.' : 'Cada jogador precisa de um nome único.'}
+              </p>
+            )}
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => (cfg.hasTeams ? setStep(1) : startGame())}
-              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 mt-2 flex items-center justify-center gap-2`}
+              disabled={!playersValid}
+              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 mt-2 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed`}
             >
               {cfg.hasTeams ? 'Continuar' : 'Começar Jogo'}
               <ChevronRight className="w-5 h-5" />
@@ -350,7 +403,8 @@ export default function GameSetup() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={startGame}
-              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 flex flex-col items-center justify-center gap-0.5`}
+              disabled={!canStart}
+              className={`w-full bg-gradient-to-r ${cfg.color} text-white font-bold rounded-2xl py-4 flex flex-col items-center justify-center gap-0.5 disabled:opacity-40`}
             >
               <span>Começar Jogo 🎉</span>
               <span className="text-sm opacity-70 font-medium">Objetivo: {winningScore} pts</span>

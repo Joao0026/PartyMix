@@ -4,6 +4,7 @@ const s = new mongoose.Schema({
   code: { type: String, required: true, unique: true, uppercase: true },
   creator: { type: String, required: true },
   creatorId: { type: String, required: true },
+  hostToken: { type: String, required: true },
   title: { type: String, default: 'Custom Cards Game' },
   maxPoints: { type: Number, default: 21, min: 1, max: 100 },
   maxPlayers: { type: Number, default: 8, min: 2, max: 20 },
@@ -14,6 +15,7 @@ const s = new mongoose.Schema({
   },
   players: [{
     id: String,
+    token: String,
     name: String,
     isJury: { type: Boolean, default: false },
     points: { type: Number, default: 0 },

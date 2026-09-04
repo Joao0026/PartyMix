@@ -1,5 +1,7 @@
 const {
   validateSettings,
+  normalizeSettings,
+  isValidNightPick,
   defaultSettings,
   assignRoles,
   assignRolesForRoom,
@@ -10,8 +12,21 @@ const {
   resolveNight,
 } = require('./aldeiaMix')
 const { nextNightStep, stepScript } = require('./aldeiaNarrator')
+const {
+  allocRoomCode,
+  authorizeRejoin,
+  generatePlayerToken,
+  normalizePlayerName,
+  publicPlayers,
+  roomsAtCapacity,
+  touchRoom,
+} = require('./gameAuth')
 
 const amRooms = {}
+
+function getAmRoom(code) {
+  return amRooms[String(code || '').toUpperCase()] || null
+}
 
 function isJuiz(room, socketId) {
   const juiz = room.players[room.juizIdx]
@@ -35,15 +50,38 @@ function aliveVoters(room) {
   if (!room.roles) return []
   return room.roles
     .map((r, i) => ({ ...r, origIdx: i }))
-    .filter((r) => isPlayingRole(r.role) && !room.eliminated.includes(r.origIdx))
+    .filter((r) => {
+      const player = room.players.find((p) => p.name === r.name)
+      return isPlayingRole(r.role)
+        && !room.eliminated.includes(r.origIdx)
+        && !!player?.id
+        && !player.disconnected
+    })
 }
 
 function countValidVotes(room) {
   if (!room.roles) return 0
   return Object.keys(room.dayVotes || {}).filter((name) => {
     const idx = room.roles.findIndex((r) => r.name === name)
-    return idx >= 0 && isPlayingRole(room.roles[idx]?.role) && !room.eliminated.includes(idx)
+    const player = room.players.find((p) => p.name === name)
+    return idx >= 0
+      && isPlayingRole(room.roles[idx]?.role)
+      && !room.eliminated.includes(idx)
+      && !!player?.id
+      && !player.disconnected
   }).length
+}
+
+function connectedDayVotes(room) {
+  return Object.fromEntries(Object.entries(room.dayVotes || {}).filter(([name]) => {
+    const player = room.players.find((p) => p.name === name)
+    const idx = room.roles?.findIndex((r) => r.name === name) ?? -1
+    return !!player?.id
+      && !player.disconnected
+      && idx >= 0
+      && isPlayingRole(room.roles[idx]?.role)
+      && !room.eliminated.includes(idx)
+  }))
 }
 
 function playingReadyTotal(room) {
@@ -102,15 +140,9 @@ function sanitizeAm(room, revealAll = false, viewerName = null) {
   return {
     code: room.code,
     host: room.host,
-    hostId: room.hostId,
     juizIdx: room.juizIdx,
     juizName: juizPlayer?.name,
-    juizId: juizPlayer?.id,
-    players: room.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      disconnected: !!p.disconnected,
-    })),
+    players: publicPlayers(room.players),
     settings: room.settings,
     status: room.status,
     nightStep: room.nightStep || null,
@@ -151,6 +183,7 @@ function sanitizeNarrator(room) {
     sheriffIsWolf: na.sheriffTarget != null
       ? room.roles[na.sheriffTarget]?.role === 'lobo'
       : null,
+    roleByIdx: Object.fromEntries((room.roles || []).map((r, i) => [i, r.role])),
   }
 }
 
@@ -229,7 +262,7 @@ function closeDayVoting(room, io, code, { skipElimination = false } = {}) {
   room.votingClosed = true
   room.discussionEndsAt = null
 
-  const counts = computeVoteCounts(room.dayVotes, room.roles, room.eliminated)
+  const counts = computeVoteCounts(connectedDayVotes(room), room.roles, room.eliminated)
   room.voteTally = Object.entries(counts)
     .map(([idx, c]) => ({
       origIdx: Number(idx),
@@ -314,6 +347,7 @@ function finishRejoin(io, room, socket, player) {
     code: c,
     room: sanitizeAm(room, room.status === 'result', player.name),
     playerName: player.name,
+    playerToken: player.token,
     isHost: room.host === player.name,
   })
 
@@ -328,14 +362,19 @@ function finishRejoin(io, room, socket, player) {
 
 function registerAldeiaMixHandlers(io, socket) {
   socket.on('am_create_room', ({ playerName, settings }) => {
-    const code = Math.random().toString(36).substring(2, 6).toUpperCase()
+    const name = normalizePlayerName(playerName)
+    if (!name) { socket.emit('error', 'Nome inválido'); return }
+    if (roomsAtCapacity(amRooms)) { socket.emit('error', 'Servidor cheio'); return }
+    const code = allocRoomCode(amRooms)
+    if (!code) { socket.emit('error', 'Não foi possível criar sala'); return }
+    const token = generatePlayerToken()
     const cfg = settings || {}
-    amRooms[code] = {
+    amRooms[code] = touchRoom({
       code,
-      host: playerName,
+      host: name,
       hostId: socket.id,
       juizIdx: 0,
-      players: [{ id: socket.id, name: playerName, disconnected: false }],
+      players: [{ id: socket.id, name, token, disconnected: false }],
       settings: {
         ...defaultSettings(),
         numLobos: Math.max(1, Number(cfg.numLobos) || 1),
@@ -358,57 +397,59 @@ function registerAldeiaMixHandlers(io, socket) {
       dayVotes: {},
       voteTally: [],
       votingClosed: false,
-    }
+    })
     socket.join(code)
-    socket.emit('am_room_created', { code, room: sanitizeAm(amRooms[code]) })
+    socket.emit('am_room_created', { code, room: sanitizeAm(amRooms[code]), playerToken: token, playerName: name })
   })
 
   socket.on('am_join_room', ({ code, playerName }) => {
-    const c = code.toUpperCase()
-    const room = amRooms[c]
-    if (!room) { socket.emit('error', 'Sala não encontrada'); return }
-
-    const existing = room.players.find((p) => p.name === playerName)
-    if (existing?.disconnected) {
-      existing.id = socket.id
-      existing.disconnected = false
-      finishRejoin(io, room, socket, existing)
-      return
-    }
-
-    if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou — usa o mesmo nome para voltar'); return }
-    if (room.players.find((p) => p.name === playerName)) { socket.emit('error', 'Nome já em uso'); return }
-    if (room.players.length >= 15) { socket.emit('error', 'Sala cheia (máx. 15)'); return }
-
-    room.players.push({ id: socket.id, name: playerName, disconnected: false })
-    socket.join(c)
-    socket.emit('am_room_joined', { code: c, room: sanitizeAm(room) })
-    io.to(c).emit('am_room_updated', sanitizeAm(room))
-  })
-
-  socket.on('am_rejoin_room', ({ code, playerName }) => {
     const c = String(code || '').toUpperCase()
     const room = amRooms[c]
     if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+    touchRoom(room)
 
-    const existing = room.players.find((p) => p.name === playerName)
-    if (!existing) { socket.emit('error', 'Jogador não encontrado nesta sala'); return }
+    const name = normalizePlayerName(playerName)
+    if (!name) { socket.emit('error', 'Nome inválido'); return }
+    if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou — usa o mesmo nome para voltar'); return }
+    if (room.players.find((p) => p.name === name)) { socket.emit('error', 'Nome já em uso'); return }
+    if (room.players.length >= 15) { socket.emit('error', 'Sala cheia (máx. 15)'); return }
 
-    existing.id = socket.id
-    existing.disconnected = false
-    finishRejoin(io, room, socket, existing)
+    const token = generatePlayerToken()
+    room.players.push({ id: socket.id, name, token, disconnected: false })
+    socket.join(c)
+    socket.emit('am_room_joined', { code: c, room: sanitizeAm(room), playerToken: token, playerName: name })
+    io.to(c).emit('am_room_updated', sanitizeAm(room))
+  })
+
+  socket.on('am_rejoin_room', ({ code, playerName, playerToken }) => {
+    const c = String(code || '').toUpperCase()
+    const room = amRooms[c]
+    const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
+    if (!auth.ok) { socket.emit('error', auth.error); return }
+    touchRoom(room)
+    auth.player.id = socket.id
+    auth.player.disconnected = false
+    auth.player.previousSocketId = null
+    finishRejoin(io, room, socket, auth.player)
   })
 
   socket.on('am_update_settings', ({ code, settings }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || room.hostId !== socket.id || room.status !== 'waiting') return
-    const v = validateSettings({ ...room.settings, ...settings }, room.players.length)
-    if (v.ok) room.settings = v.settings
+    const next = normalizeSettings({ ...room.settings, ...settings })
+    const prev = room.settings || {}
+    const unchanged = prev.numLobos === next.numLobos
+      && prev.numCurandeiras === next.numCurandeiras
+      && prev.numVidentes === next.numVidentes
+      && prev.discussionSeconds === next.discussionSeconds
+      && prev.nightSeconds === next.nightSeconds
+    if (unchanged) return
+    room.settings = next
     io.to(code).emit('am_room_updated', sanitizeAm(room))
   })
 
   socket.on('am_start_game', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
     const active = room.players.filter((p) => !p.disconnected).length
     const v = validateSettings(room.settings, active)
@@ -431,7 +472,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_reveal_ready', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || room.status !== 'reveal') return
     const player = room.players.find((p) => p.id === socket.id)
     if (!player || player.disconnected) return
@@ -455,7 +496,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_narrator_next', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id)) return
     if (room.status !== 'night') return
 
@@ -486,20 +527,17 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_narrator_pick', ({ code, field, targetOrigIdx }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id) || room.status !== 'night') return
 
     const target = Number(targetOrigIdx)
     if (!Number.isInteger(target) || room.eliminated.includes(target) || isNarratorIdx(room, target)) return
+    if (!isValidNightPick(field, room.roles[target]?.role)) return
 
     if (!room.narratorNight) resetNarratorNight(room)
     const na = room.narratorNight
 
     if (field === 'wolfTarget' && room.nightStep === 'wolves') {
-      if (room.roles[target]?.role === 'lobo') {
-        socket.emit('error', 'Os lobos não podem atacar outros lobos')
-        return
-      }
       na.wolfTarget = na.wolfTarget === target ? null : target
     } else if (field === 'medicTarget' && room.nightStep === 'medic') {
       na.medicTarget = na.medicTarget === target ? null : target
@@ -518,7 +556,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_cast_vote', ({ code, targetOrigIdx }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || room.status !== 'day' || room.votingClosed) return
 
     const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
@@ -553,19 +591,19 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_close_voting', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id) || room.status !== 'day') return
     closeDayVoting(room, io, code)
   })
 
   socket.on('am_skip_day', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id) || room.status !== 'day') return
     skipDayToNight(room, io, code)
   })
 
   socket.on('am_narrator_start_night', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id) || room.status !== 'day') return
     if (!room.votingClosed) {
       socket.emit('error', 'Espera que a votação termine')
@@ -580,7 +618,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_play_again', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room) return
     if (!isJuiz(room, socket.id) && room.hostId !== socket.id) {
       socket.emit('error', 'Só o narrador ou host pode iniciar nova partida')
@@ -614,7 +652,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_end_session', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room) return
     if (room.hostId !== socket.id && !isJuiz(room, socket.id)) {
       socket.emit('error', 'Só o host ou narrador pode fechar a sala')
@@ -626,7 +664,7 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 
   socket.on('am_request_state', ({ code }) => {
-    const room = amRooms[code]
+    const room = getAmRoom(code)
     if (!room) return
     const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
     if (!player) return
@@ -647,6 +685,8 @@ function handleAldeiaDisconnect(io, socket) {
 
   const player = room.players[idx]
   player.disconnected = true
+  player.previousSocketId = socket.id
+  player.id = null
 
   if (room.hostId === socket.id) promoteHostIfNeeded(room)
   if (room.players[room.juizIdx]?.disconnected) ensureConnectedJuiz(room)
@@ -660,6 +700,12 @@ function handleAldeiaDisconnect(io, socket) {
 
   io.to(code).emit('am_room_updated', sanitizeAm(room))
   broadcastPhase(io, room)
+  if (room.status === 'day' && !room.votingClosed) {
+    const expected = aliveVoters(room).length
+    if (expected > 0 && countValidVotes(room) >= expected) {
+      closeDayVoting(room, io, code)
+    }
+  }
 }
 
 module.exports = {
@@ -667,4 +713,9 @@ module.exports = {
   registerAldeiaMixHandlers,
   handleAldeiaDisconnect,
   sanitizeAm,
+  _test: {
+    aliveVoters,
+    countValidVotes,
+    connectedDayVotes,
+  },
 }

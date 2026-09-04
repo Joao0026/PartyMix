@@ -1,0 +1,1233 @@
+{
+  "name": "Casais na Festa",
+  "mode": "drink",
+  "pack": "casais-festa",
+  "description": "Para casais e grupos onde todos sabem demasiado uns dos outros.",
+  "premium": false,
+  "intensity": "picante",
+  "ageRating": "18+",
+  "teaser": "Compatibilidade, ciúmes, segredos e desafios a dois.",
+  "decks": {
+    "waterfall": {
+      "label": "🌊 Waterfall & Beber",
+      "desc": "Quem bebe, bebe muito",
+      "premium": false,
+      "cards": [
+        {
+          "type": "beber",
+          "emoji": "🏷️",
+          "title": "Alcunha",
+          "text": "Quem for mais tratado pela alcunha do que pelo nome bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🤝",
+          "title": "Amigo antigo",
+          "text": "O jogador que conheces há mais tempo bebe 2 contigo.",
+          "pack": "casais-festa",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🙈",
+          "title": "Vistos nus",
+          "text": "Bebe 1 golo por cada pessoa nesta sala que já viste nua.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "beber",
+          "emoji": "🛏️",
+          "title": "Amor recente",
+          "text": "Quem fez amor esta semana bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "beber",
+          "emoji": "🛁",
+          "title": "Amor na banheira",
+          "text": "Quem já fez amor numa banheira bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "beber",
+          "emoji": "💞",
+          "title": "Contagem íntima",
+          "text": "Bebe 1 golo por cada parceiro sexual que já tiveste. Podes cortar o número a meio se já estiveste com mais do que um género.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "eununca": {
+      "label": "🙅 Eu Nunca",
+      "desc": "Confissões garantidas",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA — Diz algo que nunca fizeste. Quem já fez bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA bebi até adormecer numa festa.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA enviei uma mensagem ao ex que me arrependi.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA bloqueei alguém sem dar explicação.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA dei um beijo em alguém do grupo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏖️",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz amor na praia. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏊",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui nu para o mar. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "👊",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA bati um punho ao amigo, na brotheragem claro. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⏰",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA adiei uma tarefa até ao último minuto. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💦",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA nadei nu na piscina da casa de férias. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔮",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA achei que o meu amigo me conseguia ler a mente. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥺",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA achei que o meu namorado não gostava de mim depois de bêbeda. Quem já fez, bebe 1 golo!",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "especiais": {
+      "label": "🛡️ Especiais",
+      "desc": "Alianças, mini bosses e impostor",
+      "premium": false,
+      "cards": [
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Aliança com o jogador mais calmo da mesa. Durante 3 rondas, partilham imunidade: um pode passar 1 penalização ao outro.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Escolhe um parceiro. Até à próxima aliança: quando um distribuir golos, o outro distribui 1 também.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Em 20 segundos, digam 5 ex-presidentes da República. Acertam → quem tirou a carta escolhe 3 pessoas para beber 1. Erram → todos bebem 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem dá os melhores conselhos amorosos?",
+          "wrongQuestion": "Quem manda mensagem ao ex depois de beber demais?",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Aliança da cama: escolhe um parceiro. Durante 3 rondas, sempre que um beber o outro tem de lhe fazer um elogio atrevido. Quem falhar bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Aliança de pele: par com o jogador à tua direita. Durante 2 rondas têm de manter contacto físico (mão no ombro ou joelho). Se soltarem, ambos bebem 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Aliança do colo: escolhe um parceiro. Um de vós passa a próxima ronda no colo do outro. Quem se levantar antes bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "alliance",
+          "emoji": "🤝",
+          "title": "Aliança!",
+          "text": "Aliança quente: par com quem achas mais atraente. Quando um receber uma penalização, pode passá-la ao outro... com um beijo na bochecha à mistura.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "rare",
+          "act": 3
+        }
+      ]
+    },
+    "desafios": {
+      "label": "⚡ Desafios",
+      "desc": "Mini-jogos relâmpago",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "⚡",
+          "title": "2 Verdades 1 Mentira",
+          "text": "2 verdades e 1 mentira. Quem não adivinhar a mentira bebe.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👐",
+          "title": "Cadeia de gestos",
+          "text": "Faz um gesto à pessoa à tua esquerda (ex.: carolo, cachaço). Ela repete e acrescenta um gesto novo. Continua até alguém se esquecer. Quem falhar bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💄",
+          "title": "Beijo de batom",
+          "text": "Quem tiver batom à mão põe-no e dá um beijo na bochecha de alguém à escolha. O escolhido bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "👻",
+          "title": "3 filmes de terror",
+          "text": "Diz 3 filmes de terror em 5 segundos. Se falhares, bebes 1.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚽",
+          "title": "10 futebolistas",
+          "text": "Diz o nome de 10 jogadores de futebol em 20 segundos. Se falhares, bebes 2.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍎",
+          "title": "10 frutas",
+          "text": "Diz 10 frutas em 15 segundos. Se falhares, bebes 2.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👩‍💼",
+          "title": "3 presidentes",
+          "text": "Tens 10 segundos para dizer 3 mulheres que já foram presidentes. Não consegues? Seu porco sexista, bebe 4 golos.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "✋",
+          "title": "Dedos escondidos",
+          "text": "reader, põe uma mão atrás das costas e levanta alguns dedos. Os outros adivinham quantos. Quem falhar bebe 2 golos. Os vencedores ganham um high-five... ou um beijo? Um beijo soa-me bem.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "poder": {
+      "label": "👑 Poder & Sorte",
+      "desc": "Distribui e recebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "Bebes o dobro de tudo até ao fim desta ronda.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "O grupo decide o que bebes a seguir. Tens de aceitar.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "💀",
+          "title": "Azar!",
+          "text": "Bebe 2 agora + o grupo vota se bebes mais 1 ou não.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "✖️",
+          "title": "Azar a dobrar",
+          "text": "Bebes o dobro da próxima penalização que receberes.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🎲",
+          "title": "À mercê do vizinho",
+          "text": "O jogador mais próximo de ti escolhe quanto bebes (0 a 5).",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "⚖️",
+          "title": "5 golos ou castigo",
+          "text": "Bebes 5 golos ou deixas a mesa escolher o teu castigo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "picante": {
+      "label": "🔥 Picante",
+      "desc": "Para adultos",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Conta algo que nunca disseste a ninguém aqui — vida amorosa. Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Com quem da sala ficarias se fosse o fim do mundo?",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Descreve o teu maior fantasma em 30 segundos. Quem não o fizer bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Manda uma mensagem ao teu ex: \"Estava a pensar em ti.\" Mostra a resposta.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Revela o crush secreto mais embaraçoso da tua vida.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Liga para alguém fora desta sala e diz \"precisamos de falar\". Mostra a reação.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Mostra o histórico de pesquisa do teu telemóvel ao grupo. Ou bebe 4 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Diz o nome da pessoa da sala que mais te atrai. Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Lê a última mensagem enviada no WhatsApp em voz alta. Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Um podcast",
+          "text": "Quem costuma demorar mais de 30 segundos (um «podcast») a fazer amor bebe 2 golos. Ou bebe 2 na mesma se não quiseres responder.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😏",
+          "title": "Atrevimento",
+          "text": "Mostra a última pessoa a quem mandaste uma mensagem atrevida. Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💔",
+          "title": "Pior ex",
+          "text": "Quem na mesa seria o teu pior ex? Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💋",
+          "title": "Beijo hipotético",
+          "text": "Diz quem da mesa beijavas num cenário hipotético. Ou bebe 4 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😎",
+          "title": "Mais rizz",
+          "text": "Diz quem da mesa tem mais «rizz». Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "👅",
+          "title": "Gemido ao ouvido",
+          "text": "Geme no ouvido do jogador à tua direita. Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😤",
+          "title": "Difícil de namorar",
+          "text": "Diz quem da mesa seria mais difícil de namorar. Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😖",
+          "title": "Pior beijo",
+          "text": "Diz quem da mesa teria pior beijo (hipotético). Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥱",
+          "title": "Perde interesse",
+          "text": "Diz o que te faz perder interesse rápido. Ou bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💕",
+          "title": "Melhor date",
+          "text": "Diz quem da mesa seria o melhor date. Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏝️",
+          "title": "Ilha deserta",
+          "text": "Diz com que jogador não te importavas de ficar numa ilha deserta (namorados não conta 😛). Explica porquê e depois tu e essa pessoa bebem 3 cada.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😍",
+          "title": "Amor à bebida",
+          "text": "reader, bebe 2 golos enquanto sussurras palavras de amor e tesão à tua bebida.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Mais atraente",
+          "text": "reader dá 2 golos à pessoa que achas mais atraente na mesa.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍑",
+          "title": "Palmada",
+          "text": "reader dá uma palmada no rabo a alguém à tua escolha. Se essa pessoa recusar, ambos bebem 4 golos.",
+          "pack": "casais-festa",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "preferias": {
+      "label": "🤔 Preferias?",
+      "desc": "Would you rather — escolhas impossíveis",
+      "premium": false,
+      "cards": [
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Sexo em local público",
+            "Filme caseiro em casa"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Seres apanhado a fazer sexo pelos teus pais",
+            "Apanhares os teus pais a fazer sexo"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer sexo com alguém que geme como um porco",
+            "Com alguém que grita \"VAMOS PORTUGAL\" depois de ter um orgasmo"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Ser atropelado por um trator",
+            "O vosso amigo/a tinha de fazer amor violento com 3 negões ou comer ervilhas"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer amor com duas pessoas cuja idade somada dá 30",
+            "Com idade somada a dar 160"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Poder ter relações sexuais apenas com pessoas que consideras pouco atraentes",
+            "Apenas com pessoas que consideras extremamente irritantes"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer sexo ao ar livre sob a lua cheia em outubro",
+            "Sexo numa cabana à beira da lareira durante as festas de fim de ano"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer sexo em frente a um espelho",
+            "No escuro"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer sexo num ginásio cheio de gente (nunca estás sozinho)",
+            "Numa piscina pública"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Que toda massagem do teu cônjuge levasse ao sexo",
+            "Que todo banho com o teu cônjuge levasse ao sexo"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Ter a reputação de ser bom na cama sem conseguir corresponder a ela",
+            "Ter a reputação de ser péssimo na cama, mas na verdade ser incrível"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Casar com alguém que te ama verdadeiramente mas sem sexo",
+            "Ter uma vida sexual ativa mas nunca encontrar alguém que ames e te ame verdadeiramente"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer amor com o teu parceiro/a sexual mas obrigatoriamente tinhas de fazer roleplay de um casal de amigos conhecidos",
+            "Saber que os teus amigos fizeram roleplay de ti e do teu parceiro/a"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Postar acidentalmente uma foto nua nos stories do Insta aos amigos chegados",
+            "Enviar acidentalmente uma foto nua para os teus avós com uma mensagem provocadora"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer um ménage à trois com o teu parceiro(a) e uma celebridade por quem tiveste uma queda",
+            "Ficar com a celebridade por quem tiveste uma queda enquanto o teu parceiro(a) assiste"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Abster-te completamente de sexo",
+            "Só fazer sexo durante orgias pelo resto da vida"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Poder fazer sexo apenas em pé",
+            "Apenas na posição missionária"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer um ménage à trois com alguém do mesmo sexo (tens parceiro do sexo oposto)",
+            "Com alguém do sexo oposto"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Estar por cima o resto da vida no sexo",
+            "Estar por baixo o resto da vida no sexo"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Fazer sexo com uma cabra e ninguém descobrir",
+            "Não fazer sexo com uma cabra, mas todos pensarem que fizeste"
+          ],
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "provavel": {
+      "label": "👉 Quem é mais provável?",
+      "desc": "Apontem dedos — quem receber mais bebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "👉",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de adormecer primeiro esta noite? Contagem 1-2-3 — apontem! Quem receber mais dedos bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏔️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de escalar o Everest nu? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "👀",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de entrar num quarto com alguém a fazer sexo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💔",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de se apaixonar por um amor impossível? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😴",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de sonhar com um ex/ficante e perguntar-se se isso significa alguma coisa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏊",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de nadar nu numa festa animada ou por desafio? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😵",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de acordar sem se lembrar do que aconteceu na noite anterior? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙊",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de apanhar outra pessoa num momento íntimo constrangedor (por acidente)? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛏️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer amor com alguém no primeiro encontro? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍒",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ter experimentado sexo anal? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💤",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de adormecer durante o sexo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔊",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de gemer mais alto durante o sexo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥱",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de adormecer numa discoteca? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📲",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de enviar mensagem ao ex bêbado? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍵",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de acabar a noite a cuidar dos outros? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "bluff": {
+      "label": "🎭 Bluff",
+      "desc": "Convence-me — verdade ou mentira?",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🌧️",
+          "title": "Bluff!",
+          "text": "Conta um momento em que tiveste azar extremo, real ou inventado. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛏️",
+          "title": "Bluff!",
+          "text": "Diz 3 sítios onde já fizeste sexo. Um é mentira. Se ninguém descobrir, distribuis 3; se descobrirem, bebes 3.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Bluff!",
+          "text": "Conta a coisa mais atrevida que já fizeste na cama, verdade ou mentira. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔢",
+          "title": "Bluff!",
+          "text": "Diz o teu número de parceiros, verdadeiro ou inventado. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💭",
+          "title": "Bluff!",
+          "text": "Conta a tua fantasia mais estranha, real ou inventada. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "historia": {
+      "label": "🎬 História",
+      "desc": "Constrói uma história absurda em grupo",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "😬",
+          "title": "Flirt falhado",
+          "text": "Conta um flirt que te correu mal. Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💭",
+          "title": "Fantasia",
+          "text": "Conta uma história ou fantasia sexual tua. Ou bebe 3 golos.",
+          "pack": "casais-festa",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🌶️",
+          "title": "História Picante",
+          "text": "Tema: uma noite de sexo que correu mal. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "historia",
+          "emoji": "💋",
+          "title": "História Proibida",
+          "text": "Tema: um caso de amor secreto no escritório. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "casais-festa",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    }
+  }
+}

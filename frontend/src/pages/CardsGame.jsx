@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RotateCcw, Copy, Check, Users, Wifi } from 'lucide-react'
+import { Crown, RotateCcw, Copy, Check, Users, Wifi, Share2 } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import GameShell from '../components/layout/GameShell'
@@ -12,6 +12,7 @@ import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
 import ShareRoomLink from '../components/layout/ShareRoomLink'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
+import { shareNight } from '../utils/shareNight'
 import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
@@ -68,7 +69,7 @@ function SetupScreen({ onCreateOnline, initialName }) {
     <PageShell mode="cards" innerClassName="space-y-6">
         <div className="flex items-center gap-3">
           <BackButton onClick={() => navigate('/')} />
-          <div><h1 className="text-white font-black text-2xl">🃏 Modo Cartas</h1><p className="text-slate-500 text-sm">Cria sala e partilha o código no telemóvel</p></div>
+          <div><h1 className="text-white font-black text-2xl">🃏 Modo Cartas</h1><p className="text-slate-300 text-sm">Cria sala e partilha o código no telemóvel</p></div>
         </div>
 
         <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4">
@@ -221,6 +222,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const [gameEnded,    setGameEnded]    = useState(false)
   const [finalScores,  setFinalScores]  = useState([])
   const [czarId,       setCzarId]       = useState(null)
+  const [onlineHost,   setOnlineHost]   = useState(initialRoom?.host || null)
+  const [playerMeta,   setPlayerMeta]   = useState(initialRoom?.players || initialGameState?.players || [])
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
   const playerNameRef = useRef(playerName)
@@ -270,11 +273,15 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setCzarId(state.czarId)
       setRoundNum(state.round)
       setScores(Object.fromEntries(state.players.map((p) => [p.name, p.score])))
-      setSubmissions({})
-      setRevealed(false)
-      setRoundWinner(null)
+      const restoredSubmissions = {}
+      ;(state.submissions || []).forEach((s) => { restoredSubmissions[s.playerId] = s.card })
+      setSubmissions(restoredSubmissions)
+      setRevealed(!!state.revealed)
+      setRoundWinner(state.roundWinner || null)
+      setSubCount(state.submissionUpdate || { count: 0, total: 0, allDone: false })
+      setPlayerMeta(state.players || [])
       setSelectedWhiteCards([])
-      setSubmittedThisRound(false)
+      setSubmittedThisRound(!!state.submittedThisRound)
     }
     const onYourHand = (hand) => setMyHand(Array.isArray(hand) ? [...hand] : [])
     const onSubUpdate = (d) => setSubCount(d)
@@ -293,6 +300,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setCzarId(d.czarId)
       if (typeof d.czarIdx === 'number') setCzarIdx(d.czarIdx)
       setCurrentBlack(d.blackCard)
+      if (d.preserveRound) return
       setSubmissions({})
       setRevealed(false)
       setRoundWinner(null)
@@ -305,8 +313,9 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setFinalScores(d.scores)
     }
 
-    const onCardsRejoined = ({ room: r, playerName: pn, isHost: ih }) => {
-      saveCardsSession({ code: r.code, playerName: pn, isHost: ih })
+    const onCardsRejoined = ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
+      saveCardsSession({ code: r.code, playerName: pn, isHost: ih, playerToken })
+      setOnlineHost(r.host)
       setReconnecting(false)
       setDisconnected(false)
     }
@@ -318,7 +327,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setDisconnected(false)
       const saved = loadCardsSession()
       if (saved?.code && playerNameRef.current) {
-        socket.emit('cards_rejoin_room', { code: saved.code, playerName: playerNameRef.current })
+        socket.emit('cards_rejoin_room', { code: saved.code, playerName: playerNameRef.current, playerToken: saved.playerToken })
       }
     }
     const onRoomUpdated = (r) => {
@@ -326,6 +335,8 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       setScores(Object.fromEntries(r.players.map((p) => [p.name, p.score])))
       setCzarIdx(r.czarIdx ?? 0)
       setCzarId(r.czarId)
+      setOnlineHost(r.host)
+      setPlayerMeta(r.players || [])
     }
 
     socket.on('disconnect', onDisconnect)
@@ -401,6 +412,17 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const nonCzars = players.filter(p=>p!==czarName)
   const myName = mode==='local'?null:playerName
   const imCzar = mode==='online'?(czarName===playerName):false
+  const imSittingOut = mode === 'online' && playerMeta.some((p) => p.name === playerName && p.sittingOut)
+  const hostNow = mode === 'online' && (onlineHost === playerName || isHost)
+  const waitingOthers = mode === 'online' && !revealed && !subCount.allDone && !gameEnded
+
+  useEffect(() => {
+    if (!waitingOthers || !hostNow || !socket || (subCount.count || 0) < 1) return
+    const t = setTimeout(() => {
+      socket.emit('cards_skip_pending', { code: initialRoom.code })
+    }, 45000)
+    return () => clearTimeout(t)
+  }, [waitingOthers, hostNow, socket, subCount.count, roundNum, initialRoom?.code])
   const requiredCards = Math.min(2, Math.max(1, (String(currentBlack || '').match(/___/g) || []).length))
 
   // For local: current player whose turn it is to play
@@ -434,6 +456,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         ))}
       </div>
       <div className="flex gap-3">
+        <button type="button" onClick={() => shareNight({ title: 'Modo Cartas — PartyMix', text: ['🃏 Modo Cartas — PartyMix', ...finalScores.map((s, i) => `${i + 1}. ${s.name} — ${s.score} pts`)].join('\n') })} className="px-6 py-3 rounded-2xl bg-white text-slate-950 font-black flex items-center gap-2"><Share2 className="w-4 h-4"/>Partilhar</button>
         <button onClick={()=>window.location.reload()} className="px-6 py-3 rounded-2xl bg-white/[0.07] text-white font-bold flex items-center gap-2"><RotateCcw className="w-4 h-4"/>Novo</button>
         <button onClick={()=>navigate('/')} className="px-6 py-3 rounded-2xl bg-violet-600 text-white font-bold">Início</button>
       </div>
@@ -456,10 +479,19 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
     <GameShell
       mode="cards"
       header={
-        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
           <BackButton onClick={() => navigate('/')} />
-          <div className="flex items-center gap-2"><Crown className="text-amber-400 w-4 h-4"/><span className="text-white font-bold text-sm">R{roundNum} · Czar: {czarName}</span></div>
-          <div className="flex gap-1.5">{players.map(p=><div key={p} className="text-center"><p className={`text-xs font-black ${p===czarName?'text-amber-400':'text-white'}`}>{scores[p]||0}</p><p className="text-slate-600 text-xs">{p.split(' ')[0]}</p></div>)}</div>
+          <div className="flex items-center gap-2 min-w-0"><Crown className="text-amber-400 w-4 h-4 shrink-0"/><span className="text-white font-bold text-base truncate">R{roundNum} · Czar: {czarName}</span></div>
+          <div className="flex gap-2 overflow-x-auto max-w-[42vw]">{players.map(p=>{
+            const row = playerMeta.find((m) => m.name === p)
+            return (
+              <div key={p} className={`text-center min-w-[3.25rem] ${row?.sittingOut || row?.disconnected ? 'opacity-40' : ''}`}>
+                <p className={`text-base font-black ${p===czarName?'text-amber-400':'text-white'}`}>{scores[p]||0}</p>
+                <p className="text-slate-300 text-xs font-semibold truncate">{p.split(' ')[0]}</p>
+                {row?.sittingOut && <p className="text-[9px] text-slate-500 font-bold">fora</p>}
+              </div>
+            )
+          })}</div>
         </div>
       }
     >
@@ -477,9 +509,23 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
           <p className="text-white font-black text-xl leading-snug">{currentBlack}</p>
         </div>
 
+        {mode === 'online' && imSittingOut && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-center space-y-3">
+            <p className="text-white font-bold">Estás de fora</p>
+            <p className="text-slate-400 text-sm">O telemóvel fica na mesa — volta quando quiseres.</p>
+            <button
+              type="button"
+              onClick={() => socket?.emit('cards_sit_in', { code: initialRoom.code })}
+              className="w-full rounded-2xl bg-white py-3 min-h-[48px] font-black text-slate-950"
+            >
+              Voltar ao jogo
+            </button>
+          </div>
+        )}
+
         {/* Submission status */}
         {!revealed&&(
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-slate-400 text-sm">
               {mode==='online'?`${subCount.count||0}/${subCount.total||nonCzars.length} submeteram`:`${Object.keys(submissions).length}/${nonCzars.length} submeteram`}
             </p>
@@ -487,6 +533,24 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
               <button onClick={doReveal} className="bg-amber-500 text-black font-bold rounded-xl px-4 py-2 text-sm">Revelar →</button>
             )}
           </div>
+        )}
+        {mode === 'online' && !revealed && !allSub && hostNow && (subCount.count || 0) >= 1 && (
+          <button
+            type="button"
+            onClick={() => socket?.emit('cards_skip_pending', { code: initialRoom.code })}
+            className="w-full rounded-2xl border border-amber-400/30 bg-amber-500/15 py-3 min-h-[48px] text-amber-100 text-sm font-black"
+          >
+            Seguir sem quem falta
+          </button>
+        )}
+        {mode === 'online' && !imSittingOut && !revealed && (
+          <button
+            type="button"
+            onClick={() => socket?.emit('cards_sit_out', { code: initialRoom.code })}
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] py-2.5 text-slate-400 text-xs font-bold"
+          >
+            Ficar de fora
+          </button>
         )}
 
         {/* LOCAL: show current player's hand */}
@@ -506,7 +570,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         )}
 
         {/* ONLINE: your hand */}
-        {mode==='online'&&!revealed&&!imCzar&&!mySubmitted&&(
+        {mode==='online'&&!revealed&&!imCzar&&!mySubmitted&&!imSittingOut&&(
           <div className="min-h-0 shrink-0">
             <p className="text-white font-bold mb-2 text-center">
               {playerName}, escolhe {requiredCards === 2 ? 'duas cartas' : 'a tua carta'}:
@@ -544,13 +608,13 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
             )}
           </div>
         )}
-        {mode==='online'&&!revealed&&!imCzar&&mySubmitted&&(
+        {mode==='online'&&!revealed&&!imCzar&&mySubmitted&&!imSittingOut&&(
           <div className="text-center py-4 bg-white/[0.04] rounded-2xl border border-white/[0.07]">
             <p className="text-green-400 font-bold">✅ Carta submetida!</p>
             <p className="text-slate-500 text-sm mt-1">À espera dos outros...</p>
           </div>
         )}
-        {mode==='online'&&!revealed&&imCzar&&(
+        {mode==='online'&&!revealed&&imCzar&&!imSittingOut&&(
           <div className="text-center py-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
             <Crown className="text-amber-400 w-6 h-6 mx-auto mb-1"/>
             <p className="text-amber-400 font-bold">És o Czar!</p>
@@ -595,7 +659,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
                 {roundWinner===pid&&<p className="text-amber-600 text-sm font-bold mt-2">👑 Vencedor desta ronda!</p>}
               </motion.button>
             ))}
-            {roundWinner&&(mode!=='online'||isHost)&&(
+            {roundWinner&&(mode!=='online'||onlineHost===playerName)&&(
               <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}} onClick={nextRound}
                 className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-bold rounded-2xl py-4">
                 Próxima Ronda →
@@ -672,7 +736,7 @@ export default function CardsGame() {
     const onConnect = () => {
       const saved = loadCardsSession()
       if (saved?.code && playerName) {
-        socket.emit('cards_rejoin_room', { code: saved.code, playerName })
+        socket.emit('cards_rejoin_room', { code: saved.code, playerName, playerToken: saved.playerToken })
       }
     }
     const onRejoined = ({ room: r }) => setRoom(r)
@@ -702,10 +766,10 @@ export default function CardsGame() {
     setPlayerName(name.trim()); setPacks(packs); setIsHost(true); setGameMode('online'); setPhase('connecting')
     const selectedIds = ALL_PACKS.filter(p=>packs.black.some(c=>PACKS[p.id]?.black.includes(c))).map(p=>p.id)
     s.emit('create_room', { playerName:name.trim(), packs:selectedIds.length>0?selectedIds:['base'] })
-    s.on('room_created', ({code,room:r})=>{
+    s.on('room_created', ({code,room:r,playerToken})=>{
       setRoom({...r,code})
       setPhase('lobby')
-      saveCardsSession({ code, playerName: name.trim(), isHost: true })
+      saveCardsSession({ code, playerName: name.trim(), isHost: true, playerToken })
     })
     s.on('room_updated', r=>setRoom(r))
     s.on('error', msg=>{ alert(msg); setPhase('setup'); s.disconnect() })

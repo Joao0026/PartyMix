@@ -591,7 +591,8 @@ export const MINI_GAME_META={
 }
 
 export default function MiniGameModal({type,players,currentPlayer,onClose}){
-  const meta=MINI_GAME_META[type]||{title:'🎲 Mini-Jogo',color:'from-violet-600 to-purple-700'}
+  const meta=MINI_GAME_META[type]
+  if (!meta) return null
   return(
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end justify-center overlay-safe-pad">
       <motion.div initial={{y:120,opacity:0}} animate={{y:0,opacity:1}} exit={{y:120,opacity:0}}

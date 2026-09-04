@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const requireAdmin = require('../middleware/requireAdmin')
+const { peekAdmin } = require('../middleware/requireAdmin')
 const CommunitySubmission = require('../models/CommunitySubmission')
 const Card = require('../models/Card')
 const Challenge = require('../models/Challenge')
@@ -8,6 +9,9 @@ const { appendMisterCommunityPair, appendMememixCommunityLegenda } = require('..
 const { invalidateCommunityPairsCache } = require('../lib/misterWhite')
 const { auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, bool, cleanString, intInRange, mongoId, oneOf } = require('../lib/validate')
+const { resolveVoterId, unvoteUpdate, voteUpdate } = require('../lib/communityVotes')
+const { communityVoteLimiter } = require('../middleware/rateLimits')
+const { isUnder18 } = require('../lib/ageCookie')
 
 const SUBMISSION_TYPES = ['card', 'idea']
 const MODES = ['friends','family','couple','drink','cards','mister','mememix']
@@ -20,8 +24,16 @@ router.get('/', asyncRoute(async (req, res) => {
   const page = intInRange(req.query.page, { field: 'page', min: 1, max: 1000, defaultValue: 1 })
   const limit = intInRange(req.query.limit, { field: 'limit', min: 1, max: 100, defaultValue: 50 })
   const filter = {}
-  if (status) filter.status = oneOf(status, ['pending','approved','rejected'], { field: 'status' })
+  const admin = peekAdmin(req)
+  if (!admin) {
+    filter.status = 'approved'
+  } else if (status) {
+    filter.status = oneOf(status, ['pending','approved','rejected'], { field: 'status' })
+  }
   if (mode) filter.mode = oneOf(mode, MODES, { field: 'mode' })
+  if (!admin && (isUnder18(req) || req.query.safe === '1' || req.query.safe === 'true')) {
+    filter.mode = 'family'
+  }
   if (submissionType) filter.submissionType = oneOf(submissionType, SUBMISSION_TYPES, { field: 'submissionType' })
 
   const skip = (page - 1) * limit
@@ -36,6 +48,9 @@ router.get('/', asyncRoute(async (req, res) => {
 router.post('/', asyncRoute(async (req, res) => {
   const submissionType = oneOf(req.body.submissionType, SUBMISSION_TYPES, { field: 'submissionType', required: true })
   const mode = oneOf(req.body.mode, MODES, { field: 'mode', defaultValue: submissionType === 'card' ? 'friends' : undefined })
+  if (isUnder18(req) && submissionType === 'card' && mode !== 'family') {
+    return res.status(403).json({ error: 'Menores só podem submeter cartas do Modo Família.', code: 'AGE_RESTRICTED' })
+  }
   const civilWord = cleanString(req.body.civilWord, { field: 'civilWord', max: 80 })
   const undercoverWord = cleanString(req.body.undercoverWord, { field: 'undercoverWord', max: 80 })
   let text = cleanString(req.body.text, { field: 'text', max: 300, required: false })
@@ -84,25 +99,51 @@ router.post('/', asyncRoute(async (req, res) => {
 }))
 
 // POST /api/community/:id/vote
-router.post('/:id/vote', asyncRoute(async (req, res) => {
-  const sub = await CommunitySubmission.findByIdAndUpdate(
-    mongoId(req.params.id),
-    { $inc: { votes: 1 } },
+router.post('/:id/vote', communityVoteLimiter, asyncRoute(async (req, res) => {
+  const id = mongoId(req.params.id)
+  if (isUnder18(req)) {
+    const target = await CommunitySubmission.findById(id).select('mode').lean()
+    if (!target) return res.status(404).json({ error: 'Not found' })
+    if (target.mode !== 'family') {
+      return res.status(403).json({ error: 'Menores só podem votar em cartas do Modo Família.', code: 'AGE_RESTRICTED' })
+    }
+  }
+  const voterId = resolveVoterId(req, res)
+  const operation = voteUpdate(voterId)
+  const sub = await CommunitySubmission.findOneAndUpdate(
+    { _id: id, ...operation.filter },
+    operation.update,
     { new: true }
   )
-  if (!sub) return res.status(404).json({ error: 'Not found' })
+  if (sub) return res.json(sub)
 
-  res.json(sub)
+  const existing = await CommunitySubmission.findById(id)
+  if (!existing) return res.status(404).json({ error: 'Not found' })
+  res.json(existing)
 }))
 
 // POST /api/community/:id/unvote
-router.post('/:id/unvote', asyncRoute(async (req, res) => {
-  const sub = await CommunitySubmission.findById(mongoId(req.params.id))
-  if (!sub) return res.status(404).json({ error: 'Not found' })
+router.post('/:id/unvote', communityVoteLimiter, asyncRoute(async (req, res) => {
+  const id = mongoId(req.params.id)
+  if (isUnder18(req)) {
+    const target = await CommunitySubmission.findById(id).select('mode').lean()
+    if (!target) return res.status(404).json({ error: 'Not found' })
+    if (target.mode !== 'family') {
+      return res.status(403).json({ error: 'Menores só podem votar em cartas do Modo Família.', code: 'AGE_RESTRICTED' })
+    }
+  }
+  const voterId = resolveVoterId(req, res)
+  const operation = unvoteUpdate(voterId)
+  const sub = await CommunitySubmission.findOneAndUpdate(
+    { _id: id, ...operation.filter },
+    operation.update,
+    { new: true }
+  )
+  if (sub) return res.json(sub)
 
-  sub.votes = Math.max(0, (sub.votes || 0) - 1)
-  await sub.save()
-  res.json(sub)
+  const existing = await CommunitySubmission.findById(id)
+  if (!existing) return res.status(404).json({ error: 'Not found' })
+  res.json(existing)
 }))
 
 // POST /api/community/:id/approve — admin manually approves + creates real card/challenge

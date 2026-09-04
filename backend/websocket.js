@@ -7,97 +7,141 @@
 
 const { Server } = require('socket.io')
 const { assignRolesAsync: mwAssignRoles, checkEndCondition: mwCheckEnd, invalidateCommunityPairsCache } = require('./lib/misterWhite')
-const { registerAldeiaMixHandlers, handleAldeiaDisconnect } = require('./lib/aldeiaMixSocket')
+const { registerAldeiaMixHandlers, handleAldeiaDisconnect, amRooms } = require('./lib/aldeiaMixSocket')
 const { registerMemeMixHandlers, handleMemeMixDisconnect } = require('./lib/mememixSocket')
-const { cleanupOrphanUploads } = require('./lib/mememixSessions')
+const { cleanupOrphanUploads, destroyMemeMixSession, cleanupStaleUploads } = require('./lib/mememixSessions')
+const { startedAt } = require('./lib/runtime')
 const { mmRooms } = require('./lib/mememixSocket')
+const {
+  allocRoomCode,
+  authorizeRejoin,
+  cardsInHand,
+  createSocketRateLimiter,
+  findConnectedPlayer,
+  generatePlayerToken,
+  guessMatchesWord,
+  isHostSocket,
+  isInPlay,
+  normalizePlayerName,
+  publicPlayers,
+  roomsAtCapacity,
+  sanitizeDeck,
+  startRoomGc,
+  touchRoom,
+} = require('./lib/gameAuth')
+
+const MAX_CARDS_PLAYERS = 12
+const allowSocketEvent = createSocketRateLimiter()
 
 // In-memory game rooms (resets on server restart — acceptable for party game)
 const rooms = {}
 const mwRooms = {}
 
+function getMwRoom(code) {
+  return mwRooms[String(code || '').toUpperCase()] || null
+}
+
+function toNonNegativeInt(value, fallback) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : fallback
+}
+
 function initWebSocket(httpServer, options = {}) {
   const corsOrigin = options.corsOrigin !== undefined ? options.corsOrigin : true
   const io = new Server(httpServer, {
     cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
+    maxHttpBufferSize: 2e5,
   })
 
   io.on('connection', (socket) => {
+    socket.emit('server_hello', { startedAt, roomsEphemeral: true })
+    socket.on('client_ready', () => {
+      socket.emit('server_hello', { startedAt, roomsEphemeral: true })
+    })
+    socket.use((_packet, next) => {
+      if (!allowSocketEvent(socket.id)) {
+        socket.emit('error', 'Demasiados pedidos. Aguarda um momento.')
+        return next(new Error('rate_limited'))
+      }
+      next()
+    })
 
     // ── CREATE ROOM ──────────────────────────────────────────
     socket.on('create_room', ({ playerName, packs }) => {
-      const code = Math.random().toString(36).substring(2,6).toUpperCase()
-      rooms[code] = {
+      const name = normalizePlayerName(playerName)
+      if (!name) { socket.emit('error', 'Nome inválido'); return }
+      if (roomsAtCapacity(rooms)) { socket.emit('error', 'Servidor cheio'); return }
+      const code = allocRoomCode(rooms)
+      if (!code) { socket.emit('error', 'Não foi possível criar sala'); return }
+      const token = generatePlayerToken()
+      rooms[code] = touchRoom({
         code,
-        host:      playerName,
-        players:   [{ id:socket.id, name:playerName, score:0, disconnected:false }],
-        packs:     packs || ['base'],
-        status:    'waiting', // waiting | playing | ended
+        host:      name,
+        players:   [{ id:socket.id, name, token, score:0, disconnected:false }],
+        packs:     Array.isArray(packs) ? packs.slice(0, 20).map(String) : ['base'],
+        status:    'waiting',
         czarIdx:   0,
         round:     0,
         blackCard: null,
         whiteDeck: [],
         blackDeck: [],
-        hands:     {}, // { socketId: [cards] }
-        submissions:{},// { socketId: cardText }
+        hands:     {},
+        submissions:{},
         revealed:  false,
         roundWinner: null,
-      }
+      })
       socket.join(code)
-      socket.emit('room_created', { code, room: sanitize(rooms[code]) })
+      socket.emit('room_created', { code, room: sanitize(rooms[code]), playerToken: token, playerName: name })
     })
 
     // ── JOIN ROOM ─────────────────────────────────────────────
     socket.on('join_room', ({ code, playerName }) => {
-      const c = code.toUpperCase()
+      const c = String(code || '').toUpperCase()
       const room = rooms[c]
       if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+      touchRoom(room)
 
-      const name = String(playerName || '').trim().slice(0, 20)
+      const name = normalizePlayerName(playerName)
       if (!name) { socket.emit('error', 'Nome inválido'); return }
-
-      const existing = room.players.find((p) => p.name === name)
-      if (existing?.disconnected) {
-        existing.id = socket.id
-        existing.disconnected = false
-        socket.join(c)
-        finishCardsRejoin(io, room, socket, existing)
-        io.to(c).emit('room_updated', sanitize(room))
-        return
-      }
-      if (existing) { socket.emit('error', 'Nome já em uso'); return }
+      if (room.players.find((p) => p.name === name)) { socket.emit('error', 'Nome já em uso'); return }
       if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou'); return }
+      if (room.players.length >= MAX_CARDS_PLAYERS) { socket.emit('error', 'Sala cheia'); return }
 
-      room.players.push({ id: socket.id, name, score: 0, disconnected: false })
+      const token = generatePlayerToken()
+      room.players.push({ id: socket.id, name, token, score: 0, disconnected: false })
       socket.join(c)
-      socket.emit('room_joined', { code: c, room: sanitize(room) })
+      socket.emit('room_joined', { code: c, room: sanitize(room), playerToken: token, playerName: name })
       io.to(c).emit('room_updated', sanitize(room))
     })
 
-    socket.on('cards_rejoin_room', ({ code, playerName }) => {
+    socket.on('cards_rejoin_room', ({ code, playerName, playerToken }) => {
       const c = String(code || '').toUpperCase()
       const room = rooms[c]
-      const name = String(playerName || '').trim().slice(0, 20)
-      if (!room || !name) { socket.emit('error', 'Sala não encontrada'); return }
-      const existing = room.players.find((p) => p.name === name)
-      if (!existing) { socket.emit('error', 'Não estavas nesta sala'); return }
-      existing.id = socket.id
-      existing.disconnected = false
+      const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
+      if (!auth.ok) { socket.emit('error', auth.error); return }
+      touchRoom(room)
+      auth.player.id = socket.id
+      auth.player.disconnected = false
+      auth.player.previousSocketId = null
       socket.join(c)
-      finishCardsRejoin(io, room, socket, existing)
+      finishCardsRejoin(io, room, socket, auth.player)
       io.to(c).emit('room_updated', sanitize(room))
     })
 
     // ── START GAME (host only) ────────────────────────────────
     socket.on('start_game', ({ code, cardData }) => {
-      const room = rooms[code]
+      const room = rooms[String(code || '').toUpperCase()]
       if (!room) return
-      const actor = room.players.find((p) => p.id === socket.id && !p.disconnected)
-      if (!actor || room.host !== actor.name) { socket.emit('error','Só o host pode iniciar'); return }
+      touchRoom(room)
+      if (!isHostSocket(room, socket.id)) { socket.emit('error','Só o host pode iniciar'); return }
       if (room.players.filter((p) => !p.disconnected).length < 2) { socket.emit('error','Precisas de pelo menos 2 jogadores'); return }
 
-      // cardData = { black:[...], white:[...] } sent from frontend
-      const { black, white } = cardData
+      const black = sanitizeDeck(cardData?.black)
+      const white = sanitizeDeck(cardData?.white)
+      if (black.length < 5 || white.length < 14) {
+        socket.emit('error', 'Baralho inválido')
+        return
+      }
       const shuffled = arr => arr.sort(()=>Math.random()-0.5)
 
       room.blackDeck = shuffled([...black])
@@ -126,11 +170,13 @@ function initWebSocket(httpServer, options = {}) {
 
     // ── SUBMIT CARD ───────────────────────────────────────────
     socket.on('submit_card', ({ code, cardText }) => {
-      const room = rooms[code]
+      const room = rooms[String(code || '').toUpperCase()]
       if (!room || room.status!=='playing') return
-      const player = room.players.find(p=>p.id===socket.id && !p.disconnected)
+      touchRoom(room)
+      const player = findConnectedPlayer(room, socket.id)
+      ensureConnectedCardsCzar(room)
       const czar   = room.players[room.czarIdx]
-      if (!player || !czar?.id || player.id===czar.id) return
+      if (!player || player.sittingOut || !czar?.id || player.id===czar.id) return
       if (room.submissions[player.name]) return
 
       const submittedCards = (Array.isArray(cardText) ? cardText : [cardText])
@@ -138,6 +184,7 @@ function initWebSocket(httpServer, options = {}) {
         .filter(Boolean)
         .slice(0, 2)
       if (!submittedCards.length) return
+      if (!cardsInHand(room.hands[player.name] || [], submittedCards)) return
 
       room.submissions[player.name] = {
         cards: submittedCards,
@@ -150,11 +197,11 @@ function initWebSocket(httpServer, options = {}) {
       })
       socket.emit('your_hand', room.hands[player.name])
 
-      const nonCzars = room.players.filter(p=>p.id && !p.disconnected && p.id!==czar.id)
+      const nonCzars = cardsNonCzarInPlay(room)
       const allSubmitted = nonCzars.every(p=>room.submissions[p.name])
 
       io.to(code).emit('submission_update', {
-        count:   Object.keys(room.submissions).length,
+        count:   nonCzars.filter((p) => room.submissions[p.name]).length,
         total:   nonCzars.length,
         allDone: allSubmitted,
       })
@@ -162,10 +209,12 @@ function initWebSocket(httpServer, options = {}) {
 
     // ── REVEAL CARDS (czar only) ──────────────────────────────
     socket.on('reveal_cards', ({ code }) => {
-      const room = rooms[code]
+      const room = rooms[String(code || '').toUpperCase()]
       if (!room) return
+      touchRoom(room)
+      ensureConnectedCardsCzar(room)
       const czar = room.players[room.czarIdx]
-      if (!czar?.id || socket.id !== czar.id) return
+      if (!czar?.id || czar.disconnected || socket.id !== czar.id) return
       room.revealed = true
       const subs = Object.entries(room.submissions).map(([pname, card]) => ({
         playerId: pname,
@@ -176,10 +225,12 @@ function initWebSocket(httpServer, options = {}) {
 
     // ── PICK WINNER (czar only) ───────────────────────────────
     socket.on('pick_winner', ({ code, winnerId }) => {
-      const room = rooms[code]
+      const room = rooms[String(code || '').toUpperCase()]
       if (!room) return
+      touchRoom(room)
+      ensureConnectedCardsCzar(room)
       const czar = room.players[room.czarIdx]
-      if (!czar?.id || socket.id !== czar.id) return
+      if (!czar?.id || czar.disconnected || socket.id !== czar.id) return
 
       const winner = room.players.find(p=>p.name===winnerId || p.id===winnerId)
       if (!winner) return
@@ -196,27 +247,27 @@ function initWebSocket(httpServer, options = {}) {
 
     // ── NEXT ROUND (host only) ────────────────────────────────
     socket.on('next_round', ({ code }) => {
-      const room = rooms[code]
+      const room = rooms[String(code || '').toUpperCase()]
       if (!room) return
-      const actor = room.players.find((p) => p.id === socket.id && !p.disconnected)
-      if (!actor || room.host !== actor.name) return
+      touchRoom(room)
+      if (!isHostSocket(room, socket.id)) return
       if (!room.blackDeck.length) {
         room.status = 'ended'
-        io.to(code).emit('game_ended', { scores: room.players.map(p=>({name:p.name,score:p.score})).sort((a,b)=>b.score-a.score) })
+        io.to(room.code).emit('game_ended', { scores: room.players.map(p=>({name:p.name,score:p.score})).sort((a,b)=>b.score-a.score) })
         return
       }
-      room.czarIdx   = (room.czarIdx + 1) % room.players.length
+      room.czarIdx = findNextConnectedCardsIdx(room, room.czarIdx)
+      if (room.czarIdx < 0) return
       room.round    += 1
       room.blackCard = room.blackDeck.shift()
       room.submissions = {}
       room.revealed   = false
       room.roundWinner= null
 
-      io.to(code).emit('new_round', {
+      io.to(room.code).emit('new_round', {
         round:     room.round,
         czarIdx:   room.czarIdx,
         czarName:  room.players[room.czarIdx].name,
-        czarId:    room.players[room.czarIdx].id,
         blackCard: room.blackCard,
       })
       room.players.filter((p) => p.id && !p.disconnected).forEach(p => {
@@ -224,20 +275,64 @@ function initWebSocket(httpServer, options = {}) {
       })
     })
 
+    socket.on('cards_sit_out', ({ code, playerName }) => {
+      const room = rooms[String(code || '').toUpperCase()]
+      if (!room || room.status !== 'playing') return
+      touchRoom(room)
+      const actor = findConnectedPlayer(room, socket.id)
+      if (!actor) return
+      const targetName = normalizePlayerName(playerName) || actor.name
+      if (targetName !== actor.name && !isHostSocket(room, socket.id)) return
+      const target = room.players.find((p) => p.name === targetName)
+      if (!target || target.sittingOut) return
+      target.sittingOut = true
+      const czarChanged = ensureConnectedCardsCzar(room)
+      io.to(room.code).emit('room_updated', sanitize(room))
+      emitCardsRoundState(io, room, czarChanged)
+    })
+
+    socket.on('cards_sit_in', ({ code }) => {
+      const room = rooms[String(code || '').toUpperCase()]
+      if (!room) return
+      touchRoom(room)
+      const actor = findConnectedPlayer(room, socket.id)
+      if (!actor || !actor.sittingOut) return
+      actor.sittingOut = false
+      io.to(room.code).emit('room_updated', sanitize(room))
+      if (room.status === 'playing') emitCardsRoundState(io, room, false)
+    })
+
+    socket.on('cards_skip_pending', ({ code }) => {
+      const room = rooms[String(code || '').toUpperCase()]
+      if (!room || room.status !== 'playing' || room.revealed) return
+      touchRoom(room)
+      if (!isHostSocket(room, socket.id)) return
+      if (!Object.keys(room.submissions || {}).length) return
+      skipPendingCardsPlayers(room)
+      const czarChanged = ensureConnectedCardsCzar(room)
+      io.to(room.code).emit('room_updated', sanitize(room))
+      emitCardsRoundState(io, room, czarChanged)
+    })
+
     // ── MISTER WHITE — CREATE ─────────────────────────────────
     socket.on('mw_create_room', ({ playerName, settings }) => {
-      const code = Math.random().toString(36).substring(2, 6).toUpperCase()
+      const name = normalizePlayerName(playerName)
+      if (!name) { socket.emit('error', 'Nome inválido'); return }
+      if (roomsAtCapacity(mwRooms)) { socket.emit('error', 'Servidor cheio'); return }
+      const code = allocRoomCode(mwRooms)
+      if (!code) { socket.emit('error', 'Não foi possível criar sala'); return }
+      const token = generatePlayerToken()
       const cfg = settings || {}
-      mwRooms[code] = {
+      mwRooms[code] = touchRoom({
         code,
-        host: playerName,
+        host: name,
         hostId: socket.id,
-        players: [{ id: socket.id, name: playerName, disconnected: false }],
+        players: [{ id: socket.id, name, token, disconnected: false }],
         settings: {
-          numUndercover: Math.max(0, Number(cfg.numUndercover) || 1),
-          numMW: Math.max(0, Number(cfg.numMW) || 1),
-          wordPack: cfg.wordPack || 'geral',
-          difficulty: cfg.difficulty || 'normal',
+          numUndercover: toNonNegativeInt(cfg.numUndercover, 1),
+          numMW: toNonNegativeInt(cfg.numMW, 0),
+          wordPack: String(cfg.wordPack || 'geral').slice(0, 40),
+          difficulty: String(cfg.difficulty || 'normal').slice(0, 20),
           discussionSeconds: [60, 90, 120].includes(Number(cfg.discussionSeconds)) ? Number(cfg.discussionSeconds) : 90,
         },
         status: 'waiting',
@@ -250,80 +345,74 @@ function initWebSocket(httpServer, options = {}) {
         revealReady: [],
         mwGuessIdx: null,
         gameResult: null,
-      }
+      })
       socket.join(code)
-      socket.emit('mw_room_created', { code, room: sanitizeMw(mwRooms[code]) })
+      socket.emit('mw_room_created', { code, room: sanitizeMw(mwRooms[code]), playerToken: token, playerName: name })
     })
 
     // ── MISTER WHITE — JOIN ───────────────────────────────────
     socket.on('mw_join_room', ({ code, playerName }) => {
-      const c = code.toUpperCase()
+      const c = String(code || '').toUpperCase()
       const room = mwRooms[c]
       if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+      touchRoom(room)
 
-      const name = String(playerName || '').trim().slice(0, 20)
+      const name = normalizePlayerName(playerName)
       if (!name) { socket.emit('error', 'Nome inválido'); return }
-
-      const existing = room.players.find((p) => p.name === name)
-      if (existing?.disconnected) {
-        migrateMwSockets(room, existing.id, socket.id)
-        existing.id = socket.id
-        existing.disconnected = false
-        if (room.host === name) room.hostId = socket.id
-        socket.join(c)
-        finishMwRejoin(io, room, socket, existing)
-        io.to(c).emit('mw_room_updated', sanitizeMw(room))
-        return
-      }
-      if (existing) { socket.emit('error', 'Nome já em uso'); return }
+      if (room.players.find((p) => p.name === name)) { socket.emit('error', 'Nome já em uso'); return }
       if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou'); return }
       if (room.players.length >= 12) { socket.emit('error', 'Sala cheia (máx. 12)'); return }
 
-      room.players.push({ id: socket.id, name, disconnected: false })
+      const token = generatePlayerToken()
+      room.players.push({ id: socket.id, name, token, disconnected: false })
       socket.join(c)
-      socket.emit('mw_room_joined', { code: c, room: sanitizeMw(room) })
+      socket.emit('mw_room_joined', { code: c, room: sanitizeMw(room), playerToken: token, playerName: name })
       io.to(c).emit('mw_room_updated', sanitizeMw(room))
     })
 
-    socket.on('mw_rejoin_room', ({ code, playerName }) => {
+    socket.on('mw_rejoin_room', ({ code, playerName, playerToken }) => {
       const c = String(code || '').toUpperCase()
       const room = mwRooms[c]
-      const name = String(playerName || '').trim().slice(0, 20)
-      if (!room || !name) { socket.emit('error', 'Sala não encontrada'); return }
-      const existing = room.players.find((p) => p.name === name)
-      if (!existing) { socket.emit('error', 'Não estavas nesta sala'); return }
-      migrateMwSockets(room, existing.id, socket.id)
-      existing.id = socket.id
-      existing.disconnected = false
-      if (room.host === name) room.hostId = socket.id
+      const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
+      if (!auth.ok) { socket.emit('error', auth.error); return }
+      touchRoom(room)
+      migrateMwSockets(room, auth.player.id || auth.player.previousSocketId, socket.id)
+      auth.player.id = socket.id
+      auth.player.disconnected = false
+      auth.player.previousSocketId = null
+      if (room.host === auth.player.name) room.hostId = socket.id
       socket.join(c)
-      finishMwRejoin(io, room, socket, existing)
+      finishMwRejoin(io, room, socket, auth.player)
       io.to(c).emit('mw_room_updated', sanitizeMw(room))
     })
 
     // ── MISTER WHITE — UPDATE SETTINGS (host) ─────────────────
     socket.on('mw_update_settings', ({ code, settings }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.hostId !== socket.id || room.status !== 'waiting') return
       if (settings) {
-        if (settings.numUndercover != null) room.settings.numUndercover = Math.max(0, Number(settings.numUndercover) || 0)
-        if (settings.numMW != null) room.settings.numMW = Math.max(0, Number(settings.numMW) || 0)
+        if (settings.numUndercover != null) room.settings.numUndercover = toNonNegativeInt(settings.numUndercover, 0)
+        if (settings.numMW != null) room.settings.numMW = toNonNegativeInt(settings.numMW, 0)
         if (settings.wordPack) room.settings.wordPack = settings.wordPack
         if (settings.difficulty) room.settings.difficulty = settings.difficulty
         if ([60, 90, 120].includes(Number(settings.discussionSeconds))) {
           room.settings.discussionSeconds = Number(settings.discussionSeconds)
         }
       }
-      io.to(code).emit('mw_room_updated', sanitizeMw(room))
+      io.to(room.code).emit('mw_room_updated', sanitizeMw(room))
     })
 
     // ── MISTER WHITE — START ──────────────────────────────────
     socket.on('mw_start_game', async ({ code }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room) return
       if (room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
-      if (room.players.filter((p) => !p.disconnected).length < 3) { socket.emit('error', 'Precisas de pelo menos 3 jogadores'); return }
+      room.players = room.players.filter((p) => !p.disconnected)
+      if (room.players.length < 3) { socket.emit('error', 'Precisas de pelo menos 3 jogadores'); return }
       const maxSpec = Math.max(0, room.players.length - 2)
+      if (room.settings.numMW + room.settings.numUndercover < 1) {
+        socket.emit('error', 'Escolhe pelo menos um Infiltrado ou Mister White'); return
+      }
       if (room.settings.numMW + room.settings.numUndercover > maxSpec) {
         socket.emit('error', 'Demasiados especiais para este número de jogadores'); return
       }
@@ -353,45 +442,50 @@ function initWebSocket(httpServer, options = {}) {
           })
         })
         setImmediate(() => {
-          io.to(code).emit('mw_game_started', sanitizeMw(room))
+          io.to(room.code).emit('mw_game_started', sanitizeMw(room))
         })
       } catch (err) {
-        socket.emit('error', err.message || 'Erro ao iniciar jogo')
+        socket.emit('error', 'Erro ao iniciar jogo')
       }
     })
 
     // ── MISTER WHITE — REVEAL READY ───────────────────────────
     socket.on('mw_reveal_ready', ({ code }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.status !== 'reveal') return
+      const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
+      if (!player) return
       if (!room.revealReady.includes(socket.id)) room.revealReady.push(socket.id)
-      io.to(code).emit('mw_reveal_progress', {
+      const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
+      room.revealReady = room.revealReady.filter((id) => connectedIds.has(id))
+      const total = connectedIds.size
+      io.to(room.code).emit('mw_reveal_progress', {
         ready: room.revealReady.length,
-        total: room.players.length,
+        total,
       })
-      if (room.revealReady.length >= room.players.length) {
+      if (room.revealReady.length >= total) {
         room.status = 'playing'
         room.timeLeft = room.settings.discussionSeconds
-        io.to(code).emit('mw_phase', sanitizeMw(room))
+        io.to(room.code).emit('mw_phase', sanitizeMw(room))
       }
     })
 
     // ── MISTER WHITE — HOST: START VOTE ───────────────────────
     socket.on('mw_start_vote', ({ code }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.hostId !== socket.id) return
       if (room.status !== 'playing') return
       room.status = 'vote'
       room.votes = {}
-      io.to(code).emit('mw_phase', sanitizeMw(room))
+      io.to(room.code).emit('mw_phase', sanitizeMw(room))
     })
 
     // ── MISTER WHITE — CAST VOTE ──────────────────────────────
     socket.on('mw_cast_vote', ({ code, targetOrigIdx }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.status !== 'vote') return
 
-      const voterIdx = room.players.findIndex((p) => p.id === socket.id)
+      const voterIdx = room.players.findIndex((p) => p.id === socket.id && !p.disconnected)
       if (voterIdx < 0 || room.eliminated.includes(voterIdx)) return
       if (room.votes[socket.id] != null) return
 
@@ -404,42 +498,41 @@ function initWebSocket(httpServer, options = {}) {
       }
 
       room.votes[socket.id] = target
-      io.to(code).emit('mw_vote_update', sanitizeMw(room))
+      io.to(room.code).emit('mw_vote_update', sanitizeMw(room))
 
-      const activeCount = room.players.filter((_, i) => !room.eliminated.includes(i)).length
+      const activeCount = room.players.filter((p, i) => !p.disconnected && p.id && !room.eliminated.includes(i)).length
       const votesCast = Object.keys(room.votes).filter((id) => {
         const vi = room.players.findIndex((p) => p.id === id)
-        return vi >= 0 && !room.eliminated.includes(vi)
+        return vi >= 0 && !room.players[vi].disconnected && !room.eliminated.includes(vi)
       }).length
 
       if (votesCast >= activeCount) {
-        mwResolveVotes(room, code, io)
+        mwResolveVotes(room, room.code, io)
       }
     })
 
     // ── MISTER WHITE — HOST: ELIMINATE (legacy fallback) ───────
     socket.on('mw_eliminate', ({ code, targetOrigIdx }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.hostId !== socket.id || room.status !== 'vote') return
-      mwEliminatePlayer(room, code, io, Number(targetOrigIdx))
+      mwEliminatePlayer(room, room.code, io, Number(targetOrigIdx))
     })
 
     // ── MISTER WHITE — MW GUESS ───────────────────────────────
     socket.on('mw_guess', ({ code, guess }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.status !== 'mw_guess') return
       const mwIdx = room.mwGuessIdx
       const mwPlayer = room.players[mwIdx]
       if (!mwPlayer || mwPlayer.id !== socket.id) return
 
-      const g = String(guess || '').toLowerCase().trim()
-      const civil = room.civilWord.toLowerCase().trim()
-      const correct = g === civil || civil.startsWith(g)
+      const g = String(guess || '').trim()
+      const correct = guessMatchesWord(g, room.civilWord)
 
       if (correct) {
         room.gameResult = 'mw_wins'
         room.status = 'result'
-        io.to(code).emit('mw_phase', sanitizeMw(room, true))
+        io.to(room.code).emit('mw_phase', sanitizeMw(room, true))
         return
       }
 
@@ -450,24 +543,24 @@ function initWebSocket(httpServer, options = {}) {
         if (result) {
           room.gameResult = result
           room.status = 'result'
-          io.to(code).emit('mw_phase', sanitizeMw(room, true))
+          io.to(room.code).emit('mw_phase', sanitizeMw(room, true))
           return
         }
         room.roundNum += 1
         room.status = 'playing'
         room.timeLeft = room.settings.discussionSeconds
         room.mwGuessIdx = null
-        io.to(code).emit('mw_phase', sanitizeMw(room))
+        io.to(room.code).emit('mw_phase', sanitizeMw(room))
       } else {
         room.gameResult = 'civils_win'
         room.status = 'result'
-        io.to(code).emit('mw_phase', sanitizeMw(room, true))
+        io.to(room.code).emit('mw_phase', sanitizeMw(room, true))
       }
     })
 
     // ── MISTER WHITE — RESTART (host) ─────────────────────────
     socket.on('mw_restart', ({ code }) => {
-      const room = mwRooms[code]
+      const room = getMwRoom(code)
       if (!room || room.hostId !== socket.id) return
       room.status = 'waiting'
       room.roles = null
@@ -476,7 +569,7 @@ function initWebSocket(httpServer, options = {}) {
       room.gameResult = null
       room.mwGuessIdx = null
       room.roundNum = 1
-      io.to(code).emit('mw_room_updated', sanitizeMw(room))
+      io.to(room.code).emit('mw_room_updated', sanitizeMw(room))
     })
 
     registerAldeiaMixHandlers(io, socket)
@@ -488,24 +581,66 @@ function initWebSocket(httpServer, options = {}) {
         const player = room.players.find((p) => p.id === socket.id)
         if (!player) return
         player.disconnected = true
+        player.previousSocketId = socket.id
         player.id = null
+        promoteCardsHostIfNeeded(room)
+        const czarChanged = ensureConnectedCardsCzar(room)
         io.to(room.code).emit('room_updated', sanitize(room))
         io.to(room.code).emit('player_disconnected', { name: player.name })
+        if (room.status === 'playing') {
+          emitCardsRoundState(io, room, czarChanged)
+        }
       })
       Object.values(mwRooms).forEach((room) => {
         const player = room.players.find((p) => p.id === socket.id)
         if (!player) return
         player.disconnected = true
+        player.previousSocketId = socket.id
         player.id = null
-        io.to(room.code).emit('mw_room_updated', sanitizeMw(room))
+        const hostChanged = promoteMwHostIfNeeded(room)
+        const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
+        room.revealReady = (room.revealReady || []).filter((id) => connectedIds.has(id))
+        if (room.status === 'reveal') {
+          io.to(room.code).emit('mw_reveal_progress', {
+            ready: room.revealReady.length,
+            total: connectedIds.size,
+          })
+          if (room.revealReady.length >= connectedIds.size && connectedIds.size > 0) {
+            room.status = 'playing'
+            room.timeLeft = room.settings.discussionSeconds
+            io.to(room.code).emit('mw_phase', sanitizeMw(room))
+          }
+        } else if (room.status === 'vote') {
+          const votesNeeded = connectedMwActiveCount(room)
+          if (connectedMwVotesCast(room) >= votesNeeded && votesNeeded > 0) {
+            mwResolveVotes(room, room.code, io)
+          }
+        }
+        const state = sanitizeMw(room, room.status === 'result')
+        io.to(room.code).emit('mw_room_updated', state)
+        if (hostChanged && room.status !== 'waiting') {
+          io.to(room.code).emit('mw_phase', state)
+        }
       })
       handleAldeiaDisconnect(io, socket)
       handleMemeMixDisconnect(io, socket)
     })
   })
 
+  startRoomGc(rooms)
+  startRoomGc(mwRooms)
+  startRoomGc(amRooms)
+  startRoomGc(mmRooms, { onDestroy: (room) => { try { destroyMemeMixSession(room.code) } catch { /* ignore */ } } })
   cleanupOrphanUploads(Object.keys(mmRooms))
-  console.log('✅ WebSocket (Socket.io) ready')
+  cleanupStaleUploads()
+  const uploadGc = setInterval(() => {
+    try {
+      cleanupOrphanUploads(Object.keys(mmRooms))
+      cleanupStaleUploads()
+    } catch { /* ignore */ }
+  }, 10 * 60 * 1000)
+  if (typeof uploadGc.unref === 'function') uploadGc.unref()
+  console.log('✅ WebSocket (Socket.io) ready — salas em memória, morrem se o processo reiniciar')
   return io
 }
 
@@ -515,13 +650,15 @@ function finishCardsRejoin(io, room, socket, player) {
     code: c,
     room: sanitize(room),
     playerName: player.name,
+    playerToken: player.token,
     isHost: room.host === player.name,
   })
   if (room.status === 'playing') {
-    socket.emit('game_started', buildGameState(room))
+    ensureConnectedCardsCzar(room)
+    socket.emit('game_started', buildGameState(room, player.name))
     socket.emit('your_hand', room.hands[player.name] || [])
   } else if (room.status === 'waiting') {
-    socket.emit('room_joined', { code: c, room: sanitize(room) })
+    socket.emit('room_joined', { code: c, room: sanitize(room), playerToken: player.token, playerName: player.name })
   }
 }
 
@@ -544,6 +681,7 @@ function finishMwRejoin(io, room, socket, player) {
     code: c,
     room: sanitizeMw(room),
     playerName: player.name,
+    playerToken: player.token,
     isHost: room.host === player.name,
   })
   if (room.roles && idx >= 0 && room.roles[idx]) {
@@ -565,10 +703,10 @@ function sanitize(room) {
   return {
     code:      room.code,
     host:      room.host,
-    players:   room.players.map(p=>({ name:p.name, score:p.score, disconnected: !!p.disconnected })),
+    players:   publicPlayers(room.players),
     status:    room.status,
     czarIdx:   room.czarIdx,
-    czarId:    room.players[room.czarIdx]?.id,
+    czarName:  room.players[room.czarIdx]?.name,
     round:     room.round,
     blackCard: room.blackCard,
     revealed:  room.revealed,
@@ -576,15 +714,113 @@ function sanitize(room) {
   }
 }
 
-function buildGameState(room) {
+function cardsNonCzarInPlay(room) {
+  const czar = room.players[room.czarIdx]
+  return room.players.filter((p) => isInPlay(p) && p.name !== czar?.name)
+}
+
+function skipPendingCardsPlayers(room) {
+  const czar = room.players[room.czarIdx]
+  let n = 0
+  for (const p of room.players) {
+    if (!isInPlay(p) || p.name === czar?.name) continue
+    if (!room.submissions?.[p.name]) {
+      p.sittingOut = true
+      n += 1
+    }
+  }
+  return n
+}
+
+function buildGameState(room, viewerName = null) {
+  const czar = room.players[room.czarIdx]
+  const connectedNonCzars = cardsNonCzarInPlay(room)
+  const revealedSubmissions = room.revealed
+    ? Object.entries(room.submissions || {}).map(([pname, card]) => ({ playerId: pname, card }))
+    : []
   return {
     status:    room.status,
     round:     room.round,
     czarIdx:   room.czarIdx,
     czarName:  room.players[room.czarIdx]?.name,
-    czarId:    room.players[room.czarIdx]?.id,
     blackCard: room.blackCard,
-    players:   room.players.map(p=>({ name:p.name, score:p.score })),
+    players:   room.players.map(p=>({ name:p.name, score:p.score, disconnected: !!p.disconnected, sittingOut: !!p.sittingOut })),
+    revealed:  !!room.revealed,
+    submissions: revealedSubmissions,
+    roundWinner: room.roundWinner || null,
+    roundEnded: !!room.roundWinner,
+    submittedThisRound: !!(viewerName && room.submissions?.[viewerName]),
+    submissionUpdate: {
+      count: connectedNonCzars.filter((p) => room.submissions?.[p.name]).length,
+      total: connectedNonCzars.length,
+      allDone: connectedNonCzars.every((p) => room.submissions?.[p.name]),
+    },
+  }
+}
+
+function findNextConnectedCardsIdx(room, startIdx) {
+  if (!room.players.length) return -1
+  for (let offset = 1; offset <= room.players.length; offset += 1) {
+    const idx = (startIdx + offset) % room.players.length
+    const player = room.players[idx]
+    if (isInPlay(player)) return idx
+  }
+  return -1
+}
+
+function ensureConnectedCardsCzar(room) {
+  const current = room.players[room.czarIdx]
+  if (isInPlay(current)) return false
+  const nextIdx = findNextConnectedCardsIdx(room, room.czarIdx)
+  if (nextIdx < 0) return false
+  room.czarIdx = nextIdx
+  delete room.submissions[room.players[nextIdx].name]
+  return true
+}
+
+function promoteCardsHostIfNeeded(room) {
+  const current = room.players.find((p) => p.name === room.host)
+  if (current?.id && !current.disconnected) return false
+  const next = room.players.find((p) => p.id && !p.disconnected)
+  if (!next) return false
+  room.host = next.name
+  return true
+}
+
+function promoteMwHostIfNeeded(room) {
+  const current = room.players.find((p) => p.id === room.hostId && !p.disconnected)
+  if (current) return false
+  const next = room.players.find((p) => p.id && !p.disconnected)
+  if (!next) return false
+  room.host = next.name
+  room.hostId = next.id
+  return true
+}
+
+function emitCardsRoundState(io, room, czarChanged = false) {
+  const czar = room.players[room.czarIdx]
+  const nonCzars = cardsNonCzarInPlay(room)
+  const update = {
+    count: nonCzars.filter((p) => room.submissions?.[p.name]).length,
+    total: nonCzars.length,
+    allDone: nonCzars.every((p) => room.submissions?.[p.name]),
+  }
+  io.to(room.code).emit('submission_update', update)
+  if (czarChanged) {
+    io.to(room.code).emit('new_round', {
+      round: room.round,
+      czarIdx: room.czarIdx,
+      czarName: czar?.name,
+      blackCard: room.blackCard,
+      preserveRound: true,
+    })
+  }
+  if (room.revealed) {
+    const submissions = Object.entries(room.submissions || {}).map(([pname, card]) => ({
+      playerId: pname,
+      card,
+    }))
+    io.to(room.code).emit('cards_revealed', { submissions })
   }
 }
 
@@ -593,7 +829,7 @@ function computeVoteCounts(room) {
   if (!room.votes) return counts
   for (const [voterId, targetIdx] of Object.entries(room.votes)) {
     const voterIdx = room.players.findIndex((p) => p.id === voterId)
-    if (voterIdx < 0 || room.eliminated.includes(voterIdx)) continue
+    if (voterIdx < 0 || room.players[voterIdx].disconnected || room.eliminated.includes(voterIdx)) continue
     const t = Number(targetIdx)
     if (room.eliminated.includes(t)) continue
     counts[t] = (counts[t] || 0) + 1
@@ -676,26 +912,22 @@ function sanitizeMw(room, revealAll = false) {
       }))
     : []
   const voteCounts = computeVoteCounts(room)
-  const votesNeeded = room.players.filter((_, i) => !room.eliminated.includes(i)).length
-  const votesCast = room.votes
-    ? Object.keys(room.votes).filter((id) => {
-      const vi = room.players.findIndex((p) => p.id === id)
-      return vi >= 0 && !room.eliminated.includes(vi)
-    }).length
-    : 0
+  const votesNeeded = connectedMwActiveCount(room)
+  const votesCast = connectedMwVotesCast(room)
+  const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
+  const revealReady = (room.revealReady || []).filter((id) => connectedIds.has(id)).length
 
   return {
     code: room.code,
     host: room.host,
-    hostId: room.hostId,
-    players: room.players.map((p) => ({ id: p.id, name: p.name, disconnected: !!p.disconnected })),
+    players: publicPlayers(room.players),
     settings: room.settings,
     status: room.status,
     roundNum: room.roundNum,
     timeLeft: room.timeLeft,
     eliminated: [...room.eliminated],
-    revealReady: room.revealReady.length,
-    revealTotal: room.players.length,
+    revealReady,
+    revealTotal: connectedIds.size,
     rolesPublic: activeRoles,
     gameResult: room.gameResult,
     civilWord: revealAll || room.status === 'result' ? room.civilWord : undefined,
@@ -708,4 +940,27 @@ function sanitizeMw(room, revealAll = false) {
   }
 }
 
-module.exports = { initWebSocket }
+function connectedMwActiveCount(room) {
+  return room.players.filter((p, i) => p.id && !p.disconnected && !room.eliminated.includes(i)).length
+}
+
+function connectedMwVotesCast(room) {
+  if (!room.votes) return 0
+  return Object.keys(room.votes).filter((id) => {
+    const idx = room.players.findIndex((p) => p.id === id)
+    return idx >= 0 && !room.players[idx].disconnected && !room.eliminated.includes(idx)
+  }).length
+}
+
+module.exports = {
+  initWebSocket,
+  _test: {
+    connectedMwActiveCount,
+    connectedMwVotesCast,
+    cardsNonCzarInPlay,
+    ensureConnectedCardsCzar,
+    skipPendingCardsPlayers,
+    promoteCardsHostIfNeeded,
+    promoteMwHostIfNeeded,
+  },
+}

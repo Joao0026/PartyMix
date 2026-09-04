@@ -12,12 +12,12 @@ export const MODE_VISUAL = {
     background: '#080b14',
   },
   friends: {
-    glow: 'rgba(34,211,238,0.14)',
-    background: 'radial-gradient(ellipse at 50% 0%, rgba(34,211,238,0.11) 0%, #1e2836 44%, #243044 100%)',
+    glow: 'rgba(34,211,238,0.18)',
+    background: 'radial-gradient(ellipse at 50% 0%, rgba(34,211,238,0.16) 0%, #15202c 44%, #1a2433 100%)',
   },
   family: {
-    glow: 'rgba(56,189,248,0.12)',
-    background: 'radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.10) 0%, #1e2836 44%, #243044 100%)',
+    glow: 'rgba(125,211,252,0.42)',
+    background: 'radial-gradient(ellipse at 50% 0%, rgba(56,189,248,0.32) 0%, #2a4a63 40%, #1c3a52 100%)',
   },
   drink: {
     glow: 'rgba(245,158,11,0.18)',
@@ -32,8 +32,8 @@ export const MODE_VISUAL = {
     background: 'radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.13) 0%, #1e2836 44%, #243044 100%)',
   },
   cards: {
-    glow: 'rgba(234,179,8,0.16)',
-    background: 'radial-gradient(ellipse at 50% 0%, rgba(234,179,8,0.12) 0%, #1e2836 44%, #243044 100%)',
+    glow: 'rgba(248,250,252,0.10)',
+    background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.07) 0%, #14161e 44%, #0c0d12 100%)',
   },
   mememix: {
     glow: 'rgba(236,72,153,0.16)',

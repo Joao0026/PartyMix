@@ -11,8 +11,11 @@
     "seed": "node seeds/seed.js",
     "import:pack": "node seeds/importPack.js",
     "seed:packs": "node seeds/importAllPacks.js",
+    "drink:distribute": "node scripts/distributeDrinkCards.js",
+    "drink:assign-packs": "node scripts/assignDrinkPacks.js",
+    "migrate:community-voters": "node scripts/migrateCommunityVoters.js",
     "audit:cards": "node ../scripts/audit-cards.js",
-    "check": "node --check server.js && node --check websocket.js && node --check lib/packImport.js && node --check lib/packQuery.js && node --check lib/communityDrink.js && node --check lib/contentNormalize.js && node --check lib/drinkFingerprint.js && node --check lib/contentCollect.js && node --check lib/contentSimilarity.js && node --check lib/groqEmbeddings.js && node --check lib/contentAudit.js && node --check routes/admin.js && node --check routes/ai.js && node --check routes/community.js && node --check routes/cardroom.js && node --check routes/cards.js && node --check routes/challenges.js && node --check routes/drink.js && node --check routes/lobby.js",
+    "check": "node --check server.js && node --check websocket.js && node --check lib/gameAuth.js && node --check lib/ageCookie.js && node --check lib/contentSafety.js && node --check lib/runtime.js && node --check lib/packImport.js && node --check lib/packQuery.js && node --check lib/communityDrink.js && node --check lib/communityVotes.js && node --check lib/drinkPackAssign.js && node --check lib/localMememix.js && node --check lib/mememixSocket.js && node --check lib/contentNormalize.js && node --check lib/drinkFingerprint.js && node --check lib/contentCollect.js && node --check lib/contentSimilarity.js && node --check lib/groqEmbeddings.js && node --check lib/contentAudit.js && node --check routes/admin.js && node --check routes/ai.js && node --check routes/age.js && node --check routes/community.js && node --check routes/cardroom.js && node --check routes/cards.js && node --check routes/challenges.js && node --check routes/drink.js && node --check routes/lobby.js && node --check routes/mememix.js && node --check routes/positions.js && node --check routes/dice.js && node --check scripts/migrateCommunityVoters.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
@@ -20,9 +23,9 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.5.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3",
-    "nanoid": "^3.3.7",
+    "mongoose": "^8.24.1",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {

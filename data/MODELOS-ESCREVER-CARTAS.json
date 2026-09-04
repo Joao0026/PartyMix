@@ -180,6 +180,10 @@
     "mode": "drink",
     "pack": "base",
     "description": "Estrutura real em data/drink/decks.json. Importar substitui o pack inteiro na BD.",
+    "premium": false,
+    "intensity": "moderada",
+    "ageRating": "18+",
+    "teaser": "Frase curta para apresentar o pack no catálogo.",
     "decks": {
       "waterfall": {
         "label": "🌊 Waterfall & Beber",
@@ -273,7 +277,8 @@
   },
 
   "snippet_adicionar_carta_beber": {
-    "_onde": "data/drink/decks.json → decks.{baralho_id}.cards → acrescenta ao array",
+    "_onde": "No JSON da carta (ex. data/drink/decks.json) mete \"pack\": \"noite-academica\". O baralho fica o mesmo. Depois: npm run drink:distribute && npm run seed:packs",
+    "_packs": ["base", "noite-academica", "sem-filtros", "casais-festa"],
     "baralhos_disponiveis": [
       "waterfall",
       "eununca",
@@ -288,11 +293,12 @@
       "bluff",
       "maldicao",
       "historia",
-      "extreme"
+      "cadeia"
     ],
     "por_type": {
       "_image_opcional": "image: /cards/ficheiro.webp (public/) ou https://... — omitir = só emoji",
       "beber": {
+        "pack": "noite-academica",
         "type": "beber",
         "emoji": "🍺",
         "title": "Bebe 2!",
@@ -411,6 +417,22 @@
 
   "modo_beber_na_app": {
     "_descricao": "Como cada type aparece no Modo Beber (DrinkGame.jsx)",
+    "modelo_comercial_packs": {
+      "_regra": "Pack é o produto por tema/ocasião; baralho é uma mecânica dentro do pack.",
+      "exemplos_pack": ["Essencial", "Noite Académica", "Sem Filtros", "Casais na Festa"],
+      "exemplos_baralho": ["Eu Nunca", "Regras", "Desafios", "Preferias?", "Bluff"],
+      "premium": "false = selecionável; true = apenas teaser bloqueado até existir compra real",
+      "intensity": "Informação do pack: leve, moderada, intensa ou picante. Não é dificuldade.",
+      "ageRating": "Classificação etária apresentada na seleção.",
+      "teaser": "Resumo curto do valor do pack premium, sem revelar as cartas.",
+      "seguranca": "Nunca colocar cartas premium no fallback offline nem devolvê-las pela API sem entitlement.",
+      "campos_carta": {
+        "pack": "base | noite-academica | sem-filtros | casais-festa — destino do drink:assign-packs / drink:distribute",
+        "intensity": "1–5 na carta (ritmo da sessão). O intensity do pack é o tom comercial.",
+        "act": "1 aquecimento, 2 motor, 3 pico",
+        "rarity": "common | rare (impostor, miniboss, alliance, momento caos)"
+      }
+    },
     "poder_sorte_azar": {
       "baralho_id": "poder",
       "nota": "Mesmo baralho na configuração; cada carta muda cor consoante o type.",

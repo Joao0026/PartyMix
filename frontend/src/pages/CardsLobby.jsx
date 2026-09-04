@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Wifi } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import { io } from 'socket.io-client'
@@ -105,18 +104,18 @@ export default function CardsLobby() {
       })
     }
     s.once('connect', () => {
-      s.on('cards_rejoined', ({ room: r, playerName: pn, isHost: ih }) => {
+      s.on('cards_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
         setRoom(r)
         roomRef.current = r
         setJoining(false)
-        saveCardsSession({ code: r.code, playerName: pn || saved.playerName, isHost: ih })
+        saveCardsSession({ code: r.code, playerName: pn || saved.playerName, isHost: ih, playerToken })
         if (r.status === 'playing') {
           enterGameAfterHand({ status: r.status, round: r.round, czarIdx: r.czarIdx, czarName: r.players[r.czarIdx]?.name, czarId: r.czarId, blackCard: r.blackCard, players: r.players })
         }
       })
       s.on('your_hand', (hand) => { handRef.current = hand })
       s.on('error', (msg) => { setError(msg); setJoining(false) })
-      s.emit('cards_rejoin_room', { code: saved.code, playerName: saved.playerName })
+      s.emit('cards_rejoin_room', { code: saved.code, playerName: saved.playerName, playerToken: saved.playerToken })
     })
     s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setJoining(false) })
   }
@@ -153,20 +152,20 @@ export default function CardsLobby() {
     }
 
     s.emit('join_room', { code:code.trim().toUpperCase(), playerName:name.trim() })
-    s.on('room_joined', ({ room:r }) => {
+    s.on('room_joined', ({ room:r, playerToken }) => {
       setRoom(r)
       roomRef.current = r
       setJoining(false)
-      saveCardsSession({ code: r.code, playerName: name.trim(), isHost: r.host === name.trim() })
+      saveCardsSession({ code: r.code, playerName: name.trim(), isHost: r.host === name.trim(), playerToken })
       if (r.status === 'playing') {
         enterGameAfterHand({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
       }
     })
-    s.on('cards_rejoined', ({ room: r, playerName: pn }) => {
+    s.on('cards_rejoined', ({ room: r, playerName: pn, playerToken }) => {
       setRoom(r)
       roomRef.current = r
       setJoining(false)
-      saveCardsSession({ code: r.code, playerName: pn || name.trim(), isHost: r.host === (pn || name.trim()) })
+      saveCardsSession({ code: r.code, playerName: pn || name.trim(), isHost: r.host === (pn || name.trim()), playerToken })
       if (r.status === 'playing') {
         enterGameAfterHand({ status:r.status, round:r.round, czarIdx:r.czarIdx, czarName:r.players[r.czarIdx]?.name, czarId:r.czarId, blackCard:r.blackCard, players:r.players })
       }
@@ -195,8 +194,8 @@ export default function CardsLobby() {
         <div className="flex items-center gap-3">
           <BackButton onClick={() => navigate('/')} />
           <div>
-            <h1 className="text-white font-black text-xl flex items-center gap-2"><Wifi className="text-green-400 w-5 h-5"/>Entrar na Sala</h1>
-            <p className="text-slate-500 text-sm">Entra numa sala criada por outra pessoa</p>
+            <h1 className="text-white font-black text-xl">Cartas</h1>
+            <p className="text-slate-300 text-sm">Cria uma sala ou entra com um código</p>
           </div>
         </div>
 
@@ -211,7 +210,7 @@ export default function CardsLobby() {
             <div>
               <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
               <input value={code} onChange={e=>setCode(e.target.value.toUpperCase())}
-                placeholder="XXXX" maxLength={6}
+                placeholder="ABC234" maxLength={6}
                 className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600"/>
             </div>
             {savedSession?.code && (
@@ -220,26 +219,23 @@ export default function CardsLobby() {
                 Voltar à sala {savedSession.code} ({savedSession.playerName})
               </button>
             )}
-            {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
+            {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
+            <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
+              onClick={() => navigate('/CardsGame', { state: { presetPlayerName: name.trim() } })}
+              disabled={!name.trim()}
+              className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+              Criar sala
+            </motion.button>
             <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
               onClick={join} disabled={joining||!name.trim()||!code.trim()}
-              className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-5 text-xl disabled:opacity-40">
-              {joining ? '⏳ A entrar...' : '🔑 Entrar na Sala'}
+              className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+              {joining ? 'A entrar…' : 'Tenho um código'}
             </motion.button>
-            <div className="pt-4 text-center">
-              <p className="text-slate-500 text-sm mb-2">Ainda não tens sala?</p>
-              <button
-                onClick={() => navigate('/CardsGame', { state: { presetPlayerName: name.trim() } })}
-                disabled={!name.trim()}
-                className="w-full bg-white/[0.04] border border-white/[0.08] text-white rounded-2xl py-4 text-sm hover:bg-white/[0.08] transition disabled:opacity-40 disabled:hover:bg-white/[0.04]">
-                ✨ Criar Sala de Cartas
-              </button>
-            </div>
           </div>
         ) : (
           <div className="space-y-4">
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-3xl p-6">
-              <ShareRoomLink mode="cards" code={room.code} />
+              <ShareRoomLink mode="cards" code={room.code} codeSize="xl" />
             </div>
             <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-2">
               <p className="text-slate-400 text-sm font-semibold">{room.players?.length} jogador{room.players?.length!==1?'es':''}</p>
@@ -252,10 +248,8 @@ export default function CardsLobby() {
               ))}
             </div>
             <div className="text-center py-4 space-y-2">
-              <motion.div animate={{scale:[1,1.05,1]}} transition={{repeat:Infinity,duration:1.5}}>
-                <p className="text-slate-400 text-lg">⏳ À espera que o host inicie o jogo...</p>
-              </motion.div>
-              <p className="text-slate-600 text-sm">Quando o host carregar em "Iniciar", o jogo começa automaticamente</p>
+              <p className="text-white text-lg font-black">À espera que o host inicie</p>
+              <p className="text-slate-300 text-sm">Quando o host carregar em Iniciar, o jogo começa aqui.</p>
             </div>
           </div>
         )}

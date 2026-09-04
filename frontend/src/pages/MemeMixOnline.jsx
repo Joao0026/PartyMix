@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RefreshCw, Trash2, WifiOff } from 'lucide-react'
+import { Crown, RefreshCw, Share2, Trash2, WifiOff } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
@@ -10,6 +10,7 @@ import { getGlobalSocket, setGlobalSocket, clearMmLobbyHandoff, peekMmLobbyHando
 import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
 import { fullMemeUrl } from '../utils/mememixImage'
 import { getSocketUrl } from '../utils/api'
+import { shareNight } from '../utils/shareNight'
 
 const API_URL = getSocketUrl()
 
@@ -56,6 +57,17 @@ export default function MemeMixOnline() {
     s.on('connect', () => {
       setDisconnected(false)
       setReconnecting(false)
+      const saved = loadMmSession()
+      const code = saved?.code
+      const name = playerNameRef.current || saved?.playerName
+      if (code && name) {
+        s.emit('mm_rejoin_room', {
+          code,
+          playerName: name,
+          uploadToken: saved?.uploadToken,
+          playerToken: saved?.playerToken,
+        })
+      }
     })
 
     s.on('mm_state', (state) => {
@@ -72,7 +84,7 @@ export default function MemeMixOnline() {
     s.on('mm_game_ended', (r) => setRoom(r))
     s.on('mm_session_ended', () => {
       clearMmSession()
-      navigate('/MemeMix', { replace: true })
+      navigate('/', { replace: true })
     })
     s.on('mm_room_updated', (r) => {
       if (r.status === 'waiting') {
@@ -88,12 +100,12 @@ export default function MemeMixOnline() {
         setRoom(r)
       }
     })
-    s.on('mm_rejoined', ({ room: r, uploadToken: tok, playerName: pn, isHost: ih }) => {
+    s.on('mm_rejoined', ({ room: r, uploadToken: tok, playerName: pn, isHost: ih, playerToken }) => {
       setRoom(r)
       setUploadToken(tok)
       setPlayerName(pn)
       setIsHost(ih)
-      patchMmSession({ uploadToken: tok, isHost: ih })
+      patchMmSession({ uploadToken: tok, isHost: ih, playerToken })
       setReconnecting(false)
       setDisconnected(false)
       s.emit('mm_request_state', { code: r.code })
@@ -133,7 +145,7 @@ export default function MemeMixOnline() {
       setSocket(sock)
       setGlobalSocket(sock)
       bindGameSocket(sock)
-      sock.emit('mm_rejoin_room', { code, playerName: pn, uploadToken: tok })
+      sock.emit('mm_rejoin_room', { code, playerName: pn, uploadToken: tok, playerToken: saved?.playerToken })
     }
 
     const existing = getGlobalSocket()
@@ -191,8 +203,20 @@ export default function MemeMixOnline() {
     if (!socket || !room || !window.confirm('Fechar sala e apagar todas as fotos?')) return
     socket.emit('mm_end_session', { code: room.code })
     clearMmSession()
-    navigate('/MemeMix')
+    navigate('/')
   }
+
+  useEffect(() => {
+    if (!isHost || !socket || !room) return
+    const pendingCount = game?.pendingSubmissions ?? room.submissions ?? 0
+    const expectedCount = room.submissionsExpected ?? 0
+    const waiting = room.status === 'playing' && room.currentMeme && !room.revealed && pendingCount < expectedCount
+    if (!waiting || pendingCount < 1) return
+    const t = setTimeout(() => {
+      socket.emit('mm_skip_pending', { code: room.code })
+    }, 45000)
+    return () => clearTimeout(t)
+  }, [isHost, socket, room, game])
 
   if (!room) {
     return (
@@ -217,7 +241,8 @@ export default function MemeMixOnline() {
   const scores = room.players || []
   const myScore = scores.find((p) => p.name === playerName)?.score || 0
   const pending = g.pendingSubmissions ?? room.submissions ?? 0
-  const expected = room.submissionsExpected ?? Math.max(0, scores.filter((p) => !p.disconnected).length - 1)
+  const expected = room.submissionsExpected ?? Math.max(0, scores.filter((p) => !p.disconnected && !p.sittingOut).length - 1)
+  const imSittingOut = !!scores.find((p) => p.name === playerName)?.sittingOut
   const rawLegendaMode = room.settings?.legendaMode || 'pack'
   const legendaMode = rawLegendaMode === 'misto' ? 'pack' : rawLegendaMode
   const canPickFromHand = legendaMode === 'pack' && hand.length > 0
@@ -233,32 +258,50 @@ export default function MemeMixOnline() {
         />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <BackButton onClick={() => navigate('/MemeMix')} />
+            <BackButton onClick={() => navigate('/')} />
             <div>
-              <h1 className="text-white font-bold">😂 {room.code}</h1>
-              <p className="text-slate-500 text-xs">
+              <h1 className="text-white font-black text-lg">😂 {room.code}</h1>
+              <p className="text-slate-300 text-sm">
                 Ronda {room.round} · Juiz: {room.juizName} · Meta: {room.settings?.maxPoints} pts
               </p>
             </div>
           </div>
         </div>
 
+        {isJuiz && room.status === 'playing' && (
+          <div className="rounded-2xl border border-pink-400/40 bg-pink-600/25 px-4 py-3 text-center">
+            <p className="text-pink-50 font-black text-lg tracking-[0.12em]">
+              {currentMeme && room.revealed ? 'TU JULGAS' : currentMeme ? 'TU ÉS O JUIZ' : 'TU ESCOLHES O MEME'}
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
           {scores.map((p) => (
-            <span key={p.id || p.name} className={`relative text-xs px-2 py-1 rounded-lg ${p.disconnected ? 'opacity-40 line-through' : ''} ${p.name === playerName ? 'bg-pink-600/30 text-pink-200' : 'bg-white/[0.05] text-slate-400'}`}>
+            <span key={p.id || p.name} className={`relative px-2.5 py-1.5 rounded-xl text-base font-bold ${p.disconnected || p.sittingOut ? 'opacity-40' : ''} ${p.disconnected ? 'line-through' : ''} ${p.name === playerName ? 'bg-pink-600/30 text-pink-100' : 'bg-white/[0.06] text-slate-300'}`}>
               {p.name === room.juizName && (
                 <Crown className="absolute -top-3 left-1/2 h-4 w-4 -translate-x-1/2 text-amber-300 drop-shadow" />
               )}
-              {p.name}: {p.score}
+              {p.name}: {p.score}{p.sittingOut ? ' · fora' : ''}
             </span>
           ))}
         </div>
 
         {room.lastRoundWinner && (
-          <div className="rounded-2xl border border-pink-400/25 bg-pink-500/10 p-3 text-center">
-            <p className="text-pink-200 text-xs font-black uppercase tracking-[0.16em]">Legenda vencedora</p>
-            <p className="mt-1 text-white font-bold leading-snug">"{room.lastRoundWinner.text}"</p>
-            <p className="mt-1 text-pink-300 text-sm font-semibold">+1 ponto: {room.lastRoundWinner.playerName}</p>
+          <div className="rounded-[1.6rem] border border-pink-400/25 bg-white p-4 text-center shadow-xl">
+            <p className="text-pink-600 text-xs font-black uppercase tracking-[0.16em]">Polaroid da ronda</p>
+            <p className="mt-2 text-slate-950 font-black text-lg leading-snug">"{room.lastRoundWinner.text}"</p>
+            <p className="mt-1 text-pink-600 text-sm font-bold">+1 ponto: {room.lastRoundWinner.playerName}</p>
+            <button
+              type="button"
+              onClick={() => shareNight({
+                title: 'MemeMix',
+                text: `"${room.lastRoundWinner.text}"\n+1 ponto: ${room.lastRoundWinner.playerName} — MemeMix`,
+              })}
+              className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-pink-600 py-3.5 min-h-[48px] text-white font-black"
+            >
+              <Share2 className="h-4 w-4" /> Partilhar
+            </button>
           </div>
         )}
 
@@ -271,6 +314,16 @@ export default function MemeMixOnline() {
         {room.status === 'ended' && (
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center space-y-4">
             <p className="text-white font-black text-2xl">🏆 {room.gameWinner} ganhou!</p>
+            <button
+              type="button"
+              onClick={() => shareNight({
+                title: 'MemeMix',
+                text: `🏆 ${room.gameWinner} ganhou no MemeMix!`,
+              })}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-white py-4 min-h-[52px] font-black text-slate-950"
+            >
+              <Share2 className="h-4 w-4" /> Partilhar vitória
+            </button>
             {isHost && (
               <>
                 <button type="button" onClick={() => socket?.emit('mm_play_again', { code: room.code })}
@@ -278,7 +331,7 @@ export default function MemeMixOnline() {
                   Nova sessão (lobby)
                 </button>
                 <button type="button" onClick={closeRoom}
-                  className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/30 text-red-300 rounded-2xl py-3 text-sm">
+                  className="w-full flex items-center justify-center gap-2 bg-red-950/50 border border-red-500/30 text-red-300 rounded-2xl py-4 min-h-[52px] font-bold">
                   <Trash2 className="w-4 h-4" /> Fechar sala
                 </button>
               </>
@@ -286,12 +339,46 @@ export default function MemeMixOnline() {
           </motion.div>
         )}
 
+        {room.status === 'playing' && imSittingOut && (
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 text-center space-y-3">
+            <p className="text-white font-bold">Estás de fora</p>
+            <p className="text-slate-400 text-sm">O telemóvel fica na mesa — volta quando quiseres.</p>
+            <button
+              type="button"
+              onClick={() => socket?.emit('mm_sit_in', { code: room.code })}
+              className="w-full rounded-2xl bg-white py-3 min-h-[48px] font-black text-slate-950"
+            >
+              Voltar ao jogo
+            </button>
+          </div>
+        )}
+
+        {isHost && room.status === 'playing' && currentMeme && !room.revealed && pending < expected && pending >= 1 && (
+          <button
+            type="button"
+            onClick={() => socket?.emit('mm_skip_pending', { code: room.code })}
+            className="w-full rounded-2xl border border-pink-400/30 bg-pink-500/15 py-3 min-h-[48px] text-pink-100 text-sm font-black"
+          >
+            Seguir sem quem falta
+          </button>
+        )}
+
+        {room.status === 'playing' && !imSittingOut && (
+          <button
+            type="button"
+            onClick={() => socket?.emit('mm_sit_out', { code: room.code })}
+            className="w-full rounded-2xl border border-white/10 bg-white/[0.03] py-2.5 text-slate-400 text-xs font-bold"
+          >
+            Ficar de fora
+          </button>
+        )}
+
         {room.status === 'playing' && (
           <AnimatePresence mode="wait">
             {!gameReady ? (
               <div className="flex flex-col items-center gap-3 py-8">
                 <div className="w-10 h-10 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-slate-500 text-sm">A carregar a tua mão…</p>
+                <p className="text-slate-300 text-sm">A carregar a tua mão…</p>
               </div>
             ) : currentMeme ? (
               <motion.div key={`round-${room.round}-${currentMeme.id}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
@@ -303,12 +390,12 @@ export default function MemeMixOnline() {
                   <div className="overflow-hidden rounded-2xl bg-black">
                     <img src={memeImgUrl(currentMeme.url, uploadToken)} alt="Meme" className="w-full max-h-72 object-contain mx-auto" />
                   </div>
-                  <p className="mt-3 text-center text-xs font-black uppercase tracking-[0.18em] text-slate-500">
+                  <p className="mt-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-600">
                     Meme da ronda #{room.round}
                   </p>
                 </motion.div>
                 {!room.revealed && (
-                  <p className="text-center text-slate-500 text-xs">Legendas: {pending}/{expected}</p>
+                  <p className="text-center text-white text-2xl font-black">Legendas {pending}/{expected}</p>
                 )}
                 {room.revealed && (
                   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
@@ -335,36 +422,27 @@ export default function MemeMixOnline() {
                     ))}
                   </motion.div>
                 )}
-                {!isJuiz && !g.mySubmission && !room.revealed && (
+                {!isJuiz && !g.mySubmission && !room.revealed && !imSittingOut && (
                   <div className="space-y-2">
                     {canPickFromHand && (
                       <>
                         <p className="text-slate-400 text-sm">Escolhe uma legenda:</p>
                         {hand.map((leg) => (
                           <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
-                            className={`relative w-full text-left rounded-[1.35rem] p-3 pr-12 text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white ring-2 ring-pink-300/70' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                            className={`relative w-full text-left rounded-[1.35rem] p-3 min-h-[48px] text-sm ${pickedLegenda === leg ? 'bg-pink-600 text-white ring-2 ring-pink-300/70' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
                             <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
                             {leg}
-                            {canSwapLegendas && (
-                              <span
-                                role="button"
-                                tabIndex={0}
-                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); swapLegenda(leg) }}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault()
-                                    e.stopPropagation()
-                                    swapLegenda(leg)
-                                  }
-                                }}
-                                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl bg-black/20 text-white/90"
-                                title="Trocar por 1 ponto"
-                              >
-                                <RefreshCw className="h-4 w-4" />
-                              </span>
-                            )}
                           </button>
                         ))}
+                        {canSwapLegendas && pickedLegenda && (
+                          <button
+                            type="button"
+                            onClick={() => swapLegenda(pickedLegenda)}
+                            className="w-full flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-3.5 min-h-[48px] text-white font-bold"
+                          >
+                            <RefreshCw className="h-4 w-4" /> Trocar esta −1 pt
+                          </button>
+                        )}
                       </>
                     )}
                     {canType && (
@@ -385,7 +463,7 @@ export default function MemeMixOnline() {
                   </div>
                 )}
                 {g.mySubmission && !room.revealed && (
-                  <p className="text-center text-slate-500 text-sm">Legenda enviada ({pending}/{expected})</p>
+                  <p className="text-center text-slate-300 text-base font-bold">Legenda enviada — {pending}/{expected}</p>
                 )}
                 {room.roundWinner && (
                   <p className="text-pink-300 text-center font-semibold">+1 ponto: {room.roundWinner} 🎉</p>
@@ -403,35 +481,26 @@ export default function MemeMixOnline() {
               </motion.div>
             ) : (
               <motion.div key="waiting-meme" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-                <p className="text-center text-slate-500 text-sm">Juiz a escolher meme…</p>
+                <p className="text-center text-slate-300 text-base font-bold">Juiz a escolher meme…</p>
                 {canPickFromHand && (
                   <>
                     <p className="text-slate-400 text-sm">As tuas legendas — podes ir escolhendo:</p>
                     {hand.map((leg) => (
                       <button key={leg} type="button" onClick={() => { setPickedLegenda(leg); setTypedLegenda('') }}
-                        className={`relative w-full text-left rounded-[1.35rem] p-3 pr-12 text-sm ${pickedLegenda === leg ? 'bg-pink-600/80 text-white ring-1 ring-pink-400/50' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
+                        className={`relative w-full text-left rounded-[1.35rem] p-3 min-h-[48px] text-sm ${pickedLegenda === leg ? 'bg-pink-600/80 text-white ring-1 ring-pink-400/50' : 'bg-white/[0.06] text-slate-200 border border-white/10'}`}>
                         <span className="absolute -top-1.5 left-5 h-3 w-3 rotate-45 bg-inherit" />
                         {leg}
-                        {canSwapLegendas && (
-                          <span
-                            role="button"
-                            tabIndex={0}
-                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); swapLegenda(leg) }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                e.stopPropagation()
-                                swapLegenda(leg)
-                              }
-                            }}
-                            className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl bg-black/20 text-white/90"
-                            title="Trocar por 1 ponto"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </span>
-                        )}
                       </button>
                     ))}
+                    {canSwapLegendas && pickedLegenda && (
+                      <button
+                        type="button"
+                        onClick={() => swapLegenda(pickedLegenda)}
+                        className="w-full flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/5 py-3.5 min-h-[48px] text-white font-bold"
+                      >
+                        <RefreshCw className="h-4 w-4" /> Trocar esta −1 pt
+                      </button>
+                    )}
                   </>
                 )}
                 {canType && (
@@ -449,8 +518,8 @@ export default function MemeMixOnline() {
         )}
 
         {isHost && room.status === 'playing' && (
-          <button type="button" onClick={closeRoom} className="w-full flex items-center justify-center gap-2 text-red-400/80 text-xs py-2">
-            <Trash2 className="w-3 h-3" /> Fechar sala
+          <button type="button" onClick={closeRoom} className="w-full flex items-center justify-center gap-2 rounded-2xl border border-red-500/25 bg-red-950/30 py-3.5 min-h-[48px] text-red-200 text-sm font-bold">
+            <Trash2 className="w-4 h-4" /> Fechar sala
           </button>
         )}
     </PageShell>

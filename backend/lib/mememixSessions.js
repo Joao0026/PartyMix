@@ -7,6 +7,7 @@ const crypto = require('crypto')
 const UPLOAD_ROOT = path.join(__dirname, '../../uploads/mememix')
 const tokens = new Map()
 const TOKEN_TTL_MS = 6 * 60 * 60 * 1000
+const VIEW_TTL_SEC = 15 * 60
 
 function ensureDir(dir) {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
@@ -14,6 +15,47 @@ function ensureDir(dir) {
 
 function roomDir(code) {
   return path.join(UPLOAD_ROOT, String(code).toUpperCase())
+}
+
+function viewSecret() {
+  return process.env.JWT_SECRET || process.env.MEMEMIX_VIEW_SECRET || 'dev-mememix-view'
+}
+
+function signMemeView(roomCode, filename) {
+  const exp = Math.floor(Date.now() / 1000) + VIEW_TTL_SEC
+  const code = String(roomCode).toUpperCase()
+  const file = path.basename(String(filename || ''))
+  const msg = `${code}|${file}|${exp}`
+  const sig = crypto.createHmac('sha256', viewSecret()).update(msg).digest('hex').slice(0, 32)
+  return { exp, sig, file }
+}
+
+function verifyMemeView(roomCode, filename, exp, sig) {
+  const expNum = Number(exp)
+  if (!Number.isFinite(expNum) || expNum < Math.floor(Date.now() / 1000)) return false
+  const expected = signMemeView(roomCode, filename)
+  // re-sign with same exp
+  const code = String(roomCode).toUpperCase()
+  const file = path.basename(String(filename || ''))
+  const msg = `${code}|${file}|${expNum}`
+  const want = crypto.createHmac('sha256', viewSecret()).update(msg).digest('hex').slice(0, 32)
+  const a = Buffer.from(String(sig || ''), 'utf8')
+  const b = Buffer.from(want, 'utf8')
+  if (a.length !== b.length || a.length === 0) return false
+  return crypto.timingSafeEqual(a, b)
+}
+
+function memeViewUrl(roomCode, filename) {
+  const { exp, sig, file } = signMemeView(roomCode, filename)
+  return `/api/mememix/rooms/${String(roomCode).toUpperCase()}/memes/${file}?exp=${exp}&sig=${sig}`
+}
+
+function detectImageKind(buffer) {
+  if (!buffer || buffer.length < 12) return null
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return '.jpg'
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return '.png'
+  if (buffer.slice(0, 4).toString('ascii') === 'RIFF' && buffer.slice(8, 12).toString('ascii') === 'WEBP') return '.webp'
+  return null
 }
 
 function createUploadToken(roomCode, socketId, playerName) {
@@ -58,6 +100,19 @@ function destroyMemeMixSession(code) {
   const dir = roomDir(code)
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+function cleanupStaleUploads(maxAgeMs = TOKEN_TTL_MS) {
+  ensureDir(UPLOAD_ROOT)
+  const now = Date.now()
+  for (const name of fs.readdirSync(UPLOAD_ROOT)) {
+    const full = path.join(UPLOAD_ROOT, name)
+    let st
+    try { st = fs.statSync(full) } catch { continue }
+    if (now - st.mtimeMs > maxAgeMs) {
+      fs.rmSync(full, { recursive: true, force: true })
+    }
   }
 }
 
@@ -113,8 +168,12 @@ module.exports = {
   verifyUploadToken,
   destroyMemeMixSession,
   cleanupOrphanUploads,
+  cleanupStaleUploads,
   saveMemeImage,
   getMemeFilePath,
   deleteMemeImage,
   roomDir,
+  memeViewUrl,
+  verifyMemeView,
+  detectImageKind,
 }

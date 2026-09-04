@@ -1,0 +1,2167 @@
+{
+  "name": "Sem Filtros",
+  "mode": "drink",
+  "pack": "sem-filtros",
+  "description": "Perguntas desconfortáveis e desafios para grupos sem vergonha.",
+  "premium": false,
+  "intensity": "intensa",
+  "ageRating": "18+",
+  "teaser": "Conteúdo adulto, confissões e decisões que podem dividir a mesa.",
+  "decks": {
+    "waterfall": {
+      "label": "🌊 Waterfall & Beber",
+      "desc": "Quem bebe, bebe muito",
+      "premium": false,
+      "cards": [
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bateria!",
+          "text": "Quem tem o telemóvel com menos de 30% bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🧔",
+          "title": "Barbudos",
+          "text": "Quem tiver barba bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🥂",
+          "title": "Brinde!",
+          "text": "BRINDEEE! Todos batem os copos e bebem 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🎂",
+          "title": "Aniversário próximo",
+          "text": "O jogador com o aniversário mais próximo do teu bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🎂",
+          "title": "Aniversariante manda",
+          "text": "Quem fez anos mais recentemente manda outro jogador beber 2.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🏃",
+          "title": "Atletas na sala",
+          "text": "Há atletas na sala? Aguentam bem: bebem 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bebe 3",
+          "text": "Bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "😏",
+          "title": "Ar sedutor",
+          "text": "Todos fazem a cara mais sedutora que conseguirem e depois bebem 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🎂",
+          "title": "Aniversário",
+          "text": "Quem fez anos mais recentemente bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🚿",
+          "title": "Banho de hoje",
+          "text": "Quem tomou banho hoje bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🐾",
+          "title": "Amigos peludos",
+          "text": "Se tiveres animais de estimação, bebe 1 golo por cada um. Sem animais? Bebe 3 por seres um sem coração.",
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "common",
+          "act": 1
+        },
+        {
+          "type": "beber",
+          "emoji": "🍺",
+          "title": "Bebe 2!",
+          "text": "O jogador com o cabelo mais comprido bebe 2 golos.",
+          "caos": {
+            "activator": "subject",
+            "activatorLabel": "Quem tiver o cabelo mais comprido",
+            "buttonLabel": "Evoluir carta!",
+            "cost": "Bebes 3 goles em vez de 2.",
+            "preview": "Passa a distribuir 5 goles como quiseres.",
+            "title": "Distribuição Épica!",
+            "text": "Distribui 5 goles como quiseres à mesa.",
+            "emoji": "⚡",
+            "readerDrinks": 3,
+            "readerDistributes": 5
+          },
+          "pack": "sem-filtros",
+          "intensity": 2,
+          "rarity": "rare",
+          "act": 1
+        }
+      ]
+    },
+    "eununca": {
+      "label": "🙅 Eu Nunca",
+      "desc": "Confissões garantidas",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz algo ilegal e não fui apanhado.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fingi estar doente para não ir trabalhar.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui a uma consulta médica de ressaca.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA chorei com um filme de animação.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA comprei algo que nunca usei.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz xixi numa piscina.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😏",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA comi alguém do grupo. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚗",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA disse «já vou a caminho» estando ainda em casa. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🧇",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA comi uma pila de waffle depois de uma festa. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fingi perceber o que alguém estava a dizer para não parecer perdido. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👀",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA entrei num quarto que tinha lá dentro pessoas a fazer coisas indecentes. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🌅",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiquei acordado só para ver o nascer do sol. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎤",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA cantei uma música errada com toda a confiança. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚦",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA cheguei atrasado e culpei o trânsito. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛍️",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui às compras e comprei demasiado. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😴",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA deixei o despertador tocar várias vezes seguidas. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🌹",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA falei mal de outra etnia e fui comprar-lhe rosas no fim da noite. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😱",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui ver um vídeo porno e fiquei triste por ver lá a minha tia. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🌙",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiz uma direta. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎙️",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA enviei um áudio a cantar. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🫣",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fingi não ver alguém que conhecia só para não ter de falar com ele. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🪞",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiquei em frente ao espelho a fazer frente a mim próprio. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💸",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui sair com um amigo e acabei arruinado. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚪",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fiquei mais tempo numa situação porque não queria ser o primeiro a sair. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍺",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA deixei de conseguir andar de tão bêbado que estava. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎸",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA cantei uma música como se estivesse a dar um concerto. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💩",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA calquei fezes e encontrei dinheiro logo a seguir. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍸",
+          "title": "Eu Nunca",
+          "text": "EU NUNCA fui ao Bô Zen. Quem já fez, bebe 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "caos": {
+      "label": "💥 Caos",
+      "desc": "Regras temporárias e viragens de mesa",
+      "premium": false,
+      "cards": [
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, quem disser nomes próprios bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "💥",
+          "title": "Caos!",
+          "text": "Até sair outra carta Caos, todos têm de beber com a mão trocada.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "💪",
+          "title": "Caos!",
+          "text": "Durante 2 rondas, o jogador à tua direita passa a ser os teus braços. Se falharem, bebem os dois 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🚫",
+          "title": "Caos!",
+          "text": "A palavra «ok» fica banida durante 2 rondas. Quem a disser bebe 2 golos. Mas «brinde» não... BRINDEEE, todos bebem 1 golo!",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "💃",
+          "title": "Caos!",
+          "text": "Dança sem parar durante as próximas 2 rondas. Se parares, bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🗣️",
+          "title": "Caos!",
+          "text": "Durante 3 rondas só podes falar com palavras de uma sílaba. Bebes 1 por cada vez que falhares.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🎯",
+          "title": "Caos!",
+          "text": "Durante 4 rondas, fazes tudo o que o jogador à tua esquerda mandar. Quando recusares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "3️⃣",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, tudo o que beberes conta a triplicar.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🤫",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos falam a sussurrar. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🐢",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos têm de falar mais devagar do que o normal. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🔤",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, ninguém pode usar a letra «s» no início das palavras. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🤬",
+          "title": "Caos!",
+          "text": "Durante 1 volta, para falar com alguém têm de o insultar antes ou depois. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "⏱️",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos têm de responder em menos de 2 segundos. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "⚽",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos falam como comentadores de futebol. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🤓",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos têm de começar as frases com «na verdade». Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "caos",
+          "emoji": "🎤",
+          "title": "Caos!",
+          "text": "Durante 3 rondas, todos têm de responder a cantar. Quem falhar bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "especiais": {
+      "label": "🛡️ Especiais",
+      "desc": "Alianças, mini bosses e impostor",
+      "premium": false,
+      "cards": [
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Todos em pé: primeiro a sentar sem ser apanhado distribui 3 golos. Último a sentar bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Qual o melhor destino de férias?",
+          "wrongQuestion": "Qual o pior destino de férias?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem da mesa seria o melhor chefe?",
+          "wrongQuestion": "Quem da mesa seria o pior chefe?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "O que levarias para uma ilha deserta?",
+          "wrongQuestion": "O que NÃO levarias para uma ilha deserta?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem sobreviveria mais tempo num apocalipse?",
+          "wrongQuestion": "Quem sobreviveria menos tempo num apocalipse?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem daria o melhor discurso de casamento?",
+          "wrongQuestion": "Quem daria o pior discurso num casamento?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem apareceria de pijama a um evento formal?",
+          "wrongQuestion": "Quem apareceria nota 10/10 num evento formal?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem seria o melhor DJ desta festa?",
+          "wrongQuestion": "Quem tem o pior gosto musical do grupo?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem ganharia um concurso do Joker?",
+          "wrongQuestion": "Quem não acertaria uma pergunta num concurso de Joker?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem cozinha melhor às 2h da manhã?",
+          "wrongQuestion": "Quem conseguiria queimar água a tentar cozinhar?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem seria o melhor actor?",
+          "wrongQuestion": "Quem estraga filmes fazendo perguntas no pior momento?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem organizaria a melhor viagem de amigos?",
+          "wrongQuestion": "Quem perderia o bilhete do comboio antes de embarcar?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem ganharia um Secret Story?",
+          "wrongQuestion": "Quem seria eliminado logo na primeira votação do Secret Story?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem arrasaria num karaoke?",
+          "wrongQuestion": "Quem desafina mesmo a cantar baixo?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem arrasaria numa pista de dança?",
+          "wrongQuestion": "Quem tropeça a caminhar em linha reta?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem anima qualquer festa?",
+          "wrongQuestion": "Quem desaparece durante horas sem explicar onde esteve?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem seria o melhor copiloto numa road trip?",
+          "wrongQuestion": "Quem faria o carro perder a saída três vezes seguidas?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem recomendaria a melhor série?",
+          "wrongQuestion": "Quem dá spoilers sem perceber?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem ficaria milionário por uma ideia estúpida?",
+          "wrongQuestion": "Quem criaria uma empresa de sucesso?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem mantém a calma em situações difíceis?",
+          "wrongQuestion": "Quem entra em modo «isto é o fim do mundo» por qualquer coisa?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "miniboss",
+          "emoji": "👹",
+          "title": "Mini Boss!",
+          "text": "Cada um confessa o seu maior fetiche em 5 segundos. Quem hesitar ou recusar bebe 3; o resto distribui 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        },
+        {
+          "type": "impostor",
+          "emoji": "🎭",
+          "title": "Impostor!",
+          "correctQuestion": "Quem seria melhor num striptease?",
+          "wrongQuestion": "Quem teria mais vergonha de fazer um striptease?",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "rare",
+          "act": 3
+        }
+      ]
+    },
+    "desafios": {
+      "label": "⚡ Desafios",
+      "desc": "Mini-jogos relâmpago",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🎵",
+          "title": "Adivinha a música",
+          "text": "Trauteia uma música. Quem acertar escolhe outra pessoa (não tu) para beber 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔢",
+          "title": "Adivinha o número",
+          "text": "Pensa num número de 1 a 10. Quem acertar escolhe alguém para beber 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥤",
+          "title": "Adivinha a mistura",
+          "text": "Fecha os olhos. Os outros escolhem uma bebida para te dar a provar. Se adivinhares o que é, todos bebem 2; se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎂",
+          "title": "Aniversários de todos",
+          "text": "Tenta dizer o dia de aniversário de cada jogador. Quando falhares, bebes 2. Se acertares todos, distribuis 4.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤐",
+          "title": "Pergunta secreta",
+          "text": "A pessoa à tua direita faz-te uma pergunta em segredo. Respondes em voz alta. Se o grupo quiser saber a pergunta, todos bebem 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🪙",
+          "title": "Cara ou coroa",
+          "text": "Alguém lança uma moeda ao ar. Cada jogador diz cara ou coroa. Quem errar bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⭐",
+          "title": "Celebridade",
+          "text": "Imita uma celebridade. A mesa tenta adivinhar. Se ninguém acertar, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔤",
+          "title": "Alfabeto ao contrário",
+          "text": "Diz o alfabeto ao contrário em 45 segundos. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😐",
+          "title": "Cara séria",
+          "text": "Mantém a cara séria, de olhos abertos, durante 30 segundos enquanto tentam fazer-te rir. Se rires, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🌍",
+          "title": "5 países",
+          "text": "Diz 5 países em 5 segundos. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍦",
+          "title": "5 gelados",
+          "text": "Diz 5 sabores de gelado em 5 segundos. Se falhares, bebes 1.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍌",
+          "title": "Anúncio da banana",
+          "text": "Faz um anúncio publicitário a uma banana durante 15 segundos. Se o grupo achar que foi mau, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏙️",
+          "title": "5 cidades",
+          "text": "Diz 5 cidades portuguesas em 5 segundos. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👕",
+          "title": "5 marcas de roupa",
+          "text": "Diz 5 marcas de roupa em 5 segundos. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎲",
+          "title": "Bebe e arrisca",
+          "text": "Bebe golos um a um e pára quando quiseres. Ao parares, levanta a mão e distribui esse número de golos a outro jogador. Mas cuidado: se alguém gritar «BEBE» antes de parares, bebes o dobro.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "☠️",
+          "title": "O veneno",
+          "text": "reader escolhe 2 jogadores para darem um golo e, em segredo, decide qual deles está envenenado. Eles podem trocar antes de revelares. O envenenado bebe +2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥪",
+          "title": "Almoço misterioso",
+          "text": "reader, escreve no telemóvel o que almoçaste na última sexta-feira. Os outros tentam adivinhar. Quem falhar bebe 2; quem acertar recebe o tesouro... da vossa amizade ❤️.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏋️",
+          "title": "Bebida pesada",
+          "text": "reader bebe 3 golos, mas finge que a tua bebida é super pesada.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "poder": {
+      "label": "👑 Poder & Sorte",
+      "desc": "Distribui e recebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "poder",
+          "emoji": "😳",
+          "title": "Confissão ou copo",
+          "text": "Fazes alguém contar uma história embaraçosa ou beber 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🫵",
+          "title": "Nas mãos do grupo",
+          "text": "O grupo escolhe o que bebes. Tens de aceitar.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🙏",
+          "title": "Bebe e reza",
+          "text": "Bebe 2 agora. O grupo decide se bebes mais 1.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "👀",
+          "title": "Refém",
+          "text": "Escolhe alguém. Essa pessoa decide quanto bebes — valem penáltis. 👀",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🤐",
+          "title": "Bebe e cala",
+          "text": "Bebes 3 golos e ficas proibido de falar na próxima ronda.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "😬",
+          "title": "Bebe e paga",
+          "text": "Bebes 2 golos e ainda tens de fazer um desafio escolhido pela mesa.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🥴",
+          "title": "Já para dentro",
+          "text": "Bebes 4 golos imediatamente.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "😖",
+          "title": "Castigo da mesa",
+          "text": "A mesa decide um castigo físico leve para ti e ainda bebes 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🙊",
+          "title": "Palavra amaldiçoada",
+          "text": "Bebes 2 golos sempre que disseres uma palavra proibida na próxima ronda.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "🎯",
+          "title": "Marcado",
+          "text": "Ficas marcado: a próxima carta negativa que sair duplica para ti.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "📈",
+          "title": "Maré de azar",
+          "text": "Ficas penalizado: +1 golo em todas as cartas durante 5 rondas.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "azar",
+          "emoji": "📜",
+          "title": "Bebe e obedece",
+          "text": "Bebes 4 golos e ficas com uma regra inventada pela mesa durante 3 minutos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "picante": {
+      "label": "🔥 Picante",
+      "desc": "Para adultos",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Picante!",
+          "text": "Troca uma item de roupa com o jogador à tua esquerda durante 5 minutos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😍",
+          "title": "Quem te atrai",
+          "text": "Diz quem na mesa te atrai mais. Ou bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🕵️",
+          "title": "Último stalk",
+          "text": "Mostra a última pessoa que stalkeaste. Ou bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚩",
+          "title": "Red flag",
+          "text": "Diz o teu maior red flag. Ou bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "✋",
+          "title": "Um fora",
+          "text": "Diz quem da mesa seria mais provável dar-te um fora. Ou bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "💃",
+          "title": "Striptease",
+          "text": "reader, estás meio a dormir, vê se acordas! Faz 20 segundos de striptease para toda a gente aproveitar estranhamente. Ou bebe 5 golos.",
+          "pack": "sem-filtros",
+          "intensity": 5,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "preferias": {
+      "label": "🤔 Preferias?",
+      "desc": "Would you rather — escolhas impossíveis",
+      "premium": false,
+      "cards": [
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Cheirar sempre a cebola",
+            "Ter sempre comida presa nos dentes"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Burger King",
+            "McDonald's"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Contares ao grupo o número real de pessoas com quem já dormiste",
+            "Beberes a garrafa toda (penalidade forte)"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Vomitar na pessoa por quem estás apaixonado(a) numa festa",
+            "Ter uma diarreia explosiva durante um encontro com ela"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Andar por aí coberto de chupões à vista 24 horas por dia, 7 dias por semana",
+            "Fazer uma tatuagem que diga \"excitado\" à vista"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Chantilly no morango durante o ato",
+            "Chocolate no morango"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Chupar os dedos dos pés da pessoa como preliminar",
+            "Ter os dedos dos pés chupados como preliminar"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "preferencia",
+          "emoji": "🤔",
+          "title": "Preferias?",
+          "text": "Minoria bebe 1",
+          "choices": [
+            "Beber um shot de sêmen",
+            "Beber um shot de urina"
+          ],
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "provavel": {
+      "label": "👉 Quem é mais provável?",
+      "desc": "Apontem dedos — quem receber mais bebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "👉",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de vomitar antes do fim da festa? Quem for apontado bebe 2 golos. Quem apontar a si mesmo bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🥴",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de dar um blackout hoje? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💘",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de estar secretamente apaixonado por alguém nesta sala neste momento? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤐",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de revelar acidentalmente o segredo de um amigo depois de ter jurado sigilo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "😏",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de engatar um estranho só para conseguir algo de graça? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔞",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de contar as suas histórias sexuais? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💼",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de comer o chefe de trabalho? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏹",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer de cupido para os amigos? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙈",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser apanhado a fazer algo indevido num local público? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚨",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de experimentar coisas ilegais (ou infringir as regras) só pela emoção? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😈",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer uma partida a um amigo, ultrapassando todos os limites? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💋",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de beijar um(a) desconhecido(a) na véspera de Ano Novo, na emoção do momento? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🖋️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer uma tatuagem por desafio durante uma viagem ou festa? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤪",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de dizer «YOLO» e viver mesmo de acordo com isso? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🗣️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de falar abertamente sobre detalhes íntimos da sua vida? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🍑",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de entrar numa orgia? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📸",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de enviar uma foto provocante a alguém e depois entrar em pânico por causa disso? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💈",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer um piercing ou mudar de visual simplesmente porque é emocionante ou rebelde? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔥",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de experimentar um ménage à trois? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⛓️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de construir uma masmorra sexual? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏢",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de dormir com um(a) colega de trabalho? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🩰",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de frequentar um clube de striptease? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "📹",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer um vídeo íntimo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "📱",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de enviar 10 mensagens quando uma só bastava? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💍",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de casar primeiro? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎂",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de esquecer o próprio aniversário? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤔",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de esquecer o que ia dizer a meio da frase? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙃",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de esquecer o nome de alguém que acabou de conhecer? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😭",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de chorar num filme de animação? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤫",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de contar um segredo sem querer? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🏧",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de esquecer o próprio PIN do multibanco? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😅",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ser apanhado a mentir? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🛌",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de dormir em qualquer lado? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🧳",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de arranjar problemas numa viagem? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤡",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de ficar famoso por algo ridículo? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🗨️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de falar com estranhos como se fossem amigos? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😤",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de começar uma discussão por nada? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "⚖️",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer algo ilegal sem querer? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎤",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer um discurso estranho num casamento? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😰",
+          "title": "Quem é mais provável?",
+          "text": "Quem é mais provável de fazer o pior primeiro dia de trabalho? A pessoa com mais dedos apontados bebe 1 golo.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    },
+    "bluff": {
+      "label": "🎭 Bluff",
+      "desc": "Convence-me — verdade ou mentira?",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🎭",
+          "title": "Bluff!",
+          "text": "Conta uma história em que foste apanhado a fazer asneira — verdade ou mentira. O grupo vota. Enganas todos: distribuis 3. Descobrem-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🃏",
+          "title": "Bluff!",
+          "text": "Diz 3 factos sobre ti: 2 verdadeiros e 1 falso. Se ninguém acertar o falso, distribuis 3; se acertarem, bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🙈",
+          "title": "Bluff!",
+          "text": "Conta uma história embaraçosa tua, verdadeira ou inventada. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚪",
+          "title": "Bluff!",
+          "text": "Conta uma situação em que foste expulso de algum sítio, real ou inventada. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎉",
+          "title": "Bluff!",
+          "text": "Diz 3 coisas que já fizeste numa festa. Uma é mentira. Se ninguém descobrir, distribuis 3; se descobrirem, bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "✈️",
+          "title": "Bluff!",
+          "text": "Conta uma viagem que fizeste, ou inventa uma. O grupo vota se é real. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🤥",
+          "title": "Bluff!",
+          "text": "Conta uma mentira que já disseste com sucesso, ou inventa uma agora. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "😳",
+          "title": "Bluff!",
+          "text": "Conta uma história de vergonha tua, verdadeira ou inventada. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🚨",
+          "title": "Bluff!",
+          "text": "Diz 3 coisas que já fizeste que davam para o torto (leve). Uma é mentira. Se descobrirem, bebes 3; se não, distribuis 3.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "💔",
+          "title": "Bluff!",
+          "text": "Conta uma situação romântica embaraçosa tua, real ou inventada. O grupo vota. Enganas: distribuis 3; apanham-te: bebes 3.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "maldicao": {
+      "label": "🔮 Maldição",
+      "desc": "Regras absurdas que passam de jogador em jogador",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔮",
+          "title": "Maldição!",
+          "text": "Estás amaldiçoado: só podes falar frases de 3 palavras. Passa a maldição a quem te fizer rir — essa pessoa fica amaldiçoada.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔮",
+          "title": "Maldição!",
+          "text": "Amaldiçoado: não podes dizer nomes próprios. Se disseres um nome, bebes 1 e passas a maldição a quem estiver à tua direita.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔮",
+          "title": "Maldição!",
+          "text": "Amaldiçoado: tens de bater palmas antes de cada golo. Esqueceste? Bebes 1 extra. Passa a maldição quando alguém te lembrar em voz alta.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🗣️",
+          "title": "Maldição da Fala Curta",
+          "text": "Só podes falar em frases de 3 palavras. Quebras a regra? Bebes 2 e passas a maldição.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "👏",
+          "title": "Maldição das Palmas",
+          "text": "Antes de beber tens de bater palmas. Se falhares, bebes 2 e passas a maldição.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "❓",
+          "title": "Maldição das Perguntas",
+          "text": "Só podes responder com perguntas. Falhas? Bebes 2 e passas a maldição.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🙋",
+          "title": "Maldição do Braço no Ar",
+          "text": "Sempre que falares, tens de levantar um braço. Esqueces-te? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "3️⃣",
+          "title": "Maldição da Contagem",
+          "text": "Antes de responder tens de contar até 3. Esqueces-te? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "✋",
+          "title": "Maldição da Mão Fraca",
+          "text": "Não podes beber com a tua mão dominante. Falhas? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "✂️",
+          "title": "Maldição das Frases Curtas",
+          "text": "Só podes dizer frases curtas, no máximo 4 palavras. Falhas? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🎵",
+          "title": "Maldição das Rimas",
+          "text": "Tens de falar sempre a rimar. Falhas? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🪑",
+          "title": "Maldição da Cadeira",
+          "text": "Não podes encostar as costas à cadeira. Falhas? Bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🍻",
+          "title": "Maldição da Sombra",
+          "text": "reader, sempre que alguém beber, bebes 1 também. Dura 5 rondas.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🧙",
+          "title": "Maldição da Bruxa",
+          "text": "reader, durante 3 rondas, sempre que beberes tens de girar a cabeça de um lado ao outro e dar uma gargalhada de bruxa louca. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "👤",
+          "title": "Maldição da Terceira Pessoa",
+          "text": "reader, tens de falar de ti na terceira pessoa durante 5 rondas. Se falhares, bebes 5.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "✋",
+          "title": "Maldição do Carinho",
+          "text": "reader, durante 3 rondas, sempre que beberes acaricia a perna da pessoa à tua direita (com consentimento!). Sem consentimento conta como falha e bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "👶",
+          "title": "Maldição do Bebé",
+          "text": "reader, traz de volta a tua criança interior! Durante 3 rondas fala como um bebé, sem vocabulário de adulto. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "maldicao",
+          "emoji": "🤭",
+          "title": "Maldição da Boca Tapada",
+          "text": "reader, tapa a boca sempre que falares durante 6 rondas, ninguém quer ver as tuas cavidades. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "historia": {
+      "label": "🎬 História",
+      "desc": "Constrói uma história absurda em grupo",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "História",
+          "text": "Começa quem tirou a carta com «O pior encontro de sempre começou quando…» Uma frase cada. Quem quebrar o flow ou contradizer o anterior bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🎬",
+          "title": "Frase maluca",
+          "text": "Faz uma frase com 3 palavras escolhidas pela mesa. Tens 40 segundos. Se falhares, bebes 2.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🌶️",
+          "title": "História picante",
+          "text": "Conta a tua melhor história sexual. Ou bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "historia",
+          "emoji": "🍑",
+          "title": "História Molhada",
+          "text": "Tema: um strip-tease que descarrilou. À vez, cada jogador diz 1 palavra. Quem travar bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        }
+      ]
+    },
+    "cadeia": {
+      "label": "🔗 Cadeia",
+      "desc": "Tema fixo — sentido horário, quem falhar bebe",
+      "premium": false,
+      "cards": [
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema: animais. Sentido horário, um cada. Quem repetir bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia livre",
+          "text": "Escolhe tu o tema (ex.: géneros musicais, memes, séries). Começa por ti, sentido horário. Quem repetir ou travar bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 4,
+          "rarity": "common",
+          "act": 3
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Tema à escolha de quem tirou a carta. Sentido horário, cada um diz uma palavra diferente. Quem repetir ou demorar mais de 3 segundos bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "🔗",
+          "title": "Cadeia!",
+          "text": "Escolhe uma letra. Sentido horário, cada um diz uma palavra começada por essa letra. Quem repetir ou travar bebe 2 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👩",
+          "title": "Cadeia!",
+          "text": "Começando reader_com, digam mulheres famosas à vez. Quem não conseguir é um misógino... e bebe 3 golos.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        },
+        {
+          "type": "desafio",
+          "emoji": "👆",
+          "title": "Cadeia!",
+          "text": "A começar reader_com, deem a volta à mesa: cada um diz, à vez, algo que poderia fazer com um dedo, sem repetições. O primeiro a falhar bebe 1 golo por cada resposta certa antes dele.",
+          "pack": "sem-filtros",
+          "intensity": 3,
+          "rarity": "common",
+          "act": 2
+        }
+      ]
+    }
+  }
+}

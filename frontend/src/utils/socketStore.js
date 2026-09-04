@@ -1,3 +1,24 @@
+import { clearCardsSession } from './cardsSession'
+import { clearMwSession } from './mwSession'
+import { clearMmSession } from './mmSession'
+import { clearAmSession } from './amSession'
+
+const SERVER_EPOCH_KEY = 'partymix_server_started'
+
+function noteServerEpoch(startedAt) {
+  if (!startedAt) return
+  try {
+    const prev = sessionStorage.getItem(SERVER_EPOCH_KEY)
+    const next = String(startedAt)
+    if (prev && prev !== next) {
+      clearCardsSession()
+      clearMwSession()
+      clearMmSession()
+      clearAmSession()
+    }
+    sessionStorage.setItem(SERVER_EPOCH_KEY, next)
+  } catch { /* ignore */ }
+}
 let storedSocket = null
 let socketStatus = 'idle'
 let detachSocketListeners = null
@@ -46,13 +67,18 @@ function bindSocketStatus(socket) {
     return
   }
 
-  const onConnect = () => setSocketStatus('connected')
+  const onHello = (payload) => noteServerEpoch(payload?.startedAt)
+  const onConnect = () => {
+    setSocketStatus('connected')
+    socket.emit('client_ready')
+  }
   const onDisconnect = () => setSocketStatus('disconnected')
   const onConnectError = () => setSocketStatus('disconnected')
   const onReconnectAttempt = () => setSocketStatus('reconnecting')
   const onReconnect = () => setSocketStatus('connected')
 
   socket.on('connect', onConnect)
+  socket.on('server_hello', onHello)
   socket.on('disconnect', onDisconnect)
   socket.on('connect_error', onConnectError)
   socket.io?.on('reconnect_attempt', onReconnectAttempt)
@@ -62,6 +88,7 @@ function bindSocketStatus(socket) {
 
   detachSocketListeners = () => {
     socket.off('connect', onConnect)
+    socket.off('server_hello', onHello)
     socket.off('disconnect', onDisconnect)
     socket.off('connect_error', onConnectError)
     socket.io?.off('reconnect_attempt', onReconnectAttempt)

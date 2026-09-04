@@ -50,18 +50,18 @@ export default function MisterWhiteOnline() {
       setReconnecting(false)
       const saved = loadMwSession()
       if (saved?.code && playerNameRef.current) {
-        s.emit('mw_rejoin_room', { code: saved.code, playerName: playerNameRef.current })
+        s.emit('mw_rejoin_room', { code: saved.code, playerName: playerNameRef.current, playerToken: saved.playerToken })
       }
     })
 
-    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih }) => {
+    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
       setRoom(r)
       setPlayerName(pn)
       setIsHost(ih)
-      saveMwSession({ code: r.code, playerName: pn, isHost: ih })
+      saveMwSession({ code: r.code, playerName: pn, isHost: ih, playerToken })
       setReconnecting(false)
       setDisconnected(false)
-      if (r.status === 'playing') setRevealedReady(true)
+      setRevealedReady(r.status !== 'reveal')
     })
     s.on('mw_your_role', (data) => setMyRole(data))
     s.on('mw_reveal_progress', ({ ready, total }) => {
@@ -69,6 +69,10 @@ export default function MisterWhiteOnline() {
     })
     s.on('mw_phase', (r) => {
       setRoom(r)
+      const nowHost = r.host === playerNameRef.current
+      setIsHost(nowHost)
+      const saved = loadMwSession()
+      if (saved) saveMwSession({ ...saved, isHost: nowHost })
       setTimeLeft(r.timeLeft ?? r.settings?.discussionSeconds ?? 90)
       setVoteTarget(null)
       if (r.status === 'vote') setMyVote(null)
@@ -76,12 +80,14 @@ export default function MisterWhiteOnline() {
     })
     s.on('mw_vote_update', (r) => setRoom(r))
     s.on('mw_room_updated', (r) => {
+      const nowHost = r.host === playerNameRef.current
+      setIsHost(nowHost)
       if (r.status === 'waiting') {
         const saved = loadMwSession()
         saveMwSession({
           code: r.code,
           playerName: playerNameRef.current || saved?.playerName,
-          isHost: saved?.isHost,
+          isHost: nowHost,
         })
         navigate('/MisterWhiteLobby', { replace: true, state: { returnToLobby: true } })
       } else {
@@ -124,7 +130,7 @@ export default function MisterWhiteOnline() {
       setSocket(sock)
       setGlobalSocket(sock)
       bindGameSocket(sock)
-      sock.emit('mw_rejoin_room', { code, playerName: pn })
+      sock.emit('mw_rejoin_room', { code, playerName: pn, playerToken: saved?.playerToken || handoff?.playerToken })
     }
 
     const existing = getGlobalSocket()
@@ -158,11 +164,15 @@ export default function MisterWhiteOnline() {
     return () => clearTimeout(t)
   }, [room?.status, timeLeft, room])
 
-  const activeRoles = (room?.rolesPublic || []).filter((r) => !r.eliminated && !room.eliminated?.includes(r.origIdx))
+  const disconnectedNames = new Set((room?.players || []).filter((p) => p.disconnected).map((p) => p.name))
+  const activeRoles = (room?.rolesPublic || []).filter((r) => (
+    !r.eliminated
+    && !room.eliminated?.includes(r.origIdx)
+    && !disconnectedNames.has(r.name)
+  ))
   const myOrigIdx = room?.rolesPublic?.find((r) => r.name === playerName)?.origIdx
   const amEliminated = myOrigIdx != null && room.eliminated?.includes(myOrigIdx)
   const voteCounts = room?.voteCounts || {}
-  const disconnectedNames = new Set((room?.players || []).filter((p) => p.disconnected).map((p) => p.name))
 
   const confirmReveal = () => {
     if (!socket || !room || revealedReady) return

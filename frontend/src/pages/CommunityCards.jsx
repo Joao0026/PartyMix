@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ThumbsUp, Send, Sparkles, Clock, CheckCircle, Lightbulb } from 'lucide-react'
+import { ThumbsUp, Send, Sparkles, CheckCircle, Lightbulb } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import { api } from '../utils/api'
-import { DRINK_BARALHOS, DRINK_ESPECIAL_TYPES, DRINK_BARALHO_PLACEHOLDERS, drinkBaralhoLabel } from '../utils/drinkBaralhos'
+import { isUnder18 } from '../utils/ageGate'
 
 const MODES = [
   {
@@ -89,13 +89,12 @@ export default function CommunityCards() {
   const [loading,    setLoading]    = useState(true)
   const [voted,      setVoted]      = useState(() => loadVoted())
   const [tab,        setTab]        = useState('browse')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [modeFilter, setModeFilter] = useState('all')
+  const [modeFilter, setModeFilter] = useState(() => (isUnder18() ? 'family' : 'all'))
   const [submitted,  setSubmitted]  = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   // Card form state
-  const [cMode,     setCMode]     = useState('')
+  const [cMode,     setCMode]     = useState(() => (isUnder18() ? 'family' : ''))
   const [cType,     setCType]     = useState('')
   const [cIsBlack,  setCIsBlack]  = useState(false)
   const [cText,     setCText]     = useState('')
@@ -115,7 +114,7 @@ export default function CommunityCards() {
   const [iText,   setIText]   = useState('')
   const [iAuthor, setIAuthor] = useState('')
 
-  const selectedModeObj = MODES.find(m => m.id === cMode)
+  const visibleModes = isUnder18() ? MODES.filter((m) => m.id === 'family') : MODES
   const isCardsMode     = cMode === 'cards'
   const isMisterMode    = cMode === 'mister'
   const isMememixMode   = cMode === 'mememix'
@@ -157,7 +156,7 @@ export default function CommunityCards() {
     const reqId = ++loadRequestRef.current
     setLoading(true)
     const p = { limit: 200 }
-    if (statusFilter !== 'all') p.status = statusFilter
+    if (isUnder18()) p.safe = '1'
     if (modeFilter !== 'all') p.mode = modeFilter
     api.getCommunity(p)
       .then((d) => {
@@ -171,7 +170,7 @@ export default function CommunityCards() {
         if (reqId !== loadRequestRef.current) return
         setLoading(false)
       })
-  }, [statusFilter, modeFilter])
+  }, [modeFilter])
 
   useEffect(() => { load() }, [load])
 
@@ -183,7 +182,8 @@ export default function CommunityCards() {
       saveVoted(nv)
       setItems(prev => prev.map(i => i._id === id ? { ...i, votes: Math.max(0, i.votes - 1) } : i))
       try {
-        await api.unvoteCommunity(id)
+        const updated = await api.unvoteCommunity(id)
+        setItems(prev => prev.map(i => i._id === id ? { ...i, votes: updated.votes } : i))
       } catch {
         const rv = new Set(nv)
         rv.add(id)
@@ -198,7 +198,8 @@ export default function CommunityCards() {
     saveVoted(nv)
     setItems(prev => prev.map(i => i._id === id ? { ...i, votes: i.votes + 1 } : i))
     try {
-      await api.voteCommunity(id)
+      const updated = await api.voteCommunity(id)
+      setItems(prev => prev.map(i => i._id === id ? { ...i, votes: updated.votes } : i))
     } catch {
       const rv = new Set(nv)
       rv.delete(id)
@@ -271,14 +272,12 @@ export default function CommunityCards() {
   const inp = 'w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 outline-none focus:border-violet-500 text-sm placeholder-slate-500'
 
   const visibleItems = useMemo(() => items.filter((item) => {
-    if (statusFilter !== 'all' && item.status !== statusFilter) return false
     if (modeFilter !== 'all' && item.mode !== modeFilter) return false
     return true
-  }), [items, statusFilter, modeFilter])
+  }), [items, modeFilter])
 
   const stats = {
-    approved: visibleItems.filter(i => i.status === 'approved').length,
-    pending:  visibleItems.filter(i => i.status === 'pending').length,
+    approved: visibleItems.length,
     votes:    visibleItems.reduce((s, i) => s + i.votes, 0),
   }
 
@@ -319,8 +318,8 @@ export default function CommunityCards() {
           {/* ── BROWSE ── */}
           {tab==='browse'&&(
             <motion.div key="browse" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                {[{n:stats.approved,l:'Aprovadas'},{n:stats.pending,l:'Em revisão'},{n:stats.votes,l:'Votos'}].map((s,i)=>(
+              <div className="grid grid-cols-2 gap-2">
+                {[{n:stats.approved,l:'Aprovadas'},{n:stats.votes,l:'Votos'}].map((s,i)=>(
                   <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-2xl p-3 text-center">
                     <p className="text-white font-black text-2xl">{s.n}</p>
                     <p className="text-slate-500 text-xs">{s.l}</p>
@@ -330,14 +329,6 @@ export default function CommunityCards() {
 
               {/* Filters */}
               <div className="space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  {[['all','Todas'],['pending','Em revisão'],['approved','Aprovadas']].map(([id,l])=>(
-                    <button key={id} onClick={()=>setStatusFilter(id)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${statusFilter===id?'bg-violet-600/30 border-violet-500 text-violet-300':'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:text-white'}`}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
                 <div>
                   <label className="text-slate-500 text-xs uppercase tracking-wider mb-1.5 block">Modo</label>
                   <select
@@ -346,7 +337,7 @@ export default function CommunityCards() {
                     className={inp + ' cursor-pointer'}
                   >
                     <option value="all">Todos os modos</option>
-                    {MODES.map(m => (
+                    {visibleModes.map(m => (
                       <option key={m.id} value={m.id}>{m.label}</option>
                     ))}
                   </select>
@@ -379,10 +370,7 @@ export default function CommunityCards() {
                               }
                             </>
                           )}
-                          {item.status==='approved'
-                            ?<span className="text-xs text-green-500 flex items-center gap-0.5"><CheckCircle className="w-3 h-3"/>No jogo!</span>
-                            :<span className="text-xs text-amber-500 flex items-center gap-0.5"><Clock className="w-3 h-3"/>Em revisão</span>
-                          }
+                          <span className="text-xs text-green-500 flex items-center gap-0.5"><CheckCircle className="w-3 h-3"/>No jogo!</span>
                         </div>
                         <p className="text-slate-200 text-sm font-medium leading-relaxed">{item.text}</p>
                         {item.answer&&<p className="text-slate-500 text-xs mt-1">💡 Resposta: {item.answer}</p>}
@@ -433,7 +421,7 @@ export default function CommunityCards() {
                 <div>
                   <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">1. Para que modo?</label>
                   <div className="space-y-2">
-                    {MODES.map(m=>(
+                    {visibleModes.map(m=>(
                       <button key={m.id} onClick={()=>{setCMode(m.id);resetCardFields(); if(m.id==='mememix') setCType('legenda')}}
                         className={`w-full px-4 py-2.5 rounded-xl border text-sm font-semibold text-left transition-all ${cMode===m.id?m.color:'bg-slate-800 border-slate-600 text-slate-300 hover:border-slate-400'}`}>
                         {m.label}

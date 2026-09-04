@@ -27,19 +27,41 @@ export async function fetchChallenges(params = {}) {
 }
 
 /** Baralhos do Modo Beber. */
+export function hasValidDrinkCards(decks) {
+  return Array.isArray(decks?.categories) && decks.categories.some((category) => (
+    Array.isArray(category?.cards) && category.cards.some((card) => (
+      typeof card === 'string'
+        ? Boolean(card.trim())
+        : Boolean(card && typeof card === 'object' && String(card.text || '').trim())
+    ))
+  ))
+}
+
 export async function fetchDrinkDecks(pack = 'base') {
   try {
     const decks = await api.getDrinkDecks(pack)
-    if (decks?.categories?.length) return decks
-  } catch { /* offline */ }
-  return getLocalDrinkDecks(pack)
+    if (hasValidDrinkCards(decks)) return decks
+  } catch (error) {
+    if (error?.status === 403 && error?.data?.premium) {
+      return { pack, premium: true, blocked: true, categories: [] }
+    }
+  }
+  const local = getLocalDrinkDecks(pack)
+  return hasValidDrinkCards(local) ? local : { pack, unavailable: true, categories: [] }
 }
 
 /** Packs disponíveis no Modo Beber. */
 export async function fetchDrinkPacks() {
+  const local = getLocalDrinkPacks()
   try {
     const packs = await api.getDrinkPacks()
-    if (Array.isArray(packs) && packs.length) return packs
+    if (Array.isArray(packs) && packs.length) {
+      const merged = new Map(local.map((pack) => [pack.pack, pack]))
+      for (const pack of packs) {
+        merged.set(pack.pack, { ...(merged.get(pack.pack) || {}), ...pack })
+      }
+      return [...merged.values()].sort((a, b) => Number(a.premium) - Number(b.premium))
+    }
   } catch { /* offline */ }
-  return getLocalDrinkPacks()
+  return local
 }

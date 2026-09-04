@@ -323,6 +323,16 @@ export default function CoupleGame(){
     setCurrentAct(pickNextActivity(playableActs))
   }
 
+  const leaveMap = () => {
+    if (!playableActs.length) {
+      setPhase('menu')
+      return
+    }
+    setCurrentAct(pickNextActivity(playableActs))
+    setTurn((t) => t + 1)
+    setPhase('playing')
+  }
+
   // ── MENU ──────────────────────────────────────────────────
   if(phase==='menu')return(
     <GameShell mode="couple">
@@ -437,13 +447,13 @@ export default function CoupleGame(){
       mode="couple"
       header={
         <div className="flex items-center justify-between">
-          <BackButton onClick={() => setPhase('menu')} />
+          <BackButton onClick={leaveMap} />
           <h1 className="text-white font-bold">💕 Mapa do Casal</h1>
           <div className="w-5"/>
         </div>
       }
     >
-      <CoupleMap players={players} selected={selected} maxDice={maxDice} loopGoal={loopGoal} targetLaps={targetLaps} onExit={()=>setPhase('menu')}/>
+      <CoupleMap players={players} selected={selected} maxDice={maxDice} loopGoal={loopGoal} targetLaps={targetLaps} onExit={leaveMap}/>
     </GameShell>
   )
 

@@ -8,7 +8,7 @@ import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setMwLobbyHandoff, patchMwLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
-import { WORD_PACKS, mergeCommunityPairs } from '../utils/misterWhiteShared'
+import { WORD_PACKS, adjustSpecialRoleCounts, mergeCommunityPairs } from '../utils/misterWhiteShared'
 import ShareRoomLink from '../components/layout/ShareRoomLink'
 
 const API_URL = getSocketUrl()
@@ -31,7 +31,7 @@ export default function MisterWhiteLobby() {
   const savedSession = loadMwSession()
 
   const [numUndercover, setNumUndercover] = useState(1)
-  const [numMW, setNumMW] = useState(1)
+  const [numMW, setNumMW] = useState(0)
   const [wordPack, setWordPack] = useState('geral')
   const [difficulty, setDifficulty] = useState('normal')
   const [discussionSeconds, setDiscussionSeconds] = useState(90)
@@ -79,29 +79,34 @@ export default function MisterWhiteLobby() {
       roleRef.current = data
       patchMwLobbyHandoff({ myRole: data })
     })
-    s.on('mw_room_created', ({ code: c, room: r }) => {
+    s.on('mw_room_created', ({ code: c, room: r, playerToken }) => {
       creatingRoomRef.current = false
       setRoom({ ...r, code: c })
       setConnecting(false)
-      saveMwSession({ code: c, playerName, isHost: true })
+      saveMwSession({ code: c, playerName, isHost: true, playerToken })
     })
-    s.on('mw_room_joined', ({ room: r }) => {
+    s.on('mw_room_joined', ({ room: r, playerToken }) => {
       setRoom(r)
       setConnecting(false)
-      saveMwSession({ code: r.code, playerName, isHost })
+      saveMwSession({ code: r.code, playerName, isHost, playerToken })
       if (r.status !== 'waiting') {
         goToGame(r, playerName, isHost, roleRef.current)
       }
     })
-    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih }) => {
+    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
       setRoom(r)
       setConnecting(false)
-      saveMwSession({ code: r.code, playerName: pn, isHost: ih })
+      saveMwSession({ code: r.code, playerName: pn, isHost: ih, playerToken })
       if (r.status !== 'waiting') {
         goToGame(r, pn, ih, roleRef.current)
       }
     })
-    s.on('mw_room_updated', (r) => setRoom(r))
+    s.on('mw_room_updated', (r) => {
+      const nowHost = r.host === playerNameRef.current
+      isHostRef.current = nowHost
+      setRoom(r)
+      saveMwSession({ code: r.code, playerName: playerNameRef.current, isHost: nowHost })
+    })
     s.on('mw_game_started', (r) => goToGame(r, playerNameRef.current, isHostRef.current, roleRef.current))
     s.on('error', (msg) => { setError(msg); setConnecting(false) })
     s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setConnecting(false) })
@@ -109,7 +114,7 @@ export default function MisterWhiteLobby() {
       if (creatingRoomRef.current) return
       const saved = loadMwSession()
       if (saved?.code && playerNameRef.current) {
-        s.emit('mw_rejoin_room', { code: saved.code, playerName: playerNameRef.current })
+        s.emit('mw_rejoin_room', { code: saved.code, playerName: playerNameRef.current, playerToken: saved.playerToken })
       }
     })
   }
@@ -133,6 +138,7 @@ export default function MisterWhiteLobby() {
   const createRoom = () => {
     if (!name.trim()) return
     creatingRoomRef.current = true
+    setTab('create')
     connectAnd((s) => {
       bindSocket(s, name.trim(), true)
       s.emit('mw_create_room', {
@@ -144,6 +150,7 @@ export default function MisterWhiteLobby() {
 
   const joinRoom = () => {
     if (!name.trim() || !code.trim()) return
+    setTab('join')
     connectAnd((s) => {
       bindSocket(s, name.trim(), false)
       s.emit('mw_join_room', { code: code.trim().toUpperCase(), playerName: name.trim() })
@@ -157,7 +164,7 @@ export default function MisterWhiteLobby() {
     setCode(saved.code)
     connectAnd((s) => {
       bindSocket(s, saved.playerName, !!saved.isHost)
-      s.emit('mw_rejoin_room', { code: saved.code, playerName: saved.playerName })
+      s.emit('mw_rejoin_room', { code: saved.code, playerName: saved.playerName, playerToken: saved.playerToken })
     })
   }
 
@@ -168,7 +175,7 @@ export default function MisterWhiteLobby() {
     if (location.state?.returnToLobby && saved) {
       connectAnd((s) => {
         bindSocket(s, saved.playerName, !!saved.isHost)
-        s.emit('mw_rejoin_room', { code: saved.code, playerName: saved.playerName })
+        s.emit('mw_rejoin_room', { code: saved.code, playerName: saved.playerName, playerToken: saved.playerToken })
       })
     }
     return () => {
@@ -206,6 +213,16 @@ export default function MisterWhiteLobby() {
 
   const maxSpec = room ? Math.max(0, (room.players?.length || 0) - 2) : 0
   const isHost = room && room.host === name.trim()
+  const adjustRole = (role, delta) => {
+    const next = adjustSpecialRoleCounts(
+      { numMW, numUndercover },
+      role,
+      delta,
+      room?.players?.length || 0,
+    )
+    setNumMW(next.numMW)
+    setNumUndercover(next.numUndercover)
+  }
 
   if (room) {
     return (
@@ -247,17 +264,26 @@ export default function MisterWhiteLobby() {
                 ))}
               </select>
               <div className="grid grid-cols-2 gap-2">
-                {[{ label: 'Infiltrados', val: numUndercover, set: setNumUndercover }, { label: 'Mister Whites', val: numMW, set: setNumMW }].map(({ label, val, set }) => (
+                {[{ label: 'Infiltrados', val: numUndercover, role: 'undercover' }, { label: 'Mister Whites', val: numMW, role: 'mw' }].map(({ label, val, role }) => (
                   <div key={label} className="bg-white/[0.03] rounded-xl p-3 text-center">
                     <p className="text-slate-500 text-xs mb-1">{label}</p>
                     <div className="flex items-center justify-center gap-2">
-                      <button type="button" onClick={() => set((v) => Math.max(0, v - 1))} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400">−</button>
+                      <button type="button" onClick={() => adjustRole(role, -1)}
+                        disabled={val === 0 || numMW + numUndercover <= 1}
+                        className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-25">−</button>
                       <span className="text-white font-black">{val}</span>
-                      <button type="button" onClick={() => { if (numMW + numUndercover < maxSpec) set((v) => v + 1) }} className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400">+</button>
+                      <button type="button" onClick={() => adjustRole(role, 1)}
+                        disabled={maxSpec === 0 || (numMW + numUndercover >= maxSpec && (role === 'mw' ? numUndercover : numMW) === 0)}
+                        className="w-7 h-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-25">+</button>
                     </div>
                   </div>
                 ))}
               </div>
+              <p className="text-center text-slate-500 text-xs">
+                {(room.players?.length || 0) < 3
+                  ? 'Quando entrarem 3 jogadores podes escolher os papéis.'
+                  : `${maxSpec === 1 ? '1 papel especial' : `${maxSpec} papéis especiais`} no máximo · ficam sempre 2 civis.`}
+              </p>
               <div className="grid grid-cols-3 gap-2">
                 {[60, 90, 120].map((s) => (
                   <button key={s} type="button" onClick={() => setDiscussionSeconds(s)}
@@ -288,17 +314,8 @@ export default function MisterWhiteLobby() {
           <BackButton onClick={() => navigate('/MisterWhite')} />
           <div>
             <h1 className="text-white font-black text-xl">Sala online</h1>
-            <p className="text-slate-500 text-sm">Cria ou entra numa sala</p>
+            <p className="text-slate-300 text-sm">Cria uma sala ou entra com o código</p>
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {['create', 'join'].map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)}
-              className={`py-3 rounded-xl font-bold text-sm ${tab === t ? 'bg-violet-600 text-white' : 'bg-white/[0.04] text-slate-400 border border-white/[0.07]'}`}>
-              {t === 'create' ? '✨ Criar sala' : '🔑 Entrar'}
-            </button>
-          ))}
         </div>
 
         <div>
@@ -307,16 +324,15 @@ export default function MisterWhiteLobby() {
             className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-lg" />
         </div>
 
-        {tab === 'join' && (
-          <div>
-            <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código</label>
-            <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="XXXX" maxLength={6}
-              className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black" />
-          </div>
-        )}
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
+          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (e.target.value) setTab('join') }}
+            placeholder="ABC234" maxLength={6}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-violet-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600" />
+        </div>
 
-        {tab === 'create' && (
-          <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
+        <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
+            <p className="text-slate-300 text-xs font-bold uppercase tracking-wider">Opções da nova sala</p>
             <select value={wordPack} onChange={(e) => setWordPack(e.target.value)}
               className="w-full bg-white/[0.05] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.07] text-sm">
               {Object.entries(wordPacks).map(([id, pack]) => (
@@ -326,15 +342,14 @@ export default function MisterWhiteLobby() {
             <div className="grid grid-cols-3 gap-2">
               {[['facil', 'Fácil'], ['normal', 'Normal'], ['dificil', 'Difícil']].map(([id, label]) => (
                 <button key={id} type="button" onClick={() => setDifficulty(id)}
-                  className={`rounded-xl border py-2 text-xs font-bold ${difficulty === id ? 'bg-slate-500/30 border-slate-400 text-white' : 'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
+                  className={`rounded-xl border py-3 min-h-[48px] text-xs font-bold ${difficulty === id ? 'bg-slate-500/30 border-slate-400 text-white' : 'bg-white/[0.03] border-white/[0.07] text-slate-400'}`}>
                   {label}
                 </button>
               ))}
             </div>
           </div>
-        )}
 
-        {error && <p className="text-red-400 text-sm text-center bg-red-900/20 border border-red-500/30 rounded-xl p-3">{error}</p>}
+        {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
 
         {savedSession?.code && (
           <button type="button" onClick={rejoinSaved} disabled={connecting}
@@ -344,10 +359,16 @@ export default function MisterWhiteLobby() {
         )}
 
         <motion.button whileTap={{ scale: 0.98 }}
-          onClick={tab === 'create' ? createRoom : joinRoom}
-          disabled={connecting || !name.trim() || (tab === 'join' && !code.trim())}
-          className="w-full bg-gradient-to-r from-violet-600 to-purple-700 text-white font-black rounded-2xl py-5 text-xl disabled:opacity-40">
-          {connecting ? '⏳ A ligar…' : tab === 'create' ? 'Criar sala' : 'Entrar na sala'}
+          onClick={createRoom}
+          disabled={connecting || !name.trim()}
+          className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
+        </motion.button>
+        <motion.button whileTap={{ scale: 0.98 }}
+          onClick={joinRoom}
+          disabled={connecting || !name.trim() || !code.trim()}
+          className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'join' ? 'A ligar…' : 'Tenho um código'}
         </motion.button>
     </PageShell>
   )

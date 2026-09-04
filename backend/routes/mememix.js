@@ -3,12 +3,18 @@ const router = express.Router()
 const Card = require('../models/Card')
 const { asyncRoute, cleanString } = require('../lib/validate')
 const { buildPackFilter } = require('../lib/packQuery')
+const { getLocalLegendaPacks, getLocalLegendas } = require('../lib/localMememix')
 const {
   verifyUploadToken,
   saveMemeImage,
   getMemeFilePath,
+  detectImageKind,
+  verifyMemeView,
 } = require('../lib/mememixSessions')
-const { mmRooms, removeMemeFromRoom } = require('../lib/mememixSocket')
+const {
+  mmRooms,
+  removeMemeFromRoom,
+} = require('../lib/mememixSocket')
 
 const MAX_BYTES = 5 * 1024 * 1024
 
@@ -20,7 +26,12 @@ router.get('/packs', asyncRoute(async (req, res) => {
     { $group: { _id: '$pack', count: { $sum: 1 } } },
     { $sort: { _id: 1 } },
   ])
-  res.json(rows.map((r) => ({ pack: r._id || 'base', count: r.count })))
+  const packs = new Map(getLocalLegendaPacks().map((r) => [r.pack, r]))
+  for (const row of rows) {
+    const pack = row._id || 'base'
+    packs.set(pack, { ...(packs.get(pack) || {}), pack, count: row.count })
+  }
+  res.json([...packs.values()].sort((a, b) => a.pack.localeCompare(b.pack)))
 }))
 
 router.get('/legendas', asyncRoute(async (req, res) => {
@@ -30,7 +41,11 @@ router.get('/legendas', asyncRoute(async (req, res) => {
     category: 'legenda',
     pack: buildPackFilter(pack, req.query.include_community),
   }).lean()
-  res.json(rows.map((r) => r.text))
+  const includeCommunity = req.query.include_community === true
+    || req.query.include_community === 'true'
+    || req.query.include_community === '1'
+  const local = getLocalLegendas({ packs: [pack], includeCommunity })
+  res.json([...new Set([...rows.map((r) => r.text), ...local])])
 }))
 
 router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
@@ -64,8 +79,9 @@ router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
     const b64 = match ? match[2] : raw
     const mime = match ? match[1] : 'image/jpeg'
     buffer = Buffer.from(b64, 'base64')
-    if (mime.includes('png')) ext = '.png'
-    else if (mime.includes('jpeg') || mime.includes('jpg')) ext = '.jpg'
+    const kind = detectImageKind(buffer)
+    if (!kind) return res.status(400).json({ error: 'Ficheiro não é uma imagem válida' })
+    ext = kind
   } else {
     return res.status(400).json({ error: 'Envia imageBase64 no body' })
   }
@@ -101,12 +117,17 @@ router.post('/rooms/:code/memes/:memeId/remove', asyncRoute(handleMemeRemove))
 
 router.get('/rooms/:code/memes/:file', asyncRoute(async (req, res) => {
   const code = String(req.params.code || '').toUpperCase()
-  const token = req.query.token
-  const auth = verifyUploadToken(token, code)
-  if (!auth && !mmRooms[code]) return res.status(403).json({ error: 'Acesso negado' })
+  if (!verifyMemeView(code, req.params.file, req.query.exp, req.query.sig)) {
+    return res.status(403).json({ error: 'Acesso negado' })
+  }
+
+  const room = mmRooms[code]
+  if (!room) return res.status(404).json({ error: 'Sala não encontrada' })
 
   const filePath = getMemeFilePath(code, req.params.file)
   if (!filePath) return res.status(404).json({ error: 'Meme não encontrado' })
+  res.setHeader('Cache-Control', 'private, max-age=60')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
   res.sendFile(filePath)
 }))
 

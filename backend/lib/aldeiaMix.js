@@ -26,7 +26,7 @@ function defaultSettings() {
   }
 }
 
-function validateSettings(settings, totalPlayers) {
+function normalizeSettings(settings) {
   const s = { ...defaultSettings(), ...settings }
   s.numLobos = Math.max(0, Math.min(5, Number(s.numLobos) || 0))
   s.numCurandeiras = Math.max(0, Math.min(3, Number(s.numCurandeiras) || 0))
@@ -35,6 +35,19 @@ function validateSettings(settings, totalPlayers) {
     ? Number(s.discussionSeconds) : 120
   s.nightSeconds = [45, 60, 90].includes(Number(s.nightSeconds))
     ? Number(s.nightSeconds) : 60
+  return s
+}
+
+function isValidNightPick(field, targetRole) {
+  if (!targetRole || targetRole === 'narrador') return false
+  if (field === 'wolfTarget') return targetRole !== 'lobo'
+  if (field === 'sheriffTarget') return targetRole !== 'vidente'
+  if (field === 'medicTarget') return true
+  return false
+}
+
+function validateSettings(settings, totalPlayers) {
+  const s = normalizeSettings(settings)
 
   const playingSlots = Math.max(0, totalPlayers - 1)
   const specials = s.numLobos + s.numCurandeiras + s.numVidentes
@@ -162,7 +175,9 @@ function pickMostVoted(counts) {
 module.exports = {
   ROLE_LABELS,
   defaultSettings,
+  normalizeSettings,
   validateSettings,
+  isValidNightPick,
   assignRoles,
   assignRolesForRoom,
   checkEndCondition,

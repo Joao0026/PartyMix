@@ -61,7 +61,7 @@ export default function ConnectionStatus() {
   if (socketStatus === 'disconnected') {
     return (
       <StatusBanner tone="red" icon={<WifiOff className="w-4 h-4" />}>
-        Ligação ao jogo perdida. A tentar recuperar.
+        Ligação ao jogo perdida. Se o servidor reiniciou, a sala acabou — volta ao lobby e cria outra.
       </StatusBanner>
     )
   }

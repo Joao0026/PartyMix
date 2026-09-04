@@ -8,6 +8,11 @@ import coupleBase from '../../../data/couple/base.json'
 import coupleFesta from '../../../data/couple/festa.json'
 import coupleCommunity from '../../../data/couple/community.json'
 import drinkDecks from '../../../data/drink/decks.json'
+import drinkNoiteAcademica from '../../../data/drink/noite-academica-pack.json'
+import drinkSemFiltros from '../../../data/drink/sem-filtros-pack.json'
+import drinkCasaisFesta from '../../../data/drink/casais-festa-pack.json'
+
+const DRINK_PACK_DOCS = [drinkDecks, drinkNoiteAcademica, drinkSemFiltros, drinkCasaisFesta]
 
 const CATEGORY_MAP = {
   telepatia: 'telepatia',
@@ -36,6 +41,8 @@ const CHALLENGE_PACKS = {
   family: { base: familyBase, festa: familyFesta, community: familyCommunity },
   couple: { base: coupleBase, festa: coupleFesta, community: coupleCommunity },
 }
+
+const DRINK_PACKS = DRINK_PACK_DOCS
 
 function clean(value, max = 300) {
   return String(value ?? '').replace(/<[^>]*>/g, '').trim().slice(0, max)
@@ -134,11 +141,14 @@ function allLocalChallenges() {
 
 export function getLocalChallenges({ category, mode_type, pack, include_community, difficulty } = {}) {
   const packs = resolvePackNames(pack, include_community === true || include_community === 'true' || include_community === '1')
-  const modes = mode_type ? [mode_type, 'all'] : ['friends', 'family', 'couple', 'all']
+  const familyOnly = mode_type === 'family'
+  const modes = familyOnly ? ['family'] : (mode_type ? [mode_type, 'all'] : ['friends', 'family', 'couple', 'all'])
+  const adultCats = new Set(['erotico', 'picante', 'roleplay', 'casal_pergunta', 'caos'])
 
   return allLocalChallenges().filter((row) => {
     if (category && row.category !== category) return false
     if (mode_type && !modes.includes(row.mode_type)) return false
+    if (familyOnly && (row.audience === 'adult' || adultCats.has(row.category))) return false
     if (pack && !packs.includes(row.pack)) return false
     if (difficulty && row.difficulty !== difficulty) return false
     return true
@@ -161,27 +171,34 @@ export function getLocalImpostorChallenges(params = {}) {
 
 export function getLocalDrinkDecks(pack = 'base') {
   const packId = clean(pack, 60) || 'base'
-  if (packId !== 'base' && drinkDecks.pack !== packId) return null
-  const categories = Object.entries(drinkDecks.decks || {}).map(([id, deck]) => ({
+  const doc = DRINK_PACK_DOCS.find((entry) => entry.pack === packId)
+  if (!doc) return null
+  const categories = Object.entries(doc.decks || {}).map(([id, deck]) => ({
     id,
     label: deck.label || id,
     desc: deck.desc || '',
-    premium: !!deck.premium,
+    premium: false,
     cards: Array.isArray(deck.cards) ? deck.cards : [],
   }))
   return {
-    pack: drinkDecks.pack || 'base',
-    name: drinkDecks.name || 'Beber',
-    description: drinkDecks.description || '',
+    pack: doc.pack || packId,
+    name: doc.name || 'Beber',
+    description: doc.description || '',
+    premium: false,
+    intensity: doc.intensity || 'moderada',
+    ageRating: doc.ageRating || '18+',
     categories,
   }
 }
 
 export function getLocalDrinkPacks() {
-  return [{
-    pack: drinkDecks.pack || 'base',
-    name: drinkDecks.name || 'Beber - Baralhos',
-    description: drinkDecks.description || '',
-    deckIds: Object.keys(drinkDecks.decks || {}),
-  }]
+  return DRINK_PACKS.map((pack) => ({
+    pack: pack.pack,
+    name: pack.name || pack.pack,
+    description: pack.description || '',
+    premium: false,
+    intensity: pack.intensity || 'moderada',
+    ageRating: pack.ageRating || '18+',
+    teaser: pack.teaser || '',
+  }))
 }

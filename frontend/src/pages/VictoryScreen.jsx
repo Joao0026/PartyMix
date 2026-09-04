@@ -1,8 +1,9 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Trophy, Home, RotateCcw } from 'lucide-react'
+import { Home, RotateCcw, Share2 } from 'lucide-react'
 import GameShell from '../components/layout/GameShell'
+import { shareNight } from '../utils/shareNight'
 
 // ── WEB AUDIO SOUNDS ─────────────────────────────────────────
 function playVictorySound() {
@@ -126,11 +127,48 @@ export default function VictoryScreen() {
     .map((p, i) => ({ ...p, score: scores[i], fails: fails[i] || 0, originalIdx: i }))
     .sort((a, b) => b.score - a.score)
 
+  const winnerName = players[winnerIdx]?.name || '—'
+
+  const shareText = [
+    `🏆 PartyMix — ${winnerName} venceu com ${maxScore} pts!`,
+    ...ranked.map((p, i) => `${i + 1}. ${p.name} — ${p.score} pts${p.fails ? ` · ${p.fails} falhas` : ''}`),
+  ].join('\n')
+
   return (
     <GameShell mode="victory" mainClassName="flex-1 overflow-y-auto relative z-10">
       <Confetti/>
 
       <div className="w-full max-w-lg mx-auto px-4 py-8 relative z-20 space-y-6">
+        {/* Cartão estático 9:16 — screenshot sem depender do confetti */}
+        <div className="mx-auto w-full max-w-[280px] aspect-[9/16] rounded-[2rem] overflow-hidden border border-amber-400/40 bg-[#0c1020] relative shadow-[0_20px_60px_rgba(245,158,11,0.18)]">
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-500/25 via-transparent to-violet-900/50 pointer-events-none" />
+          <div className="relative h-full flex flex-col p-5">
+            <p className="text-amber-200/80 text-[11px] font-black uppercase tracking-[0.22em]">PartyMix</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <span className="text-6xl leading-none">🏆</span>
+              <h2 className="text-white font-black text-2xl mt-4 leading-tight">{winnerName}</h2>
+              <p className="text-amber-300 font-black text-5xl mt-2 leading-none">{maxScore}</p>
+              <p className="text-slate-300 text-sm font-bold mt-1">{maxScore === 1 ? 'ponto' : 'pontos'}</p>
+            </div>
+            <div className="space-y-1.5">
+              {ranked.slice(0, 5).map((p, i) => (
+                <div key={p.originalIdx} className="flex items-center justify-between text-sm">
+                  <span className={`truncate font-bold ${i === 0 ? 'text-amber-300' : 'text-slate-200'}`}>{i + 1}. {p.name}</span>
+                  <span className="text-white font-black ml-2">{p.score}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => shareNight({ title: 'PartyMix', text: shareText })}
+          className="w-full rounded-2xl bg-white py-4 min-h-[52px] text-slate-950 font-black inline-flex items-center justify-center gap-2"
+        >
+          <Share2 className="h-5 w-5" /> Partilhar a noite
+        </button>
+
         {/* Trophy header */}
         <AnimatePresence>
           {show && (
@@ -177,7 +215,7 @@ export default function VictoryScreen() {
                 {/* Score */}
                 <div className="text-right flex-shrink-0">
                   <p className={`font-black text-2xl ${rank===0?'text-amber-400':'text-white'}`}>{p.score}</p>
-                  <p className="text-slate-500 text-xs">{p.score===1?'ponto':'pontos'}</p>
+                  <p className="text-slate-300 text-xs">{p.score===1?'ponto':'pontos'}</p>
                 </div>
               </motion.div>
             )
@@ -201,15 +239,15 @@ export default function VictoryScreen() {
         {fails.some(f => f > 0) && (
           <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:1}}
             className="surface p-4">
-            <p className="text-slate-500 text-xs text-center mb-2 uppercase tracking-wider">Estatísticas da Noite</p>
+            <p className="text-slate-300 text-xs text-center mb-2 uppercase tracking-wider">Estatísticas da Noite</p>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div>
                 <p className="text-white font-black text-2xl">{scores.reduce((a,b)=>a+b,0)}</p>
-                <p className="text-slate-500 text-xs">Desafios completos</p>
+                <p className="text-slate-300 text-xs">Desafios completos</p>
               </div>
               <div>
                 <p className="text-white font-black text-2xl">{fails.reduce((a,b)=>a+b,0)}</p>
-                <p className="text-slate-500 text-xs">Falhanços épicos</p>
+                <p className="text-slate-300 text-xs">Falhanços épicos</p>
               </div>
             </div>
           </motion.div>

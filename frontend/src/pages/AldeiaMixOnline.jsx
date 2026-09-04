@@ -15,6 +15,7 @@ import {
   gameResultLabel,
   playerStatusMessage,
   stepScript,
+  nightPickVisible,
 } from '../utils/aldeiaMixShared'
 
 const API_URL = getSocketUrl()
@@ -133,7 +134,11 @@ function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
         </div>
         {pickField && (
           <div className="space-y-2">
-            {alive.map((r) => (
+            {alive.filter((r) => {
+              const role = narr?.roleByIdx?.[r.origIdx]
+              if (role == null) return true
+              return nightPickVisible(step, role)
+            }).map((r) => (
               <button key={r.origIdx} type="button" onClick={() => onPick(pickField, r.origIdx)}
                 className={`w-full py-3 px-4 rounded-xl text-left font-medium ${
                   selected === r.origIdx ? 'bg-indigo-600 text-white ring-2 ring-indigo-300' : 'bg-white/[0.06] text-slate-200'
@@ -251,6 +256,12 @@ export default function AldeiaMixOnline() {
     s.on('connect', () => {
       setDisconnected(false)
       setReconnecting(false)
+      const saved = loadAmSession()
+      const code = saved?.code
+      const name = playerNameRef.current || saved?.playerName
+      if (code && name) {
+        s.emit('am_rejoin_room', { code, playerName: name, playerToken: saved?.playerToken })
+      }
     })
 
     s.on('am_your_role', (data) => setMyRole(data))
@@ -278,6 +289,7 @@ export default function AldeiaMixOnline() {
         medicTarget: state.medicTarget,
         sheriffTarget: state.sheriffTarget,
         sheriffIsWolf: state.sheriffIsWolf,
+        roleByIdx: state.roleByIdx,
       })
       if (state.discussionEndsAt) {
         setTimerLeft(Math.max(0, Math.ceil((state.discussionEndsAt - Date.now()) / 1000)))
@@ -299,12 +311,12 @@ export default function AldeiaMixOnline() {
     s.on('am_vote_progress', (p) => {
       setRoom((r) => r ? { ...r, votesCast: p.cast, votesExpected: p.total } : r)
     })
-    s.on('am_rejoined', ({ room: r, playerName: pn, isHost: ih }) => {
+    s.on('am_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
       setRoom(r)
       setPlayerName(pn)
       playerNameRef.current = pn
       setIsHost(ih)
-      patchAmSession({ isHost: ih })
+      patchAmSession({ isHost: ih, playerToken })
       setReconnecting(false)
       setDisconnected(false)
       s.emit('am_request_state', { code: r.code })
@@ -344,7 +356,7 @@ export default function AldeiaMixOnline() {
       setSocket(sock)
       setGlobalSocket(sock)
       bindSocket(sock)
-      sock.emit('am_rejoin_room', { code, playerName: pn })
+      sock.emit('am_rejoin_room', { code, playerName: pn, playerToken: saved?.playerToken || handoff?.playerToken })
     }
 
     if (s?.connected) {

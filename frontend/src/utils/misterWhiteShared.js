@@ -72,6 +72,37 @@ export const MW_COLORS = [
   'from-teal-400 to-cyan-500', 'from-orange-400 to-amber-500', 'from-indigo-400 to-violet-500',
 ]
 
+/**
+ * Ajusta Mister Whites/Infiltrados, reservando sempre pelo menos 2 civis.
+ * Se o limite já estiver cheio, aumentar um papel troca uma vaga do outro.
+ */
+export function adjustSpecialRoleCounts(counts, role, delta, playerCount) {
+  const current = {
+    numMW: Math.max(0, Number(counts?.numMW) || 0),
+    numUndercover: Math.max(0, Number(counts?.numUndercover) || 0),
+  }
+  const maxSpecial = Math.max(0, Number(playerCount) - 2)
+  const key = role === 'mw' ? 'numMW' : 'numUndercover'
+  const otherKey = key === 'numMW' ? 'numUndercover' : 'numMW'
+  const total = current.numMW + current.numUndercover
+
+  if (delta < 0) {
+    if (current[key] <= 0 || total <= 1) return current
+    return { ...current, [key]: current[key] - 1 }
+  }
+
+  if (maxSpecial <= 0) return current
+  if (total < maxSpecial) return { ...current, [key]: current[key] + 1 }
+  if (current[otherKey] > 0) {
+    return {
+      ...current,
+      [key]: current[key] + 1,
+      [otherKey]: current[otherKey] - 1,
+    }
+  }
+  return current
+}
+
 /** Junta pares aprovados pela comunidade ao pack indicado (e ao pack comunidade). */
 export function mergeCommunityPairs(packs, communityPairs) {
   if (!Array.isArray(communityPairs) || communityPairs.length === 0) return packs

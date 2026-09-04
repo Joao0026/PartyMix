@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, RotateCcw, Check, Lock, Plus, Trash2 } from 'lucide-react'
+import { ChevronRight, RotateCcw, Check, Plus, Trash2, Beer, Share2 } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import { fetchChallenges, fetchDrinkDecks, fetchDrinkPacks } from '../utils/contentApi'
@@ -19,13 +19,16 @@ import {
   buildPlayableDrinkDeck,
   composeAgentCard,
   pickBalancedDeckCard,
+  sessionAct,
 } from '../utils/drinkAgentCompose'
-import { normalizeDrinkCategories, selectableDrinkCategories } from '../utils/drinkBaralhos'
+import { normalizeDrinkCategories, selectableDrinkCategories, mergeDrinkCategories } from '../utils/drinkBaralhos'
 import { substitutePlayerTokens } from '../utils/drinkPlayerText'
 import PageShell from '../components/layout/PageShell'
 import ModeHeader from '../components/layout/ModeHeader'
 import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
+import { shareNight } from '../utils/shareNight'
+import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 
 const MAX_DRINK_PLAYERS = 15
 
@@ -53,7 +56,7 @@ function PlayerRosterPanel({
             <div className="flex items-center justify-between gap-2 mb-2">
               <p className="text-white text-sm font-bold truncate">
                 {genderSymbol(player.gender) && (
-                  <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
+                  <span className={`mr-1 font-black ${player.gender === 'm' ? 'text-sky-200' : 'text-pink-200'}`}>{genderSymbol(player.gender)}</span>
                 )}
                 {player.name}
               </p>
@@ -62,14 +65,14 @@ function PlayerRosterPanel({
             {showDrinkStats && (
               <div className="grid grid-cols-3 gap-1">
                 {[1, 2, 3].map((amount) => (
-                  <button key={amount} type="button" onClick={() => registerDrink(idx, amount)} className="rounded-lg bg-amber-500/15 border border-amber-400/20 text-amber-200 py-1.5 text-xs font-black">
+                  <button key={amount} type="button" onClick={() => registerDrink(idx, amount)} className="rounded-xl bg-amber-500/15 border border-amber-400/20 text-amber-200 py-3 min-h-[48px] text-sm font-black">
                     +{amount}
                   </button>
                 ))}
               </div>
             )}
             {players.length > 2 && (
-              <button type="button" onClick={() => removeActivePlayer(idx)} className={`${showDrinkStats ? 'mt-2' : ''} w-full rounded-lg bg-red-500/10 border border-red-400/20 text-red-200 py-1.5 text-xs font-bold`}>
+              <button type="button" onClick={() => removeActivePlayer(idx)} className={`${showDrinkStats ? 'mt-2' : ''} w-full rounded-xl bg-red-500/10 border border-red-400/20 text-red-200 py-3 min-h-[48px] text-sm font-bold`}>
                 Remover
               </button>
             )}
@@ -308,7 +311,6 @@ function CardDeck({
   agentPublicPool,
   players,
   departedPlayers,
-  deckSessionId,
   impostorPairs,
   onCardDrawn,
   onAgentResult,
@@ -316,7 +318,8 @@ function CardDeck({
   onImpostorResult,
   onChaosResolved,
 }) {
-  const [deck, setDeck] = useState(() => shuffle([...activeDeck]))
+  const sessionDeck = useMemo(() => [...activeDeck], [activeDeck])
+  const [deck, setDeck] = useState(() => shuffle([...sessionDeck]))
   const [current, setCurrent] = useState(null)
   const [baseCard, setBaseCard] = useState(null)
   const [chaosMomentActive, setChaosMomentActive] = useState(false)
@@ -356,27 +359,6 @@ function CardDeck({
     })
   }, [players])
 
-  useEffect(() => {
-    setDeck(shuffle([...activeDeck]))
-    setCurrent(null)
-    setBaseCard(null)
-    setChaosMomentActive(false)
-    setChaosResolved(true)
-    setChaosActivatorIdx('')
-    setCardDrawId(0)
-    setAgentOpen(false)
-    setAgentResult(null)
-    setImpostorName(null)
-    setImpostorDone(false)
-    setAllianceDone(false)
-    setAllianceTarget('')
-    setNextReaderName(players[0]?.name ?? null)
-    setLastReaderName(null)
-    setRecentTypes([])
-    setRecentDeckIds([])
-    recentPublicTextsRef.current = []
-  }, [deckSessionId, activeDeck])
-
   const finalizeAgent = (raw) => {
     if (!agentPublicPool.length) return raw
     const composed = composeAgentCard(raw, agentPublicPool, recentPublicTextsRef.current)
@@ -403,7 +385,9 @@ function CardDeck({
       pool = pool.filter((card) => card.type !== 'impostor')
     }
     const avoidDeckIds = repeatedDeck ? [recentDeckIds[recentDeckIds.length - 1]] : []
-    const { card: picked, rest } = pickBalancedDeckCard(pool, { avoidDeckIds })
+    const preferAct = sessionAct(sessionDeck.length - deck.length, sessionDeck.length)
+    const skipRare = recentTypes.slice(-8).some((type) => ['impostor', 'miniboss', 'alliance'].includes(type))
+    const { card: picked, rest } = pickBalancedDeckCard(pool, { avoidDeckIds, preferAct, skipRare })
     if (!picked) return
     let card = picked
     if (card?.type === 'agent') card = finalizeAgent(card)
@@ -539,6 +523,27 @@ function CardDeck({
   const showCaosPanel = chaosMomentActive && cardCaos && !chaosResolved
   const caosNeedsSubjectPick = showCaosPanel && caosActivatorIsSubject(cardCaos)
   const caosCanUpgrade = !caosNeedsSubjectPick || chaosActivatorIdx !== ''
+
+  const reshuffleCleanDeck = () => {
+    setDeck(shuffle([...sessionDeck]))
+    setCurrent(null)
+    setBaseCard(null)
+    setChaosMomentActive(false)
+    setChaosResolved(true)
+    setChaosActivatorIdx('')
+    setCardDrawId(0)
+    setAgentOpen(false)
+    setAgentResult(null)
+    setImpostorName(null)
+    setImpostorDone(false)
+    setAllianceDone(false)
+    setAllianceTarget('')
+    setRecentTypes([])
+    setRecentDeckIds([])
+    recentPublicTextsRef.current = []
+    setNextReaderName(players[0]?.name ?? null)
+    setLastReaderName(null)
+  }
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
@@ -810,18 +815,7 @@ function CardDeck({
           <p className="text-emerald-400 font-bold text-lg">🏆 Baralho esgotado!</p>
           <button
             type="button"
-            onClick={() => {
-              setDeck(shuffle([...activeDeck]))
-              setCurrent(null)
-              setBaseCard(null)
-              setChaosMomentActive(false)
-              setChaosResolved(true)
-              setChaosActivatorIdx('')
-    setCardDrawId(0)
-              setNextReaderName(players[0]?.name ?? null)
-              setLastReaderName(null)
-              setRecentTypes([])
-            }}
+            onClick={reshuffleCleanDeck}
             className="w-full bg-white/[0.07] text-white rounded-2xl py-3 flex items-center justify-center gap-2 font-medium"
           >
             <RotateCcw className="w-4 h-4" /> Baralhar de novo
@@ -837,9 +831,16 @@ export default function DrinkGame(){
   const navigate=useNavigate()
   const [phase,setPhase]=useState('setup')
   const [setupStep, setSetupStep] = useState(0)
-  const [playerNames,setPlayerNames]=useState(['','',''])
-  const [playerGenders,setPlayerGenders]=useState([null, null, null])
+  const [playerNames,setPlayerNames]=useState(() => {
+    const { names } = loadNightRoster()
+    return names.length >= 2 ? names.slice(0, MAX_DRINK_PLAYERS) : ['', '', '']
+  })
+  const [playerGenders,setPlayerGenders]=useState(() => {
+    const { names, genders } = loadNightRoster()
+    return names.length >= 2 ? names.slice(0, MAX_DRINK_PLAYERS).map((_, i) => genders[i] ?? null) : [null, null, null]
+  })
   const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','cadeia','especiais'])
+  const [packOff, setPackOff] = useState({})
   const [showMesaPanel, setShowMesaPanel] = useState(false)
   const [showPlayersPanel, setShowPlayersPanel] = useState(false)
   const [deckSessionId, setDeckSessionId] = useState(0)
@@ -848,21 +849,23 @@ export default function DrinkGame(){
   const [activeCurses,setActiveCurses]=useState([])
   const [activeAlliances,setActiveAlliances]=useState([])
   const [turnCount,setTurnCount]=useState(0)
+  const [leaveConfirm, setLeaveConfirm] = useState(false)
   const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
   const [deckCategories, setDeckCategories] = useState(FALLBACK_DRINK_DECKS)
-  const [contentPack, setContentPack] = useState('base')
-  const [includeCommunity, setIncludeCommunity] = useState(true)
-  const [packOptions, setPackOptions] = useState([{ pack: 'base', name: 'base' }])
+  const [contentPacks, setContentPacks] = useState(['base'])
+  const includeCommunity = false
+  const [packOptions, setPackOptions] = useState([{
+    pack: 'base',
+    name: 'Essencial',
+    description: 'O pack gratuito para começar qualquer festa.',
+    premium: false,
+    intensity: 'moderada',
+    ageRating: '18+',
+  }])
   const [decksLoading, setDecksLoading] = useState(true)
   const [midGameName, setMidGameName] = useState('')
   const [midGameGender, setMidGameGender] = useState('m')
   const [departedPlayers, setDepartedPlayers] = useState([])
-
-  const toggleCat=id=>{
-    const cat=deckCategories.find(c=>c.id===id)
-    if(cat?.premium)return
-    setSelectedCats(s=>s.includes(id)?s.filter(x=>x!==id):[...s,id])
-  }
 
   const players=playerNames
     .map((name,i)=>({
@@ -872,18 +875,54 @@ export default function DrinkGame(){
     }))
     .filter(p=>p.name)
 
-  const playersSetupReady = players.length >= 2 && players.every((p) => p.gender === 'm' || p.gender === 'f')
+  const playersSetupReady = players.length >= 2
+
+  useEffect(() => {
+    const names = playerNames.map((n) => n.trim()).filter(Boolean)
+    if (names.length < 2) return
+    const genders = playerNames
+      .map((n, i) => (n.trim() ? playerGenders[i] ?? null : null))
+      .filter((_, i) => playerNames[i]?.trim())
+    saveNightRoster(names, genders)
+  }, [playerNames, playerGenders])
 
   const genderSymbol = (g) => (g === 'm' ? '♂' : g === 'f' ? '♀' : '')
 
+  const packHasCard = (card, packId) => card.pack === packId || (!card.pack && packId === 'base')
+
+  const packedCategories = useMemo(() => {
+    const packSet = new Set(contentPacks)
+    return deckCategories
+      .map((cat) => ({
+        ...cat,
+        cards: (cat.cards || []).filter((card) => {
+          const packId = card.pack || 'base'
+          if (!packSet.has(packId)) return false
+          return !(packOff[packId] || []).includes(cat.id)
+        }),
+      }))
+      .filter((cat) => cat.id === 'comunidade' || (cat.cards && cat.cards.length))
+  }, [deckCategories, contentPacks, packOff])
+
+  const availableCats = useMemo(
+    () => selectableDrinkCategories(packedCategories),
+    [packedCategories]
+  )
+
+  const effectiveCats = useMemo(() => {
+    const available = availableCats.map((cat) => cat.id)
+    const picked = selectedCats.filter((id) => available.includes(id))
+    return picked.length ? picked : available
+  }, [availableCats, selectedCats])
+
   const agentPublicPool = useMemo(
-    () => buildAgentPublicPool(deckCategories, selectedCats),
-    [deckCategories, selectedCats]
+    () => buildAgentPublicPool(packedCategories, effectiveCats),
+    [packedCategories, effectiveCats]
   )
 
   const activeDeck = useMemo(
-    () => buildPlayableDrinkDeck(deckCategories, selectedCats, includeCommunity),
-    [deckCategories, selectedCats, includeCommunity]
+    () => buildPlayableDrinkDeck(packedCategories, effectiveCats, includeCommunity),
+    [packedCategories, effectiveCats, includeCommunity]
   )
 
   const freshStats = (count) => Array.from({ length: count }, () => ({
@@ -894,8 +933,46 @@ export default function DrinkGame(){
     unlucky: 0,
   }))
 
+  const togglePack = (packId) => {
+    setContentPacks((prev) => {
+      if (prev.includes(packId)) {
+        if (prev.length === 1) return prev
+        return prev.filter((id) => id !== packId)
+      }
+      return [...prev, packId]
+    })
+  }
+
+  const decksForPack = (packId) => selectableDrinkCategories(deckCategories)
+    .map((cat) => ({
+      id: cat.id,
+      label: cat.label,
+      count: (cat.cards || []).filter((card) => packHasCard(card, packId)).length,
+    }))
+    .filter((cat) => cat.count > 0)
+
+  const togglePackDeck = (packId, catId) => {
+    setPackOff((prev) => {
+      const current = prev[packId] || []
+      if (current.includes(catId)) {
+        return { ...prev, [packId]: current.filter((id) => id !== catId) }
+      }
+      const onCount = decksForPack(packId).filter((cat) => !current.includes(cat.id)).length
+      if (onCount <= 1 && contentPacks.length === 1) return prev
+      return { ...prev, [packId]: [...current, catId] }
+    })
+  }
+
+  const countPackCards = (packId) => {
+    const off = new Set(packOff[packId] || [])
+    return deckCategories.reduce(
+      (n, cat) => n + (off.has(cat.id) ? 0 : (cat.cards || []).filter((card) => packHasCard(card, packId)).length),
+      0
+    )
+  }
+
   const startGame = () => {
-    if (!playersSetupReady) return
+    if (!playersSetupReady || activeDeck.length === 0) return
     setDrinkStats(freshStats(players.length))
     setActiveRules([])
     setActiveCurses([])
@@ -1122,26 +1199,29 @@ export default function DrinkGame(){
   useEffect(() => {
     let cancelled = false
     setDecksLoading(true)
-    Promise.all([
-      fetchDrinkPacks(),
-      fetchDrinkDecks(contentPack),
-      fetchChallenges({
-        category: 'impostor',
-        mode_type: 'friends',
-        ...challengePackParams(contentPack, includeCommunity),
-      }),
-    ]).then(([packs, decks, impostorRows]) => {
-      if (cancelled) return
-      if (Array.isArray(packs) && packs.length) {
-        setPackOptions(packs.map((p) => ({ pack: p.pack, name: p.name || p.pack })))
-      }
-      const cats = normalizeDrinkCategories(decks?.categories?.length ? decks.categories : FALLBACK_DRINK_DECKS)
-      setDeckCategories(cats)
-      setSelectedCats((prev) => prev.filter((id) => id !== 'comunidade' && cats.some((c) => c.id === id)))
-      if (Array.isArray(impostorRows)) setImpostorPairs(mergeImpostorPairs(IMPOSTOR_PAIRS, impostorRows))
-    }).finally(() => { if (!cancelled) setDecksLoading(false) })
+    fetchDrinkPacks()
+      .then(async (packs) => {
+        if (cancelled) return
+        const list = Array.isArray(packs) && packs.length ? packs : [{ pack: 'base' }]
+        if (Array.isArray(packs) && packs.length) setPackOptions(packs)
+        const ids = list.map((pack) => pack.pack).filter(Boolean)
+        const [decksList, impostorRows] = await Promise.all([
+          Promise.all((ids.length ? ids : ['base']).map((id) => fetchDrinkDecks(id))),
+          fetchChallenges({
+            category: 'impostor',
+            mode_type: 'friends',
+            ...challengePackParams(ids[0] || 'base', includeCommunity),
+          }),
+        ])
+        if (cancelled) return
+        const cats = normalizeDrinkCategories(mergeDrinkCategories(decksList))
+        setDeckCategories(cats)
+        setSelectedCats(selectableDrinkCategories(cats).map((cat) => cat.id))
+        if (Array.isArray(impostorRows)) setImpostorPairs(mergeImpostorPairs(IMPOSTOR_PAIRS, impostorRows))
+      })
+      .finally(() => { if (!cancelled) setDecksLoading(false) })
     return () => { cancelled = true }
-  }, [contentPack, includeCommunity])
+  }, [includeCommunity])
 
   const topBy = (field) => {
     if (!players.length) return null
@@ -1187,7 +1267,7 @@ export default function DrinkGame(){
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-bold truncate">
                       {genderSymbol(player.gender) && (
-                        <span className={player.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(player.gender)} </span>
+                        <span className={`mr-1 font-black ${player.gender === 'm' ? 'text-sky-200' : 'text-pink-200'}`}>{genderSymbol(player.gender)}</span>
                       )}
                       {player.name}
                     </p>
@@ -1203,13 +1283,31 @@ export default function DrinkGame(){
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={()=>setPhase('playing')} className="rounded-2xl bg-white/[0.08] border border-white/10 text-white py-3 font-bold">
+            <button type="button" onClick={()=>setPhase('playing')} className="rounded-2xl bg-white/[0.08] border border-white/10 text-white py-4 min-h-[52px] font-bold">
               Voltar ao jogo
             </button>
-            <button type="button" onClick={startGame} className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-black py-3 font-black">
+            <button type="button" onClick={startGame} className="rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 text-black py-4 min-h-[52px] font-black">
               Nova sessão
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => shareNight({
+              title: 'Modo Beber — PartyMix',
+              text: [
+                '🍺 Modo Beber — PartyMix',
+                mostDrinks ? `Mais goles: ${mostDrinks.player.name} (${mostDrinks.value})` : null,
+                bestAgent ? `Agente: ${bestAgent.player.name} (${bestAgent.value})` : null,
+                ruleKing ? `Regras: ${ruleKing.player.name} (${ruleKing.value})` : null,
+                unluckiest ? `Azar: ${unluckiest.player.name} (${unluckiest.value})` : null,
+                '',
+                ...players.map((player, idx) => `${player.name}: ${drinkStats[idx]?.drinks || 0} goles`),
+              ].filter(Boolean).join('\n'),
+            })}
+            className="w-full rounded-2xl bg-white text-slate-950 py-4 min-h-[52px] font-black inline-flex items-center justify-center gap-2"
+          >
+            <Share2 className="h-5 w-5" /> Partilhar a noite
+          </button>
       </PageShell>
     )
   }
@@ -1219,7 +1317,7 @@ export default function DrinkGame(){
         <ModeHeader
           onBack={() => setupStep > 0 ? setSetupStep(0) : navigate('/')}
           title="🍺 Modo Beber"
-          subtitle={setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Baralhos'}
+          subtitle={setupStep === 0 ? 'Passo 1 — Jogadores' : 'Passo 2 — Escolhe os decks'}
         />
 
         <div className="w-full bg-white/[0.06] rounded-full h-1 mb-6">
@@ -1241,11 +1339,10 @@ export default function DrinkGame(){
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
                 <h3 className="text-white font-semibold mb-1">Quem joga?</h3>
                 <p className="text-slate-500 text-sm mb-4">
-                  Preenche o <span className="text-slate-300 font-semibold">nome</span> e escolhe <span className="text-slate-300 font-semibold">♂ ou ♀</span> — usados nas cartas.
+                  Adiciona pelo menos <span className="text-slate-300 font-semibold">2 nomes</span>. O género é opcional e só serve para adaptar algumas cartas.
                 </p>
                 <div className="space-y-3">
                   {playerNames.map((n, i) => {
-                    const needsGender = n.trim() && playerGenders[i] !== 'm' && playerGenders[i] !== 'f'
                     return (
                     <div key={i} className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-3 space-y-2">
                       <p className="text-slate-500 text-xs font-semibold">Jogador {i + 1}</p>
@@ -1254,7 +1351,7 @@ export default function DrinkGame(){
                           id={`drink-player-name-${i}`}
                           value={n}
                           onChange={(e) => setPlayerNames((ns) => ns.map((x, j) => (j === i ? e.target.value : x)))}
-                          placeholder={`Ex.: ${['Ana', 'João', 'Maria', 'Pedro'][i] || `Jogador ${i + 1}`}`}
+                          placeholder={`Ex.: ${['Margarida', 'João', 'Joel'][i] || `Jogador ${i + 1}`}`}
                           autoComplete="off"
                           aria-label={`Nome do jogador ${i + 1}`}
                           className="flex-1 min-w-0 bg-white/[0.04] text-white rounded-xl px-3 py-2.5 outline-none border border-white/[0.1] focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 text-sm font-medium placeholder-slate-600"
@@ -1272,7 +1369,7 @@ export default function DrinkGame(){
                             <Trash2 className="w-4 h-4"/>
                           </button>
                         )}
-                        <div className={`flex gap-1 flex-shrink-0 rounded-xl p-0.5 ${needsGender ? 'ring-1 ring-amber-400/50' : ''}`}>
+                        <div className="flex gap-1 flex-shrink-0 rounded-xl p-0.5">
                           {[
                             { id: 'm', label: '♂', title: 'Masculino' },
                             { id: 'f', label: '♀', title: 'Feminino' },
@@ -1282,12 +1379,12 @@ export default function DrinkGame(){
                               type="button"
                               title={opt.title}
                               onClick={() => setPlayerGenders((gs) => gs.map((g, j) => (j === i ? opt.id : g)))}
-                              className={`w-9 h-9 rounded-xl border text-base font-bold transition-all ${
+                              className={`min-w-[48px] min-h-[48px] rounded-xl border text-sm font-black transition-all ${
                                 playerGenders[i] === opt.id
                                   ? opt.id === 'm'
                                     ? 'border-sky-400/50 bg-sky-500/20 text-sky-200'
                                     : 'border-pink-400/50 bg-pink-500/20 text-pink-200'
-                                  : 'border-white/[0.08] bg-white/[0.04] text-slate-500 hover:text-white'
+                                  : 'border-white/[0.08] bg-white/[0.04] text-slate-400 hover:text-white'
                               }`}
                             >
                               {opt.label}
@@ -1299,11 +1396,10 @@ export default function DrinkGame(){
                     )
                   })}
                 </div>
-                {!playersSetupReady && players.length >= 2 && (
-                  <p className="text-amber-400/90 text-xs mt-3">Escolhe ♂ ou ♀ para cada jogador com nome.</p>
-                )}
-                {players.length < 2 && playerNames.some((name) => name.trim()) && (
-                  <p className="text-amber-400/90 text-xs mt-3">Mínimo 2 jogadores com nome e género.</p>
+                {players.length < 2 && (
+                  <p className="text-amber-400/90 text-xs mt-3">
+                    Falta adicionar {players.length === 0 ? '2 jogadores' : 'mais 1 jogador'} para continuar.
+                  </p>
                 )}
                 {playerNames.length < MAX_DRINK_PLAYERS && (
                   <button
@@ -1327,7 +1423,7 @@ export default function DrinkGame(){
                 className="w-full text-black font-black rounded-2xl py-4 text-lg disabled:opacity-40 flex items-center justify-center gap-2"
                 style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
               >
-                Escolher baralhos
+                Escolher decks
                 <ChevronRight className="w-5 h-5"/>
               </motion.button>
             </motion.div>
@@ -1350,7 +1446,7 @@ export default function DrinkGame(){
                       className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.05] px-3 py-1 text-sm text-white"
                     >
                       {genderSymbol(p.gender) && (
-                        <span className={p.gender === 'm' ? 'text-sky-300' : 'text-pink-300'}>{genderSymbol(p.gender)}</span>
+                        <span className={`font-black ${p.gender === 'm' ? 'text-sky-200' : 'text-pink-200'}`}>{genderSymbol(p.gender)}</span>
                       )}
                       {p.name}
                     </span>
@@ -1358,72 +1454,103 @@ export default function DrinkGame(){
                 </div>
               </div>
 
-              <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4">
-                <h3 className="text-white font-semibold mb-2">Pack de conteúdo</h3>
-                <select
-                  value={contentPack}
-                  onChange={(e) => setContentPack(e.target.value)}
-                  className="w-full bg-white/[0.05] text-white rounded-xl px-4 py-2.5 border border-white/[0.08] text-sm"
-                >
-                  {packOptions.map((p) => <option key={p.pack} value={p.pack}>{p.name}</option>)}
-                </select>
-                <label className="flex items-center gap-3 mt-3 cursor-pointer">
-                  <button
-                    type="button"
-                    onClick={() => setIncludeCommunity((v) => !v)}
-                    className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${includeCommunity ? 'bg-amber-500' : 'bg-white/[0.12]'}`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${includeCommunity ? 'left-6' : 'left-1'}`}/>
-                  </button>
-                  <span className="text-slate-300 text-sm">Incluir baralho Comunidade</span>
-                </label>
-                {decksLoading && <p className="text-amber-400 text-xs mt-2">A carregar baralhos…</p>}
-              </div>
-
               <div>
-                <h3 className="text-white font-semibold mb-3">Categorias do baralho</h3>
-                <div className="space-y-2">
-                  {selectableDrinkCategories(deckCategories).map(cat => {
-                    const isSel = selectedCats.includes(cat.id)
+                <div className="mb-4">
+                  <p className="text-amber-400 text-xs font-black uppercase tracking-[0.18em]">Escolhe a tua noite</p>
+                  <h3 className="text-white text-xl font-black mt-1">Que packs queres à mesa?</h3>
+                  <p className="text-slate-500 text-sm mt-1">Marca os packs. Dentro de cada um, desliga o que não queres — Bluff só neste, Eu Nunca noutro, etc.</p>
+                </div>
+                <div className="space-y-3">
+                  {packOptions.map((pack) => {
+                    const selected = contentPacks.includes(pack.pack)
+                    const packCount = countPackCards(pack.pack)
+                    const isRecommended = pack.pack === 'base'
+                    const packDecks = selected ? decksForPack(pack.pack) : []
+                    const off = packOff[pack.pack] || []
                     return (
-                      <motion.button
-                        key={cat.id}
-                        whileTap={!cat.premium ? { scale: 0.98 } : {}}
-                        onClick={() => toggleCat(cat.id)}
-                        className={`w-full rounded-2xl p-4 flex items-center gap-3 border transition-all text-left ${
-                          cat.premium
-                            ? 'opacity-50 cursor-not-allowed border-white/[0.04] bg-white/[0.02]'
-                            : isSel
-                              ? 'border-amber-500/40 bg-amber-500/8'
-                              : 'border-white/[0.06] bg-white/[0.03] hover:border-white/[0.15]'
+                      <div
+                        key={pack.pack}
+                        className={`relative w-full overflow-hidden rounded-3xl border p-4 text-left transition-all ${
+                          selected
+                            ? 'border-amber-400/60 bg-amber-500/[0.12] ring-1 ring-amber-400/20'
+                            : 'border-white/[0.08] bg-white/[0.035]'
                         }`}
                       >
-                        <div className="text-2xl flex-shrink-0 w-10 text-center">{cat.label.split(' ')[0]}</div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-bold text-sm ${isSel || cat.premium ? 'text-white' : 'text-slate-400'}`}>{cat.label}</p>
-                          <p className="text-slate-500 text-xs truncate">{cat.desc}{!cat.premium && ` · ${cat.cards.length} cartas`}</p>
-                          {cat.premium && <p className="text-amber-600 text-xs mt-0.5">Em breve — conteúdo premium</p>}
-                        </div>
-                        {cat.premium ? (
-                          <Lock className="text-slate-600 w-4 h-4 flex-shrink-0"/>
-                        ) : (
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSel ? 'border-amber-400 bg-amber-500' : 'border-white/[0.20]'}`}>
-                            {isSel && <Check className="text-white w-3 h-3"/>}
+                        <button
+                          type="button"
+                          onClick={() => togglePack(pack.pack)}
+                          className="flex w-full items-start gap-4 text-left"
+                        >
+                          <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${
+                            selected ? 'bg-amber-500 text-black' : 'bg-white/[0.07] text-amber-300'
+                          }`}>
+                            <Beer className="h-6 w-6" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-black text-white text-base">{pack.name || pack.pack}</p>
+                              {isRecommended && (
+                                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300">
+                                  Recomendado
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-1 text-sm leading-relaxed text-slate-400">{pack.description}</p>
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              <span className="rounded-full border border-white/[0.08] bg-black/10 px-2.5 py-1 text-[10px] font-bold capitalize text-slate-300">
+                                {pack.intensity || 'moderada'}
+                              </span>
+                              <span className="rounded-full border border-white/[0.08] bg-black/10 px-2.5 py-1 text-[10px] font-bold text-slate-300">
+                                {pack.ageRating || '18+'}
+                              </span>
+                              {packCount > 0 && (
+                                <span className="rounded-full border border-amber-400/20 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold text-amber-200">
+                                  {packCount} cartas
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${
+                            selected ? 'border-amber-400 bg-amber-500' : 'border-white/20'
+                          }`}>
+                            {selected && <Check className="h-4 w-4 text-black" />}
+                          </div>
+                        </button>
+                        {selected && packDecks.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+                            {packDecks.map((cat) => {
+                              const on = !off.includes(cat.id)
+                              return (
+                                <button
+                                  key={cat.id}
+                                  type="button"
+                                  onClick={() => togglePackDeck(pack.pack, cat.id)}
+                                  className={`min-h-[48px] rounded-2xl border px-3 py-2 text-left transition-all ${
+                                    on
+                                      ? 'border-amber-400/40 bg-amber-500/15 text-white'
+                                      : 'border-white/[0.08] bg-black/20 text-slate-500 line-through'
+                                  }`}
+                                >
+                                  <span className="block text-sm font-bold leading-tight">{cat.label}</span>
+                                  <span className="block text-[10px] font-semibold text-slate-400">{cat.count}</span>
+                                </button>
+                              )
+                            })}
                           </div>
                         )}
-                      </motion.button>
+                      </div>
                     )
                   })}
                 </div>
-
+                {decksLoading && <p className="text-center text-amber-400 text-xs mt-3">A preparar os decks…</p>}
               </div>
 
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={startGame}
-                disabled={selectedCats.length === 0 || !playersSetupReady}
-                className="w-full text-black font-black rounded-2xl py-5 text-xl disabled:opacity-40"
+                disabled={contentPacks.length === 0 || effectiveCats.length === 0 || activeDeck.length === 0 || !playersSetupReady}
+                className="sticky bottom-3 z-20 w-full rounded-2xl py-5 text-xl font-black text-black disabled:opacity-40"
                 style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}
               >
                 🍻 Começar! ({activeDeck.length} cartas)
@@ -1439,10 +1566,10 @@ export default function DrinkGame(){
       mode="drink"
       header={
         <div className="flex items-center gap-2">
-          <BackButton onClick={() => { setSetupStep(1); setPhase('setup') }} />
+          <BackButton onClick={() => setLeaveConfirm(true)} />
           <div className="flex-1 min-w-0 text-center">
             <h1 className="text-white font-black text-lg leading-tight">🍺 Modo Beber</h1>
-            <p className="text-slate-500 text-sm">Turno {turnCount}</p>
+            <p className="text-slate-300 text-sm">Turno {turnCount}</p>
           </div>
           <button
             type="button"
@@ -1586,7 +1713,6 @@ export default function DrinkGame(){
           agentPublicPool={agentPublicPool}
           players={players}
           departedPlayers={departedPlayers}
-          deckSessionId={deckSessionId}
           impostorPairs={impostorPairs}
           onCardDrawn={onCardDrawn}
           onAgentResult={handleAgentResult}
@@ -1595,6 +1721,23 @@ export default function DrinkGame(){
           onChaosResolved={handleChaosResolved}
         />
       </div>
+
+      {leaveConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-white/10 bg-[#1a1520] p-5 space-y-4">
+            <p className="text-white font-black text-xl text-center">Sair do jogo?</p>
+            <p className="text-slate-300 text-sm text-center">Voltas ao setup. Os goles desta sessão ficam nesta página até começares outra.</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setLeaveConfirm(false)} className="rounded-2xl border border-white/15 bg-white/10 py-4 min-h-[52px] text-white font-black">
+                Continuar
+              </button>
+              <button type="button" onClick={() => { setLeaveConfirm(false); setSetupStep(1); setPhase('setup') }} className="rounded-2xl bg-amber-500 py-4 min-h-[52px] text-black font-black">
+                Sair
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </GameShell>
   )
 }

@@ -197,6 +197,11 @@ async function insertUniqueMememixLegenda(Model, doc, counters) {
     text: doc.text,
   })
   if (exists) {
+    if (exists.pack === 'community' && doc.pack !== 'community') {
+      exists.pack = doc.pack
+      exists.audience = doc.audience || exists.audience
+      await exists.save()
+    }
     counters.skipped += 1
     return
   }
@@ -278,6 +283,10 @@ function collectDrinkDecks(pack) {
     pack: packName,
     name: clean(pack.name || packName, 80),
     description: clean(pack.description, 300),
+    premium: Boolean(pack.premium),
+    intensity: clean(pack.intensity || 'moderada', 30),
+    ageRating: clean(pack.ageRating || '18+', 10),
+    teaser: clean(pack.teaser, 180),
     decks: pack.decks,
   }
 }
@@ -291,6 +300,10 @@ async function upsertDrinkPack(doc) {
     if (!isCommunitySlice) {
       existing.name = doc.name
       existing.description = doc.description
+      existing.premium = doc.premium
+      existing.intensity = doc.intensity
+      existing.ageRating = doc.ageRating
+      existing.teaser = doc.teaser
     }
     existing.decks = { ...(existing.decks || {}), ...(doc.decks || {}) }
     await existing.save()
@@ -373,6 +386,10 @@ async function exportPackObject(packName) {
 
   if (drinkRow?.decks) {
     out.mode = 'drink'
+    out.premium = Boolean(drinkRow.premium)
+    out.intensity = drinkRow.intensity || 'moderada'
+    out.ageRating = drinkRow.ageRating || '18+'
+    out.teaser = drinkRow.teaser || ''
     out.decks = drinkRow.decks
   }
 

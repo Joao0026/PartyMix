@@ -1,4 +1,7 @@
+import { loadAgeGate } from './ageGate'
+
 const ADMIN_TOKEN_KEY = 'partymix_admin_token'
+const COMMUNITY_VOTER_KEY = 'partymix_community_voter_id'
 
 const rawInput = (import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:3001`).trim()
 
@@ -29,6 +32,27 @@ export function clearAdminToken() {
   sessionStorage.removeItem(ADMIN_TOKEN_KEY)
 }
 
+function logoutAdminIfUnauthorized(status) {
+  if (status !== 401) return
+  if (typeof sessionStorage === 'undefined' || !sessionStorage.getItem(ADMIN_TOKEN_KEY)) return
+  clearAdminToken()
+  window.dispatchEvent(new Event('partymix-admin-auth'))
+}
+
+export function getCommunityVoterId() {
+  const stored = localStorage.getItem(COMMUNITY_VOTER_KEY)
+  if (stored) return stored
+  const id = globalThis.crypto?.randomUUID
+    ? globalThis.crypto.randomUUID()
+    : `anon_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`
+  localStorage.setItem(COMMUNITY_VOTER_KEY, id)
+  return id
+}
+
+function ageHeaders() {
+  return loadAgeGate() === 'under' ? { 'X-PartyMix-Age': 'under' } : {}
+}
+
 const authHeaders = () => {
   const t = getAdminToken()
   return t ? { Authorization: `Bearer ${t}` } : {}
@@ -36,7 +60,8 @@ const authHeaders = () => {
 
 const get = (url, opts = {}) =>
   fetch(`${BASE}${url}`, {
-    headers: { ...(opts.auth ? authHeaders() : {}) },
+    credentials: 'include',
+    headers: { ...ageHeaders(), ...(opts.auth ? authHeaders() : {}) },
   })
     .catch((e) => {
       const m = e?.message || 'Erro de rede'
@@ -49,12 +74,32 @@ const get = (url, opts = {}) =>
     })
     .then(async (r) => {
       const text = await r.text()
+      let data
       try {
-        return text ? JSON.parse(text) : {}
+        data = text ? JSON.parse(text) : {}
       } catch {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        if (!r.ok) {
+          logoutAdminIfUnauthorized(r.status)
+          const error = new Error(text.trim() || `HTTP ${r.status}`)
+          error.status = r.status
+          throw error
+        }
         throw new Error('Resposta inválida do servidor')
       }
+      if (!r.ok) {
+        logoutAdminIfUnauthorized(r.status)
+        const error = new Error(
+          typeof data.error === 'string'
+            ? data.error
+            : typeof data.message === 'string'
+              ? data.message
+              : `HTTP ${r.status}`
+        )
+        error.status = r.status
+        error.data = data
+        throw error
+      }
+      return data
     })
 
 const post = async (url, body) => {
@@ -62,7 +107,8 @@ const post = async (url, body) => {
   try {
     r = await fetch(`${BASE}${url}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      headers: { 'Content-Type': 'application/json', ...ageHeaders(), ...authHeaders() },
+      credentials: 'include',
       body: JSON.stringify(body),
     })
   } catch (e) {
@@ -81,7 +127,10 @@ const post = async (url, body) => {
   } catch {
     throw new Error(!r.ok ? `Erro ${r.status} do servidor` : 'Resposta inválida (não JSON)')
   }
-  if (!r.ok) throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  if (!r.ok) {
+    logoutAdminIfUnauthorized(r.status)
+    throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  }
   return data
 }
 
@@ -90,7 +139,8 @@ const del = async (url) => {
   try {
     r = await fetch(`${BASE}${url}`, {
       method: 'DELETE',
-      headers: { ...authHeaders() },
+      headers: { ...ageHeaders(), ...authHeaders() },
+      credentials: 'include',
     })
   } catch (e) {
     const m = e?.message || 'Erro de rede'
@@ -108,7 +158,10 @@ const del = async (url) => {
   } catch {
     throw new Error(!r.ok ? `Erro ${r.status} do servidor` : 'Resposta inválida (não JSON)')
   }
-  if (!r.ok) throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  if (!r.ok) {
+    logoutAdminIfUnauthorized(r.status)
+    throw new Error(typeof data.error === 'string' ? data.error : `HTTP ${r.status}`)
+  }
   return data
 }
 
@@ -127,11 +180,16 @@ export const api = {
   importPack:         (pack) => post('/admin/import-pack', { pack }),
   listAdminPacks:     () => get('/admin/packs', { auth: true }),
   exportAdminPack:    (pack) => get(`/admin/packs/${encodeURIComponent(pack)}/export`, { auth: true }),
+  listDrinkAssign:    () => get('/admin/drink-cards', { auth: true }),
+  assignDrinkCard:    (d) => post(`/admin/drink-cards/assign`, d),
   updateCommunityMeta:(id, d) => post(`/admin/community/${id}/meta`, d),
   getContentAudit:    (p = {}) => get(`/admin/content-audit?${new URLSearchParams(p)}`, { auth: true }),
   previewSubmissionWarnings: (id) => get(`/admin/community/${id}/warnings`, { auth: true }),
 
-  getDrinkPacks:      () => get('/drink/packs'),
+  adminLogout:        () => post('/admin/logout', {}),
+  getHealth:          () => get('/health'),
+  setAgeGate:         (age) => post('/age', { age }),
+  clearAgeGate:       () => del('/age'),
   getDrinkDecks:      (pack = 'base') => get(`/drink/decks?pack=${encodeURIComponent(pack)}`),
 
   // Challenges
@@ -167,11 +225,11 @@ export const api = {
   generateCards:     (players, lang = 'pt') => post('/ai/cards', { players, lang }),
 
   // Community
-  getCommunity:       (p = {}) => get(`/community?${new URLSearchParams(p)}`),
+  getCommunity:       (p = {}, opts = {}) => get(`/community?${new URLSearchParams(p)}`, { auth: !!opts.auth }),
   getCommunityStats:  () => get('/community/stats', { auth: true }),
   submitCommunity:    (d) => post('/community', d),
-  voteCommunity:      (id) => post(`/community/${id}/vote`, {}),
-  unvoteCommunity:    (id) => post(`/community/${id}/unvote`, {}),
+  voteCommunity:      (id) => post(`/community/${id}/vote`, { voterId: getCommunityVoterId() }),
+  unvoteCommunity:    (id) => post(`/community/${id}/unvote`, { voterId: getCommunityVoterId() }),
   approveCommunity:   (id) => post(`/community/${id}/approve`, {}),
   rejectCommunity:    (id) => post(`/community/${id}/reject`, {}),
   deleteCommunity:    (id) => del(`/community/${id}`),

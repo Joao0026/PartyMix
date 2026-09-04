@@ -1,8 +1,14 @@
 const KEY = 'partymix_cards_session'
 
-export function saveCardsSession({ code, playerName, isHost }) {
+export function saveCardsSession({ code, playerName, isHost, playerToken }) {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ code, playerName, isHost: !!isHost }))
+    const prev = loadCardsSession() || {}
+    sessionStorage.setItem(KEY, JSON.stringify({
+      code,
+      playerName,
+      isHost: !!isHost,
+      playerToken: playerToken || prev.playerToken || null,
+    }))
   } catch { /* ignore */ }
 }
 

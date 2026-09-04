@@ -1,8 +1,14 @@
 const KEY = 'partymix_mw_session'
 
-export function saveMwSession({ code, playerName, isHost }) {
+export function saveMwSession({ code, playerName, isHost, playerToken }) {
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ code, playerName, isHost: !!isHost }))
+    const prev = loadMwSession() || {}
+    sessionStorage.setItem(KEY, JSON.stringify({
+      code,
+      playerName,
+      isHost: !!isHost,
+      playerToken: playerToken || prev.playerToken || null,
+    }))
   } catch { /* ignore */ }
 }
 

@@ -22,6 +22,7 @@ const LEGENDA_PACK_LABELS = {
   trabalho: 'Trabalho/Escola',
   relacionamentos: 'Relacionamentos',
   nostalgia: 'Nostalgia',
+  amigos: 'Amigos',
   community: 'Comunidade',
 }
 
@@ -90,7 +91,7 @@ export default function MemeMixLobby() {
     s.off('connect')
     s.off('connect_error')
 
-    s.on('mm_room_created', ({ code: c, room: r, uploadToken: tok }) => {
+    s.on('mm_room_created', ({ code: c, room: r, uploadToken: tok, playerToken }) => {
       creatingRoomRef.current = false
       setRoom({ ...r, code: c })
       setUploadToken(tok)
@@ -98,21 +99,21 @@ export default function MemeMixLobby() {
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
       setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
-      saveMmSession({ code: c, playerName, uploadToken: tok, isHost: true })
+      saveMmSession({ code: c, playerName, uploadToken: tok, isHost: true, playerToken })
       setConnecting(false)
     })
-    s.on('mm_room_joined', ({ code: c, room: r, uploadToken: tok }) => {
+    s.on('mm_room_joined', ({ code: c, room: r, uploadToken: tok, playerToken }) => {
       setRoom(r)
       setUploadToken(tok)
       uploadTokenRef.current = tok
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
       setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
-      saveMmSession({ code: c, playerName, uploadToken: tok, isHost })
+      saveMmSession({ code: c, playerName, uploadToken: tok, isHost, playerToken })
       setConnecting(false)
       if (r.status === 'playing') goToGame(r, playerName, isHost, tok)
     })
-    s.on('mm_rejoined', ({ code: c, room: r, uploadToken: tok, playerName: pn, isHost: ih }) => {
+    s.on('mm_rejoined', ({ code: c, room: r, uploadToken: tok, playerName: pn, isHost: ih, playerToken }) => {
       setRoom(r)
       setUploadToken(tok)
       uploadTokenRef.current = tok
@@ -120,7 +121,7 @@ export default function MemeMixLobby() {
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
       setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
       hasNavigatedRef.current = false
-      saveMmSession({ code: c, playerName: pn, uploadToken: tok, isHost: ih })
+      saveMmSession({ code: c, playerName: pn, uploadToken: tok, isHost: ih, playerToken })
       setConnecting(false)
       if (r.status === 'playing' || r.status === 'ended') {
         const buffered = lastGameStateRef.current
@@ -186,6 +187,7 @@ export default function MemeMixLobby() {
           code: saved.code,
           playerName: playerNameRef.current,
           uploadToken: uploadTokenRef.current || saved.uploadToken,
+          playerToken: saved.playerToken,
         })
       }
     })
@@ -210,6 +212,7 @@ export default function MemeMixLobby() {
   const createRoom = () => {
     if (!name.trim()) return
     creatingRoomRef.current = true
+    setTab('create')
     connectAnd((s) => {
       bindSocket(s, name.trim(), true)
       s.emit('mm_create_room', {
@@ -221,6 +224,7 @@ export default function MemeMixLobby() {
 
   const joinRoom = () => {
     if (!name.trim() || !code.trim()) return
+    setTab('join')
     connectAnd((s) => {
       bindSocket(s, name.trim(), false)
       s.emit('mm_join_room', { code: code.trim().toUpperCase(), playerName: name.trim() })
@@ -238,6 +242,7 @@ export default function MemeMixLobby() {
         code: saved.code,
         playerName: saved.playerName,
         uploadToken: saved.uploadToken,
+        playerToken: saved.playerToken,
       })
     })
   }
@@ -253,6 +258,7 @@ export default function MemeMixLobby() {
           code: saved.code,
           playerName: saved.playerName,
           uploadToken: saved.uploadToken,
+          playerToken: saved.playerToken,
         })
       })
     }
@@ -448,11 +454,11 @@ export default function MemeMixLobby() {
     socket.emit('mm_end_session', { code: room.code })
     clearMmSession()
     socket.disconnect()
-    navigate('/MemeMix')
+    navigate('/')
   }
 
   const playerName = playerNameRef.current || name.trim() || loadMmSession()?.playerName || ''
-  const isHost = room && (room.host === playerName || room.hostId === socket?.id)
+  const isHost = Boolean(room && (isHostRef.current || room.host === playerName))
   const uploadsSetting = room?.settings?.uploads || uploadsMode
   const canUpload = !room?.uploadsLocked && (uploadsSetting === 'all' || isHost)
   const maxPer = room?.settings?.maxMemesPerPlayer || maxMemesPerPlayer
@@ -506,7 +512,7 @@ export default function MemeMixLobby() {
     return (
       <PageShell mode="mememix" innerClassName="space-y-4">
           <div className="flex items-center gap-3">
-            <BackButton onClick={() => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/MemeMix') }} />
+            <BackButton onClick={() => { clearMmSession(); socket?.disconnect(); clearGlobalSocket(); navigate('/') }} />
             <h1 className="text-white font-black text-xl">MemeMix · {room.code}</h1>
           </div>
 
@@ -713,7 +719,7 @@ export default function MemeMixLobby() {
               </button>
             </>
           ) : (
-            <p className="text-center text-slate-600 text-sm animate-pulse">À espera do host…</p>
+            <p className="text-center text-slate-300 text-sm animate-pulse">À espera do host…</p>
           )}
       </PageShell>
     )
@@ -721,32 +727,38 @@ export default function MemeMixLobby() {
 
   return (
     <PageShell mode="mememix" innerClassName="space-y-5">
-        <BackButton onClick={() => navigate('/MemeMix')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
-        <div className="grid grid-cols-2 gap-2">
-          {['create', 'join'].map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)}
-              className={`py-3 rounded-xl font-bold ${tab === t ? 'bg-pink-600 text-white' : 'bg-white/[0.04] text-slate-400'}`}>
-              {t === 'create' ? 'Criar' : 'Entrar'}
-            </button>
-          ))}
+        <BackButton onClick={() => navigate('/')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
+        <div>
+          <h1 className="text-white font-black text-2xl">😂 MemeMix</h1>
+          <p className="text-slate-300 text-sm mt-1">Cria uma sala ou entra com o código dos amigos.</p>
         </div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" maxLength={20}
-          className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4" />
-        {tab === 'join' && (
-          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Código" maxLength={6}
-            className="w-full bg-slate-800 text-white rounded-2xl px-4 py-4 text-center font-black tracking-widest" />
-        )}
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Como te chamas?" maxLength={20}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-pink-500 text-lg placeholder-slate-500" />
+        </div>
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
+          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (e.target.value) setTab('join') }}
+            placeholder="ABC234" maxLength={6}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-pink-500 text-2xl text-center tracking-[0.3em] font-black placeholder-slate-600" />
+        </div>
         {savedSession?.code && (
           <button type="button" onClick={rejoinSaved} disabled={connecting}
             className="w-full bg-white/[0.06] border border-pink-500/30 text-pink-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
             Voltar à sala {savedSession.code} ({savedSession.playerName})
           </button>
         )}
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={tab === 'create' ? createRoom : joinRoom}
+        {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
+        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={createRoom}
           disabled={connecting || !name.trim()}
-          className="w-full bg-pink-600 text-white font-black rounded-2xl py-5 disabled:opacity-40">
-          {connecting ? 'A ligar…' : tab === 'create' ? 'Criar sala' : 'Entrar'}
+          className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
+        </motion.button>
+        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={joinRoom}
+          disabled={connecting || !name.trim() || !code.trim()}
+          className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'join' ? 'A ligar…' : 'Tenho um código'}
         </motion.button>
     </PageShell>
   )

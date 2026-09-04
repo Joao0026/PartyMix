@@ -38,6 +38,7 @@ function expressCorsOptions() {
       }
       return cb(null, isPrivateLanOrigin(origin))
     },
+    credentials: true,
   }
 }
 

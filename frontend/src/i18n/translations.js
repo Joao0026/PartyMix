@@ -2,17 +2,18 @@
 export const translations = {
   pt: {
     // Home
-    tagline: 'O jogo de festa definitivo',
+    tagline: 'Memes, histórias e caos do teu grupo',
     modes: {
       couple:  { label: 'Modo Casal',   desc: 'Dados, desafios, quiz e roleplay' },
       friends: { label: 'Modo Amigos',  desc: 'Mapa, mini-jogos e penalizações' },
       family:  { label: 'Modo Família', desc: 'Cultura, desporto, música e cinema' },
-      drink:   { label: 'Modo Beber',   desc: 'Baralho de regras + roleta' },
-      cards:   { label: 'Modo Cartas',  desc: 'Estilo Cartas Contra Tugas' },
+      drink:   { label: 'Modo Beber',   desc: 'Cartas, desafios e caos para a tua noite' },
+      cards:   { label: 'Modo Cartas',  desc: 'Jogo online estilo Cartas Contra Tugas' },
       mister:  { label: 'Mister White', desc: 'Dedução social — quem é o infiltrado?' },
       aldeia:  { label: 'AldeiaMix', desc: 'Lobos à solta — noite, dia e votação online' },
-      mememix: { label: 'MemeMix', desc: 'Memes vossos + legendas — juiz escolhe o vencedor' },
+      mememix: { label: 'MemeMix', desc: 'Transforma as fotos e piadas do grupo em memes' },
     },
+    moreGames: 'Mais jogos',
     community: 'Cartas da Comunidade',
     // GameSetup
     players: 'Jogadores',
@@ -72,7 +73,7 @@ export const translations = {
       friends: { label: 'Modo Amigos',    desc: 'Mapa, minijuegos y penalizaciones' },
       family:  { label: 'Modo Familia',   desc: 'Cultura, deporte, música y cine' },
       drink:   { label: 'Modo Beber',     desc: 'Baraja de reglas + ruleta' },
-      cards:   { label: 'Modo Cartas',    desc: 'Estilo Cartas Contra la Humanidad' },
+      cards:   { label: 'Modo Cartas',    desc: 'Juego online estilo Cartas Contra la Humanidad' },
       mister:  { label: 'Mister White',   desc: 'Deducción social — ¿quién es el infiltrado?' },
     },
     community: 'Cartas de la Comunidad',
@@ -127,7 +128,7 @@ export const translations = {
       friends: { label: 'Friends Mode', desc: 'Map, mini-games and penalties' },
       family:  { label: 'Family Mode',  desc: 'Culture, sports, music and cinema' },
       drink:   { label: 'Drink Mode',   desc: 'Rule deck + spinning wheel' },
-      cards:   { label: 'Cards Mode',   desc: 'Cards Against Humanity style' },
+      cards:   { label: 'Cards Mode',   desc: 'Online Cards Against Humanity-style game' },
       mister:  { label: 'Mister White', desc: 'Social deduction — who is the spy?' },
     },
     community: 'Community Cards',

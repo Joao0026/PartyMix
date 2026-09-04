@@ -8,6 +8,7 @@ import { io } from 'socket.io-client'
 import { getSocketUrl } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession } from '../utils/amSession'
+import { loadNightRoster } from '../utils/nightRoster'
 import ShareRoomLink from '../components/layout/ShareRoomLink'
 
 const API_URL = getSocketUrl()
@@ -24,6 +25,9 @@ export default function AldeiaMixLobby() {
   const [connecting, setConnecting] = useState(false)
   const isHostRef = useRef(false)
   const hasNavigatedRef = useRef(false)
+  const socketBindingRef = useRef(null)
+  const socketRef = useRef(null)
+  const roomRef = useRef(null)
 
   const [numLobos, setNumLobos] = useState(1)
   const [numCurandeiras, setNumCurandeiras] = useState(1)
@@ -38,41 +42,58 @@ export default function AldeiaMixLobby() {
     navigate('/AldeiaMixOnline', { replace: true, state: { online: true } })
   }
 
+  const unbindSocket = () => {
+    const binding = socketBindingRef.current
+    if (!binding) return
+    Object.entries(binding.handlers).forEach(([event, handler]) => {
+      binding.socket.off(event, handler)
+    })
+    socketBindingRef.current = null
+  }
+
   const bindSocket = (s, playerName, isHost) => {
+    unbindSocket()
     isHostRef.current = isHost
     const roleRef = { current: null }
 
-    s.on('am_your_role', (data) => {
-      roleRef.current = data
-      patchAmLobbyHandoff({ myRole: data })
-    })
-    s.on('am_room_created', ({ code: c, room: r }) => {
-      setRoom({ ...r, code: c })
-      saveAmSession({ code: c, playerName, isHost: true })
-      setConnecting(false)
-    })
-    s.on('am_room_joined', ({ code: c, room: r }) => {
-      setRoom(r)
-      saveAmSession({ code: c, playerName, isHost })
-      setConnecting(false)
-      if (r.status !== 'waiting') goToGame(r, playerName, isHost, roleRef.current)
-    })
-    s.on('am_rejoined', ({ code: c, room: r, playerName: pn, isHost: ih }) => {
-      setRoom(r)
-      hasNavigatedRef.current = false
-      saveAmSession({ code: c, playerName: pn, isHost: ih })
-      setConnecting(false)
-      if (r.status !== 'waiting') goToGame(r, pn, ih, roleRef.current)
-    })
-    s.on('am_room_updated', (r) => setRoom(r))
-    s.on('am_game_started', (r) => goToGame(r, playerName, isHostRef.current, roleRef.current))
-    s.on('am_session_ended', () => {
-      clearAmSession()
-      setError('A sala foi fechada')
-      setRoom(null)
-    })
-    s.on('error', (msg) => { setError(msg); setConnecting(false) })
-    s.on('connect_error', () => { setError('Não foi possível conectar ao servidor'); setConnecting(false) })
+    const handlers = {
+      am_your_role: (data) => {
+        roleRef.current = data
+        patchAmLobbyHandoff({ myRole: data })
+      },
+      am_room_created: ({ code: c, room: r, playerToken }) => {
+        setRoom({ ...r, code: c })
+        saveAmSession({ code: c, playerName, isHost: true, playerToken })
+        setConnecting(false)
+      },
+      am_room_joined: ({ code: c, room: r, playerToken }) => {
+        setRoom(r)
+        saveAmSession({ code: c, playerName, isHost, playerToken })
+        setConnecting(false)
+        if (r.status !== 'waiting') goToGame(r, playerName, isHost, roleRef.current)
+      },
+      am_rejoined: ({ code: c, room: r, playerName: pn, isHost: ih, playerToken }) => {
+        setRoom(r)
+        hasNavigatedRef.current = false
+        saveAmSession({ code: c, playerName: pn, isHost: ih, playerToken })
+        setConnecting(false)
+        if (r.status !== 'waiting') goToGame(r, pn, ih, roleRef.current)
+      },
+      am_room_updated: (r) => {
+        setRoom(r)
+        setError((msg) => (msg === 'Demasiados pedidos. Aguarda um momento.' ? null : msg))
+      },
+      am_game_started: (r) => goToGame(r, playerName, isHostRef.current, roleRef.current),
+      am_session_ended: () => {
+        clearAmSession()
+        setError('A sala foi fechada')
+        setRoom(null)
+      },
+      error: (msg) => { setError(msg); setConnecting(false) },
+      connect_error: () => { setError('Não foi possível conectar ao servidor'); setConnecting(false) },
+    }
+    Object.entries(handlers).forEach(([event, handler]) => s.on(event, handler))
+    socketBindingRef.current = { socket: s, handlers }
   }
 
   const connectAnd = (fn) => {
@@ -87,12 +108,17 @@ export default function AldeiaMixLobby() {
     const s = io(API_URL, { transports: ['websocket', 'polling'] })
     setSocket(s)
     setGlobalSocket(s)
-    s.once('connect', () => fn(s))
-    s.on('connect_error', () => { setError('Sem ligação'); setConnecting(false) })
+    const onInitialError = () => { setError('Sem ligação'); setConnecting(false) }
+    s.once('connect_error', onInitialError)
+    s.once('connect', () => {
+      s.off('connect_error', onInitialError)
+      fn(s)
+    })
   }
 
   const createRoom = () => {
     if (!name.trim()) return
+    setTab('create')
     connectAnd((s) => {
       bindSocket(s, name.trim(), true)
       s.emit('am_create_room', {
@@ -104,6 +130,7 @@ export default function AldeiaMixLobby() {
 
   const joinRoom = () => {
     if (!name.trim() || !code.trim()) return
+    setTab('join')
     connectAnd((s) => {
       bindSocket(s, name.trim(), false)
       s.emit('am_join_room', { code: code.trim().toUpperCase(), playerName: name.trim() })
@@ -117,14 +144,19 @@ export default function AldeiaMixLobby() {
     setCode(saved.code)
     connectAnd((s) => {
       bindSocket(s, saved.playerName, !!saved.isHost)
-      s.emit('am_rejoin_room', { code: saved.code, playerName: saved.playerName })
+      s.emit('am_rejoin_room', { code: saved.code, playerName: saved.playerName, playerToken: saved.playerToken })
     })
   }
 
   useEffect(() => {
     const saved = loadAmSession()
     if (saved?.playerName) setName(saved.playerName)
+    else {
+      const roster = loadNightRoster()
+      if (roster.names.length) setName(roster.names[0])
+    }
     if (saved?.code) setCode(saved.code)
+    return () => unbindSocket()
   }, [])
 
   useEffect(() => {
@@ -135,13 +167,18 @@ export default function AldeiaMixLobby() {
     }
   }, [searchParams])
 
+  socketRef.current = socket
+  roomRef.current = room
+
   useEffect(() => {
-    if (!socket || !room || !isHostRef.current || room.status !== 'waiting') return
-    socket.emit('am_update_settings', {
-      code: room.code,
+    const s = socketRef.current
+    const r = roomRef.current
+    if (!s || !r?.code || !isHostRef.current || r.status !== 'waiting') return
+    s.emit('am_update_settings', {
+      code: r.code,
       settings: { numLobos, numCurandeiras, numVidentes, discussionSeconds },
     })
-  }, [numLobos, numCurandeiras, numVidentes, discussionSeconds, socket, room])
+  }, [numLobos, numCurandeiras, numVidentes, discussionSeconds])
 
   const startGame = () => {
     if (!socket || !room) return
@@ -249,32 +286,33 @@ export default function AldeiaMixLobby() {
   return (
     <PageShell mode="aldeia" innerClassName="space-y-5">
         <BackButton onClick={() => navigate('/AldeiaMix')} showLabel label="Voltar" className="!ml-0 w-auto px-1" />
-        <div className="grid grid-cols-2 gap-2">
-          {['create', 'join'].map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)}
-              className={`py-3 rounded-xl font-bold text-sm ${tab === t ? 'bg-emerald-600 text-white' : 'bg-white/[0.04] text-slate-400 border border-white/[0.07]'}`}>
-              {t === 'create' ? '✨ Criar' : '🔑 Entrar'}
-            </button>
-          ))}
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">O teu nome</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Como te chamas?" maxLength={20}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-emerald-500 text-lg placeholder-slate-500" />
         </div>
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="O teu nome" maxLength={20}
-          className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 outline-none focus:border-emerald-500" />
-        {tab === 'join' && (
-          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Código" maxLength={6}
-            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 text-center tracking-[0.3em] font-black" />
-        )}
+        <div>
+          <label className="text-slate-400 text-xs uppercase tracking-wider mb-2 block">Código da sala</label>
+          <input value={code} onChange={(e) => { setCode(e.target.value.toUpperCase()); if (e.target.value) setTab('join') }}
+            placeholder="ABC234" maxLength={6}
+            className="w-full bg-slate-800 border border-slate-600 text-white rounded-2xl px-4 py-4 text-center tracking-[0.3em] font-black placeholder-slate-600 text-2xl outline-none focus:border-emerald-500" />
+        </div>
         {savedSession?.code && (
           <button type="button" onClick={rejoinSaved} disabled={connecting}
             className="w-full bg-white/[0.06] border border-emerald-500/30 text-emerald-200 rounded-2xl py-3 text-sm font-semibold disabled:opacity-40">
             Voltar à sala {savedSession.code} ({savedSession.playerName})
           </button>
         )}
-        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
-        <motion.button type="button" whileTap={{ scale: 0.98 }}
-          onClick={tab === 'create' ? createRoom : joinRoom}
-          disabled={connecting || !name.trim() || (tab === 'join' && !code.trim())}
-          className="w-full bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black rounded-2xl py-5 disabled:opacity-40">
-          {connecting ? 'A ligar…' : tab === 'create' ? 'Criar sala' : 'Entrar'}
+        {error && <p className="text-red-300 text-sm text-center bg-red-900/30 border border-red-400/40 rounded-xl p-3">{error}</p>}
+        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={createRoom}
+          disabled={connecting || !name.trim()}
+          className="w-full bg-white text-slate-950 font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'create' ? 'A ligar…' : 'Criar sala'}
+        </motion.button>
+        <motion.button type="button" whileTap={{ scale: 0.98 }} onClick={joinRoom}
+          disabled={connecting || !name.trim() || !code.trim()}
+          className="w-full bg-white/[0.08] border border-white/20 text-white font-black rounded-2xl py-5 text-xl min-h-[56px] disabled:opacity-40">
+          {connecting && tab === 'join' ? 'A ligar…' : 'Tenho um código'}
         </motion.button>
     </PageShell>
   )

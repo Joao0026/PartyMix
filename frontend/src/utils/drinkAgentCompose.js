@@ -42,14 +42,41 @@ export function pickAgentPublicText(publicPool, recentTexts = []) {
   return drinkCardDisplayText(picked)
 }
 
+export function sessionAct(drawnCount, sessionSize) {
+  if (!sessionSize) return 1
+  const p = drawnCount / sessionSize
+  if (p < 0.25) return 1
+  if (p < 0.7) return 2
+  return 3
+}
+
+function filterByAct(deck, preferAct, leak = 0.15) {
+  if (!preferAct) return deck
+  const includeNext = Math.random() < leak
+  const filtered = deck.filter((card) => {
+    const act = Number(card.act) || 0
+    if (!act) return true
+    if (act === preferAct) return true
+    if (includeNext && act === preferAct + 1) return true
+    if (preferAct === 3 && act >= 2) return true
+    return false
+  })
+  return filtered.length ? filtered : deck
+}
+
 /** Escolhe carta com peso igual por baralho (não por número de cartas). */
-export function pickBalancedDeckCard(deck, { avoidDeckIds = [] } = {}) {
+export function pickBalancedDeckCard(deck, { avoidDeckIds = [], preferAct = 0, skipRare = false } = {}) {
   if (!deck.length) return { card: null, rest: [] }
+  let pool = filterByAct(deck, preferAct)
+  if (skipRare) {
+    const common = pool.filter((card) => card.rarity !== 'rare')
+    if (common.length) pool = common
+  }
   const byDeck = {}
-  deck.forEach((card, index) => {
+  pool.forEach((card) => {
     const id = card.deckId || 'outros'
     if (!byDeck[id]) byDeck[id] = []
-    byDeck[id].push({ card, index })
+    byDeck[id].push(card)
   })
   let deckIds = Object.keys(byDeck)
   const avoid = new Set(avoidDeckIds.filter(Boolean))
@@ -58,9 +85,10 @@ export function pickBalancedDeckCard(deck, { avoidDeckIds = [] } = {}) {
   const pickId = deckIds[Math.floor(Math.random() * deckIds.length)]
   const group = byDeck[pickId]
   const chosen = group[Math.floor(Math.random() * group.length)]
+  const index = deck.indexOf(chosen)
   return {
-    card: chosen.card,
-    rest: deck.filter((_, i) => i !== chosen.index),
+    card: chosen,
+    rest: deck.filter((_, i) => i !== index),
   }
 }
 

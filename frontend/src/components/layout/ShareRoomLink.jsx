@@ -23,7 +23,7 @@ export default function ShareRoomLink({ mode, code, codeSize = 'lg', showLabel =
 
   return (
     <div className="text-center">
-      {showLabel && <p className="text-slate-400 text-sm mb-2">Código da sala</p>}
+      {showLabel && <p className="text-slate-300 text-sm mb-2">Código da sala</p>}
       <div className="flex items-center justify-center gap-2">
         <p className={`text-white font-black ${codeClass}`}>{code}</p>
         <button
@@ -34,13 +34,13 @@ export default function ShareRoomLink({ mode, code, codeSize = 'lg', showLabel =
           className={`min-h-[44px] min-w-[44px] rounded-2xl transition-all flex items-center justify-center active:scale-95 ${
             copied
               ? 'bg-green-500/15 text-green-400/90'
-              : 'bg-white/[0.04] text-slate-500 hover:text-slate-300 opacity-80 hover:opacity-100'
+              : 'bg-white/[0.04] text-slate-300 hover:text-white opacity-90 hover:opacity-100'
           }`}
         >
           {copied ? <Check className="w-5 h-5" /> : <Link2 className="w-5 h-5" />}
         </button>
       </div>
-      <p className="text-slate-600 text-[11px] mt-1.5">Ícone = Copiar link</p>
+      <p className="text-slate-400 text-xs mt-1.5">Ícone = copiar link</p>
       <AnimatePresence>
         {copied && (
           <motion.p

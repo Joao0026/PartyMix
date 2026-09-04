@@ -9,9 +9,11 @@ import { api } from '../utils/api'
 import {
   WORD_PACKS,
   MW_COLORS,
+  adjustSpecialRoleCounts,
   mergeCommunityPairs,
   pickWordPair,
 } from '../utils/misterWhiteShared'
+import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 
 const COLORS = MW_COLORS
 
@@ -26,9 +28,15 @@ export default function MisterWhiteGame() {
     }).catch(() => {})
   }, [])
   const [step, setStep] = useState('setup')
-  const [playerNames, setPlayerNames] = useState(['','','',''])
+  const [playerNames, setPlayerNames] = useState(() => {
+    const { names } = loadNightRoster()
+    if (names.length < 3) return ['', '', '', '']
+    const take = names.slice(0, 15)
+    while (take.length < 4) take.push('')
+    return take
+  })
   const [numUndercover, setNumUndercover] = useState(1)
-  const [numMW, setNumMW] = useState(1)
+  const [numMW, setNumMW] = useState(0)
   const [wordPack, setWordPack] = useState('geral')
   const [difficulty, setDifficulty] = useState('normal')
   const [discussionSeconds, setDiscussionSeconds] = useState(90)
@@ -38,6 +46,8 @@ export default function MisterWhiteGame() {
   const [civilWord, setCivilWord] = useState('')
   const [undercoverWord, setUndercoverWord] = useState('')
   const [revealCursor, setRevealCursor] = useState(0) // tracks which player is next to reveal
+  const [revealCount, setRevealCount] = useState(0)
+  const [roundStartCursor, setRoundStartCursor] = useState(0)
   const [showRole, setShowRole] = useState(false)
   const [eliminated, setEliminated] = useState([])
   const [votes, setVotes] = useState({})           // {candidateIdx: count}
@@ -50,9 +60,25 @@ export default function MisterWhiteGame() {
   const [timeLeft, setTimeLeft] = useState(discussionSeconds)
 
   const valid = playerNames.filter(n => n.trim())
+
+  useEffect(() => {
+    const names = playerNames.map((n) => n.trim()).filter(Boolean)
+    if (names.length >= 3) saveNightRoster(names)
+  }, [playerNames])
   const maxSpec = Math.max(0, valid.length - 2)
+  const adjustRole = (role, delta) => {
+    const next = adjustSpecialRoleCounts(
+      { numMW, numUndercover },
+      role,
+      delta,
+      valid.length,
+    )
+    setNumMW(next.numMW)
+    setNumUndercover(next.numUndercover)
+  }
 
   const startGame = () => {
+    saveNightRoster(valid)
     const pair = pickWordPair(wordPack, difficulty, wordPacks)
     setCivilWord(pair.civil); setUndercoverWord(pair.undercover)
     // Assign roles randomly but KEEP original player order for reveals/turns
@@ -69,8 +95,11 @@ export default function MisterWhiteGame() {
       color: COLORS[i % COLORS.length],
       ...roleMap[i]
     }))
+    const firstPlayer = Math.floor(Math.random() * valid.length)
     setRoles(assigned)
-    setRevealCursor(Math.floor(Math.random() * valid.length))
+    setRevealCursor(firstPlayer)
+    setRevealCount(0)
+    setRoundStartCursor(firstPlayer)
     setShowRole(false)
     setEliminated([]); setVotes({}); setVoteCandidate(null); setConfirmed(false)
     setMwGuess(''); setMwEliminatedIdx(null); setGameResult(null); setRoundNum(1)
@@ -79,13 +108,22 @@ export default function MisterWhiteGame() {
   }
 
   const activeIndices = roles.map((_, i) => i).filter(i => !eliminated.includes(i))
+  const orderedActiveIndices = roles.length
+    ? Array.from({ length: roles.length }, (_, offset) => (roundStartCursor + offset) % roles.length)
+      .filter((i) => !eliminated.includes(i))
+    : []
 
   // Advance revealCursor wrapping only through active players in original order
   const nextReveal = () => {
-    // Find next in original order after current reveal
-    const next = revealCursor + 1
-    if (next >= roles.length) { setRevealCursor(0); setShowRole(false); setStep('playing'); return }
-    setRevealCursor(next); setShowRole(false)
+    const nextCount = revealCount + 1
+    if (nextCount >= roles.length) {
+      setShowRole(false)
+      setStep('playing')
+      return
+    }
+    setRevealCount(nextCount)
+    setRevealCursor((revealCursor + 1) % roles.length)
+    setShowRole(false)
   }
 
   const startVoting = () => {
@@ -132,11 +170,17 @@ export default function MisterWhiteGame() {
     if (civils <= 1) { setGameResult(mwAlive ? 'mw_wins' : undercoveres > 0 ? 'undercover_wins' : 'civils_win'); setStep('result'); return }
     if (undercoveres >= civils) { setGameResult('undercover_wins'); setStep('result'); return }
     if (!mwAlive && undercoveres === 0) { setGameResult('civils_win'); setStep('result'); return }
-    // Next round — advance reveal cursor to next active player in order
-    const nextActive = activeIndices.filter(i => !newElim.includes(i))
-    // Advance starting player by 1 (rotate right)
-    const firstNext = nextActive[(nextActive.indexOf(nextActive[0]) + 1) % nextActive.length]
-    setRevealCursor(firstNext || nextActive[0] || 0)
+    // Rotate from the previous round cursor through the original seating order.
+    // Eliminated seats still count in that order, but cannot become the starter.
+    let nextStarter = roundStartCursor
+    for (let offset = 1; offset <= roles.length; offset += 1) {
+      const candidate = (roundStartCursor + offset) % roles.length
+      if (!newElim.includes(candidate)) {
+        nextStarter = candidate
+        break
+      }
+    }
+    setRoundStartCursor(nextStarter)
     setVoteCandidate(null); setConfirmed(false); setVotes({})
     setRoundNum(r => r + 1); setStep('playing')
   }
@@ -157,7 +201,15 @@ export default function MisterWhiteGame() {
     }
   }
 
-  const resetGame = () => { setStep('setup'); setPlayerNames(['','','','']); setNumMW(1); setNumUndercover(1) }
+  const resetGame = () => {
+    const { names } = loadNightRoster()
+    const take = names.length >= 3 ? names.slice(0, 15) : ['', '', '', '']
+    while (take.length < 4) take.push('')
+    setStep('setup')
+    setPlayerNames(take)
+    setNumMW(0)
+    setNumUndercover(1)
+  }
 
   const remainingActive = roles.filter((_, i) => !eliminated.includes(i))
 
@@ -195,18 +247,26 @@ export default function MisterWhiteGame() {
                 </button>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {[{label:'Infiltrados',val:numUndercover,set:setNumUndercover},{label:'Mister Whites',val:numMW,set:setNumMW}].map(({label,val,set})=>(
+                {[{label:'Infiltrados',val:numUndercover,role:'undercover'},{label:'Mister Whites',val:numMW,role:'mw'}].map(({label,val,role})=>(
                   <div key={label} className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
                     <p className="text-slate-400 text-xs mb-2">{label}</p>
                     <div className="flex items-center justify-center gap-3">
-                      <button onClick={()=>set(v=>Math.max(0,v-1))} className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white"><Minus className="w-3 h-3"/></button>
+                      <button type="button" onClick={()=>adjustRole(role,-1)}
+                        disabled={val===0||numMW+numUndercover<=1}
+                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-25"><Minus className="w-3 h-3"/></button>
                       <span className="text-white font-black text-xl w-6 text-center">{val}</span>
-                      <button onClick={()=>{ if(numMW+numUndercover<maxSpec) set(v=>v+1) }}
-                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white"><Plus className="w-3 h-3"/></button>
+                      <button type="button" onClick={()=>adjustRole(role,1)}
+                        disabled={maxSpec===0||(numMW+numUndercover>=maxSpec&&(role==='mw'?numUndercover:numMW)===0)}
+                        className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center text-slate-400 hover:text-white disabled:opacity-25"><Plus className="w-3 h-3"/></button>
                     </div>
                   </div>
                 ))}
               </div>
+              <p className="text-center text-slate-500 text-xs">
+                {valid.length < 3
+                  ? 'Adiciona pelo menos 3 jogadores para escolher os papéis.'
+                  : `${maxSpec === 1 ? '1 papel especial' : `${maxSpec} papéis especiais`} no máximo · ficam sempre 2 civis.`}
+              </p>
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 space-y-3">
                 <h3 className="text-white font-semibold">Tema e dificuldade</h3>
                 <select value={wordPack} onChange={e=>setWordPack(e.target.value)}
@@ -281,10 +341,10 @@ export default function MisterWhiteGame() {
               {showRole&&(
                 <button onClick={nextReveal}
                   className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4">
-                  {revealCursor<roles.length-1?`Próximo: ${roles[revealCursor+1]?.name} →`:'Começar Ronda →'}
+                  {revealCount < roles.length - 1 ? `Próximo: ${roles[(revealCursor + 1) % roles.length]?.name} →` : 'Começar Ronda →'}
                 </button>
               )}
-              <p className="text-slate-600 text-xs">{revealCursor+1} de {roles.length}</p>
+              <p className="text-slate-600 text-xs">{revealCount + 1} de {roles.length}</p>
             </motion.div>
           )}
 
@@ -301,7 +361,7 @@ export default function MisterWhiteGame() {
                 </div>
               </div>
               <div className="space-y-2">
-                {activeIndices.map(i => (
+                {orderedActiveIndices.map(i => (
                   <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-sm font-black flex-shrink-0`}>{roles[i].name[0]}</div>
                     <span className="text-white font-medium">{roles[i].name}</span>

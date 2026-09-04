@@ -6,6 +6,7 @@ import BackButton from '../components/layout/BackButton'
 import GameShell from '../components/layout/GameShell'
 import PlayerScoreChips from '../components/layout/PlayerScoreChips'
 import { loadGame, CATEGORY_CONFIG } from '../utils/game'
+import { isUnder18 } from '../utils/ageGate'
 import { fetchRandomChallenge } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 
@@ -63,7 +64,10 @@ export default function ChallengesOnly() {
   const [fails,         setFails]         = useState(() => players.map(() => 0))
   const { play } = useSound()
 
-  useEffect(() => { if (!game) navigate('/') }, [])
+  useEffect(() => {
+    if (!game) navigate('/')
+    else if (isUnder18() && game.mode !== 'family') navigate('/', { replace: true })
+  }, [])
   useEffect(() => { loadChallenge() }, [currentPlayer])
 
   const loadChallenge = async () => {
