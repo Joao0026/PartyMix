@@ -1,6 +1,7 @@
 /** Lógica Mister White partilhada (servidor) */
 
 const Card = require('../models/Card')
+const { themePacks, dedupePairs, sanitizeCustomPairs, normalizeMatchSettings, DIFFICULTY_IDS } = require('./misterPairs')
 
 const WORD_PAIRS = [
   ['Futebol', 'Rugby'], ['Pizza', 'Focaccia'], ['Gato', 'Leopardo'], ['Praia', 'Piscina'],
@@ -14,13 +15,21 @@ const WORD_PAIRS = [
 const WORD_PACKS = {
   geral: { pairs: WORD_PAIRS.map(([civil, undercover]) => ({ civil, undercover, difficulty: 'normal' })) },
   comida: {
-    pairs: [
+    pairs: dedupePairs([
       { civil: 'Pizza', undercover: 'Focaccia', difficulty: 'facil' },
       { civil: 'Café', undercover: 'Chá', difficulty: 'facil' },
       { civil: 'Chocolate', undercover: 'Caramelo', difficulty: 'normal' },
       { civil: 'Bacalhau', undercover: 'Polvo', difficulty: 'dificil' },
-    ],
+      ...(themePacks.comida?.pairs || []),
+    ]),
   },
+  animais: themePacks.animais || { pairs: [] },
+  casa: themePacks.casa || { pairs: [] },
+  objetos: themePacks.objetos || { pairs: [] },
+  profissoes: themePacks.profissoes || { pairs: [] },
+  desporto: themePacks.desporto || { pairs: [] },
+  transportes: themePacks.transportes || { pairs: [] },
+  entretenimento: themePacks.entretenimento || { pairs: [] },
   portugal: {
     pairs: [
       { civil: 'Benfica', undercover: 'Sporting', difficulty: 'facil' },
@@ -31,7 +40,7 @@ const WORD_PACKS = {
   },
   marcas: {
     pairs: [
-      { civil: 'Civil', undercover: 'Pepsi', difficulty: 'facil' },
+      { civil: 'Coca-Cola', undercover: 'Pepsi', difficulty: 'facil' },
       { civil: "McDonald's", undercover: 'Burger King', difficulty: 'facil' },
       { civil: 'Instagram', undercover: 'TikTok', difficulty: 'normal' },
       { civil: 'Netflix', undercover: 'HBO', difficulty: 'normal' },
@@ -53,11 +62,9 @@ const WORD_PACKS = {
       { civil: 'Caderno', undercover: 'Manual', difficulty: 'dificil' },
     ],
   },
+  sala: { pairs: [] },
   comunidade: { pairs: [] },
 }
-
-// Fix typo I accidentally introduced - Coca-Cola not Civil
-WORD_PACKS.marcas.pairs[0] = { civil: 'Coca-Cola', undercover: 'Pepsi', difficulty: 'facil' }
 
 let communityPairsCache = null
 let communityCacheAt = 0
@@ -91,32 +98,39 @@ function invalidateCommunityPairsCache() {
   communityCacheAt = 0
 }
 
-function pickWordPairFromPool(packPairs, communityPairs, wordPack, difficulty) {
-  let base = packPairs
-  if (wordPack === 'comunidade') {
-    base = communityPairs.length ? communityPairs : packPairs
-  } else if (communityPairs.length) {
-    base = [...packPairs, ...communityPairs]
+function pairMatchesDifficulties(pair, difficulties) {
+  if (pair?.custom) return true
+  if (!difficulties?.length || difficulties.length >= DIFFICULTY_IDS.length) return true
+  return difficulties.includes(pair?.difficulty || 'normal')
+}
+
+function collectPairPool(settings, communityPairs = []) {
+  const { wordPacks, difficulties, customPairs } = normalizeMatchSettings(settings)
+  const raw = []
+  for (const id of wordPacks) {
+    if (id === 'sala') raw.push(...customPairs)
+    else if (id === 'comunidade') raw.push(...communityPairs)
+    else raw.push(...(WORD_PACKS[id]?.pairs || []))
   }
-  const candidates = base.filter((p) => (difficulty === 'normal' ? true : p.difficulty === difficulty))
-  const pool = candidates.length ? candidates : base
+  if (customPairs.length && !wordPacks.includes('sala')) raw.push(...customPairs)
+  const unique = dedupePairs(raw)
+  const filtered = unique.filter((p) => pairMatchesDifficulties(p, difficulties))
+  return filtered.length ? filtered : unique
+}
+
+function pickWordPair(settingsOrPack, difficulty, communityPairs = [], customPairs = []) {
+  const settings = typeof settingsOrPack === 'string'
+    ? { wordPack: settingsOrPack, difficulty, customPairs }
+    : (settingsOrPack || {})
+  const pool = collectPairPool(settings, communityPairs)
+  if (!pool.length) return { civil: 'Pizza', undercover: 'Focaccia', difficulty: 'facil' }
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-function pickWordPair(wordPack, difficulty, communityPairs = []) {
-  const packPairs = WORD_PACKS[wordPack]?.pairs || WORD_PACKS.geral.pairs
-  return pickWordPairFromPool(packPairs, communityPairs, wordPack, difficulty)
-}
-
-async function pickWordPairAsync(wordPack, difficulty) {
-  const communityPairs = await loadCommunityPairs()
-  return pickWordPair(wordPack, difficulty, communityPairs)
-}
-
-function assignRoles(playerNames, settings, communityPairs = []) {
+function assignRoles(playerNames, settings = {}, communityPairs = []) {
   const valid = playerNames.filter((n) => String(n).trim())
-  const { numMW = 1, numUndercover = 1, wordPack = 'geral', difficulty = 'normal' } = settings
-  const pair = pickWordPair(wordPack, difficulty, communityPairs)
+  const { numMW = 1, numUndercover = 1 } = settings
+  const pair = pickWordPair(settings, settings.difficulty, communityPairs)
   const indices = Array.from({ length: valid.length }, (_, i) => i)
   const shuffledIdxs = shuffle(indices)
   const roleMap = {}
@@ -159,4 +173,6 @@ module.exports = {
   WORD_PACKS,
   loadCommunityPairs,
   invalidateCommunityPairsCache,
+  sanitizeCustomPairs,
+  collectPairPool,
 }

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { RotateCcw } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
+import { NightCta } from '../components/layout/NightShell'
 import GameShell from '../components/layout/GameShell'
 import PlayerScoreChips from '../components/layout/PlayerScoreChips'
 import { loadGame, CATEGORY_CONFIG } from '../utils/game'
@@ -138,6 +139,7 @@ export default function ChallengesOnly() {
   }
 
   if (!players.length) {
+    const setupMode = isFamily ? 'family' : 'friends'
     return (
       <GameShell
         mode="challenges"
@@ -147,6 +149,11 @@ export default function ChallengesOnly() {
             <h1 className="flex-1 text-center text-lg font-black text-white">⚡ Só desafios</h1>
             <div className="w-10" />
           </div>
+        }
+        footer={
+          <NightCta accent={isFamily ? '#4ade80' : '#8b5cf6'} onClick={() => navigate(`/GameSetup?mode=${setupMode}`)}>
+            Configurar mesa
+          </NightCta>
         }
       >
         <p className="px-4 pt-16 text-center text-sm text-white/60">Não há jogo guardado. Volta ao setup para começar.</p>

@@ -1,4 +1,68 @@
 import { shuffle } from './game'
+import themeDoc from '../../../data/mister/pares.json'
+
+const THEME_LABELS = {
+  comida: '🍕 Comida',
+  animais: '🐾 Animais',
+  casa: '🏠 Casa',
+  objetos: '📦 Objetos',
+  profissoes: '💼 Profissões',
+  desporto: '⚽ Desporto',
+  transportes: '🚌 Transportes',
+  entretenimento: '🎬 Entretenimento',
+}
+
+export const WORD_PACK_ORDER = [
+  'geral', 'comida', 'animais', 'casa', 'objetos', 'profissoes', 'desporto',
+  'transportes', 'entretenimento', 'portugal', 'marcas', 'filmes', 'escola', 'sala', 'comunidade',
+]
+
+function cleanWord(value) {
+  return String(value || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 40)
+}
+
+export function sanitizeMisterPair(raw, extra = {}) {
+  const civil = cleanWord(raw?.civil)
+  const undercover = cleanWord(raw?.undercover)
+  if (!civil || !undercover) return null
+  if (civil.normalize('NFKC').toLowerCase() === undercover.normalize('NFKC').toLowerCase()) return null
+  const difficulty = ['facil', 'normal', 'dificil'].includes(raw?.difficulty) ? raw.difficulty : 'normal'
+  return { civil, undercover, difficulty, ...extra }
+}
+
+function pairKey(pair) {
+  return `${pair.civil.normalize('NFKC').toLowerCase()}|${pair.undercover.normalize('NFKC').toLowerCase()}`
+}
+
+function dedupePairs(list) {
+  const seen = new Set()
+  const out = []
+  for (const pair of list || []) {
+    if (!pair?.civil) continue
+    const key = pairKey(pair)
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(pair)
+  }
+  return out
+}
+
+export function sanitizeCustomPairs(list) {
+  return dedupePairs((Array.isArray(list) ? list : []).map((row) => sanitizeMisterPair(row, { custom: true }))).slice(0, 30)
+}
+
+function themePacksFromDoc(doc) {
+  const out = {}
+  for (const [id, pack] of Object.entries(doc.packs || {})) {
+    out[id] = {
+      label: THEME_LABELS[id] || pack.label || id,
+      pairs: dedupePairs((pack.pairs || []).map((row) => sanitizeMisterPair(row))),
+    }
+  }
+  return out
+}
+
+const themePacks = themePacksFromDoc(themeDoc)
 
 export const WORD_PAIRS = [
   ['Futebol', 'Rugby'], ['Pizza', 'Focaccia'], ['Gato', 'Leopardo'], ['Praia', 'Piscina'],
@@ -16,13 +80,21 @@ export const WORD_PACKS = {
   },
   comida: {
     label: '🍕 Comida',
-    pairs: [
+    pairs: dedupePairs([
       { civil: 'Pizza', undercover: 'Focaccia', difficulty: 'facil' },
       { civil: 'Café', undercover: 'Chá', difficulty: 'facil' },
       { civil: 'Chocolate', undercover: 'Caramelo', difficulty: 'normal' },
       { civil: 'Bacalhau', undercover: 'Polvo', difficulty: 'dificil' },
-    ],
+      ...(themePacks.comida?.pairs || []),
+    ]),
   },
+  animais: themePacks.animais || { label: THEME_LABELS.animais, pairs: [] },
+  casa: themePacks.casa || { label: THEME_LABELS.casa, pairs: [] },
+  objetos: themePacks.objetos || { label: THEME_LABELS.objetos, pairs: [] },
+  profissoes: themePacks.profissoes || { label: THEME_LABELS.profissoes, pairs: [] },
+  desporto: themePacks.desporto || { label: THEME_LABELS.desporto, pairs: [] },
+  transportes: themePacks.transportes || { label: THEME_LABELS.transportes, pairs: [] },
+  entretenimento: themePacks.entretenimento || { label: THEME_LABELS.entretenimento, pairs: [] },
   portugal: {
     label: '🇵🇹 Portugal',
     pairs: [
@@ -58,6 +130,10 @@ export const WORD_PACKS = {
       { civil: 'Recreio', undercover: 'Intervalo', difficulty: 'normal' },
       { civil: 'Caderno', undercover: 'Manual', difficulty: 'dificil' },
     ],
+  },
+  sala: {
+    label: 'Da sala',
+    pairs: [],
   },
   comunidade: {
     label: '🌍 Comunidade',
@@ -103,35 +179,101 @@ export function adjustSpecialRoleCounts(counts, role, delta, playerCount) {
   return current
 }
 
-/** Junta pares aprovados pela comunidade ao pack indicado (e ao pack comunidade). */
-export function mergeCommunityPairs(packs, communityPairs) {
-  if (!Array.isArray(communityPairs) || communityPairs.length === 0) return packs
-  const merged = { ...packs, comunidade: { ...packs.comunidade, pairs: communityPairs } }
+/** Junta pares da comunidade e da sala aos packs oficiais. */
+export function mergeCommunityPairs(packs, communityPairs, customPairs = []) {
+  const community = Array.isArray(communityPairs) ? communityPairs : []
+  const custom = sanitizeCustomPairs(customPairs)
+  const merged = {
+    ...packs,
+    comunidade: { ...packs.comunidade, pairs: community },
+    sala: { ...packs.sala, label: packs.sala?.label || 'Da sala', pairs: custom },
+  }
   for (const key of Object.keys(merged)) {
-    if (key === 'comunidade') continue
-    const base = merged[key]?.pairs || []
-    merged[key] = { ...merged[key], pairs: [...base, ...communityPairs] }
+    if (key === 'comunidade' || key === 'sala') continue
+    const base = packs[key]?.pairs || []
+    merged[key] = { ...merged[key], pairs: [...base, ...community, ...custom] }
   }
   return merged
 }
 
-function pickWordPairFromPacks(packs, wordPack, difficulty) {
-  let packPairs = packs[wordPack]?.pairs || packs.geral.pairs
-  if (wordPack === 'comunidade') {
-    packPairs = packs.comunidade?.pairs?.length ? packs.comunidade.pairs : packs.geral.pairs
+export const DIFFICULTY_IDS = ['facil', 'normal', 'dificil']
+export const DIFFICULTY_LABELS = { facil: 'Fácil', normal: 'Normal', dificil: 'Difícil' }
+export const DISCUSSION_SECONDS = [60, 90, 120]
+
+export function sanitizeWordPacks(list, fallback = ['geral']) {
+  const allowed = new Set(WORD_PACK_ORDER)
+  const out = WORD_PACK_ORDER.filter((id) => (Array.isArray(list) ? list : []).includes(id) && allowed.has(id))
+  return out.length ? out : fallback
+}
+
+export function sanitizeDifficulties(list, fallback = DIFFICULTY_IDS) {
+  const allowed = new Set(DIFFICULTY_IDS)
+  const out = DIFFICULTY_IDS.filter((id) => (Array.isArray(list) ? list : []).includes(id) && allowed.has(id))
+  return out.length ? out : fallback
+}
+
+export function toggleOrdered(list, id, ordered) {
+  const has = list.includes(id)
+  const next = has ? list.filter((x) => x !== id) : [...list, id]
+  return ordered.filter((x) => next.includes(x))
+}
+
+export function normalizeMatchSettings(settings = {}) {
+  const wordPacks = Array.isArray(settings.wordPacks)
+    ? sanitizeWordPacks(settings.wordPacks, [])
+    : sanitizeWordPacks(settings.wordPack ? [settings.wordPack] : ['geral'])
+  const difficulties = Array.isArray(settings.difficulties)
+    ? sanitizeDifficulties(settings.difficulties, [])
+    : sanitizeDifficulties(settings.difficulty ? [settings.difficulty] : DIFFICULTY_IDS)
+  return {
+    wordPacks: wordPacks.length ? wordPacks : ['geral'],
+    difficulties: difficulties.length ? difficulties : DIFFICULTY_IDS,
+    customPairs: sanitizeCustomPairs(settings.customPairs),
+    discussionSeconds: DISCUSSION_SECONDS.includes(Number(settings.discussionSeconds))
+      ? Number(settings.discussionSeconds)
+      : 90,
   }
-  const candidates = packPairs.filter((p) => (difficulty === 'normal' ? true : p.difficulty === difficulty))
-  const pool = candidates.length ? candidates : packPairs
+}
+
+function pairMatchesDifficulties(pair, difficulties) {
+  if (pair?.custom) return true
+  if (!difficulties?.length || difficulties.length >= DIFFICULTY_IDS.length) return true
+  return difficulties.includes(pair?.difficulty || 'normal')
+}
+
+export function collectPairPool(packs, settings = {}, communityPairs = []) {
+  const { wordPacks, difficulties, customPairs } = normalizeMatchSettings({
+    ...settings,
+    customPairs: settings.customPairs ?? packs?.sala?.pairs,
+  })
+  const community = Array.isArray(communityPairs) && communityPairs.length
+    ? communityPairs
+    : (packs?.comunidade?.pairs || [])
+  const raw = []
+  for (const id of wordPacks) {
+    if (id === 'sala') raw.push(...customPairs)
+    else if (id === 'comunidade') raw.push(...community)
+    else raw.push(...(packs[id]?.pairs || []))
+  }
+  if (customPairs.length && !wordPacks.includes('sala')) raw.push(...customPairs)
+  const unique = dedupePairs(raw)
+  const filtered = unique.filter((p) => pairMatchesDifficulties(p, difficulties))
+  return filtered.length ? filtered : unique
+}
+
+export function pickWordPair(settingsOrPack, difficulty, packs = WORD_PACKS, communityPairs = []) {
+  const settings = typeof settingsOrPack === 'string'
+    ? { wordPack: settingsOrPack, difficulty, customPairs: packs?.sala?.pairs }
+    : (settingsOrPack || {})
+  const pool = collectPairPool(packs, settings, communityPairs)
+  if (!pool.length) return { civil: 'Pizza', undercover: 'Focaccia', difficulty: 'facil' }
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
-export function pickWordPair(wordPack, difficulty, packs = WORD_PACKS) {
-  return pickWordPairFromPacks(packs, wordPack, difficulty)
-}
-
-export function assignRoles(playerNames, { numMW, numUndercover, wordPack, difficulty }, packs = WORD_PACKS) {
+export function assignRoles(playerNames, settings = {}, packs = WORD_PACKS, communityPairs = []) {
   const valid = playerNames.filter((n) => n.trim())
-  const pair = pickWordPair(wordPack, difficulty, packs)
+  const { numMW = 0, numUndercover = 1 } = settings
+  const pair = pickWordPair(settings, settings.difficulty, packs, communityPairs)
   const indices = Array.from({ length: valid.length }, (_, i) => i)
   const shuffledIdxs = shuffle([...indices])
   const roleMap = {}

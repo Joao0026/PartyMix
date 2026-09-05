@@ -3,14 +3,20 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Eye, EyeOff } from 'lucide-react'
 import NightShell, { NightTitle, NightCta, NightPlayerChip, pessoaLabel } from '../components/layout/NightShell'
+import MisterMatchSettings from '../components/mister/MisterMatchSettings'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import {
   WORD_PACKS,
+  WORD_PACK_ORDER,
   MW_COLORS,
+  DIFFICULTY_IDS,
   adjustSpecialRoleCounts,
-  mergeCommunityPairs,
+  collectPairPool,
   pickWordPair,
+  sanitizeCustomPairs,
+  sanitizeMisterPair,
+  toggleOrdered,
 } from '../utils/misterWhiteShared'
 import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 
@@ -19,7 +25,14 @@ const COLORS = MW_COLORS
 export default function MisterWhiteGame() {
   const navigate = useNavigate()
   const [communityPairs, setCommunityPairs] = useState([])
-  const wordPacks = useMemo(() => mergeCommunityPairs(WORD_PACKS, communityPairs), [communityPairs])
+  const [customPairs, setCustomPairs] = useState([])
+  const [draftCivil, setDraftCivil] = useState('')
+  const [draftUndercover, setDraftUndercover] = useState('')
+  const packOptions = WORD_PACK_ORDER.filter((id) => WORD_PACKS[id])
+  const packLabels = useMemo(
+    () => Object.fromEntries(packOptions.map((id) => [id, WORD_PACKS[id].label])),
+    [packOptions],
+  )
 
   useEffect(() => {
     api.getMisterPairs().then((d) => {
@@ -31,8 +44,8 @@ export default function MisterWhiteGame() {
   const [draft, setDraft] = useState('')
   const [numUndercover, setNumUndercover] = useState(1)
   const [numMW, setNumMW] = useState(0)
-  const [wordPack, setWordPack] = useState('geral')
-  const [difficulty, setDifficulty] = useState('normal')
+  const [wordPacks, setWordPacks] = useState(['geral'])
+  const [difficulties, setDifficulties] = useState([...DIFFICULTY_IDS])
   const [discussionSeconds, setDiscussionSeconds] = useState(90)
 
   // Game state
@@ -71,9 +84,13 @@ export default function MisterWhiteGame() {
     setNumUndercover(next.numUndercover)
   }
 
+  const matchSettings = { wordPacks, difficulties, customPairs, discussionSeconds }
+  const canStartMatch = collectPairPool(WORD_PACKS, matchSettings, communityPairs).length > 0
+
   const startGame = () => {
+    if (!canStartMatch) return
     saveNightRoster(valid)
-    const pair = pickWordPair(wordPack, difficulty, wordPacks)
+    const pair = pickWordPair(matchSettings, null, WORD_PACKS, communityPairs)
     setCivilWord(pair.civil); setUndercoverWord(pair.undercover)
     // Assign roles randomly but KEEP original player order for reveals/turns
     const indices = Array.from({ length: valid.length }, (_, i) => i)
@@ -214,11 +231,32 @@ export default function MisterWhiteGame() {
 
   return (
     <NightShell
-      onBack={() => (step === 'setup' ? navigate('/MisterWhite') : setStep('setup'))}
+      wide={step === 'settings'}
+      onBack={() => {
+        if (step === 'setup') navigate('/MisterWhite')
+        else if (step === 'settings') setStep('setup')
+        else setStep('settings')
+      }}
       footer={step === 'setup' ? (
-        <NightCta accent={GOLD} onClick={startGame} disabled={valid.length < 3}>
+        <NightCta accent={GOLD} onClick={() => setStep('settings')} disabled={valid.length < 3}>
+          Continuar com {pessoaLabel(valid.length)}
+        </NightCta>
+      ) : step === 'settings' ? (
+        <NightCta accent={GOLD} onClick={startGame} disabled={!canStartMatch}>
           Começar com {pessoaLabel(valid.length)}
         </NightCta>
+      ) : step === 'reveal' && showRole ? (
+        <NightCta accent={GOLD} onClick={nextReveal}>
+          {revealCount < roles.length - 1 ? `Próximo: ${roles[(revealCursor + 1) % roles.length]?.name}` : 'Começar ronda'}
+        </NightCta>
+      ) : step === 'playing' ? (
+        <NightCta accent="#ff4d7a" onClick={startVoting}>Votar na eliminação</NightCta>
+      ) : step === 'vote' && voteCandidate !== null && !confirmed ? (
+        <NightCta accent="#ff4d7a" onClick={confirmElimination}>Eliminar {roles[voteCandidate]?.name}</NightCta>
+      ) : step === 'mw_guess' ? (
+        <NightCta accent={GOLD} onClick={handleMWGuess} disabled={!mwGuess.trim()}>Revelar</NightCta>
+      ) : step === 'result' ? (
+        <NightCta accent={GOLD} onClick={startGame}>Nova ronda</NightCta>
       ) : null}
     >
       <AnimatePresence mode="wait">
@@ -289,40 +327,42 @@ export default function MisterWhiteGame() {
                   ? 'Adiciona pelo menos 3 jogadores para escolher os papéis.'
                   : `${maxSpec === 1 ? '1 papel especial' : `${maxSpec} papéis especiais`} no máximo · ficam sempre 2 civis.`}
               </p>
+            </motion.div>
+          )}
 
-              <select
-                value={wordPack}
-                onChange={(e) => setWordPack(e.target.value)}
-                className="mt-4 h-12 w-full appearance-none rounded-full border border-white/10 bg-[#1c1c21] px-5 text-sm text-white outline-none"
-              >
-                {Object.entries(wordPacks).map(([id, pack]) => (
-                  <option key={id} value={id}>{pack.label}</option>
-                ))}
-              </select>
-              <div className="mt-3 flex gap-2">
-                {[['facil', 'Fácil'], ['normal', 'Normal'], ['dificil', 'Difícil']].map(([id, label]) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setDifficulty(id)}
-                    className={`min-h-[48px] flex-1 rounded-full border text-xs font-bold ${difficulty === id ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                {[60, 90, 120].map((seconds) => (
-                  <button
-                    key={seconds}
-                    type="button"
-                    onClick={() => setDiscussionSeconds(seconds)}
-                    className={`rounded-full border py-2 text-xs font-bold ${discussionSeconds === seconds ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
-                  >
-                    {seconds}s
-                  </button>
-                ))}
-              </div>
+          {step === 'settings' && (
+            <motion.div key="settings" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <MisterMatchSettings
+                packIds={packOptions}
+                packLabels={packLabels}
+                wordPacks={wordPacks}
+                onTogglePack={(id) => setWordPacks((prev) => {
+                  const next = toggleOrdered(prev, id, packOptions)
+                  return next.length ? next : prev
+                })}
+                onAllPacks={() => setWordPacks([...packOptions])}
+                difficulties={difficulties}
+                onToggleDifficulty={(id) => setDifficulties((prev) => {
+                  const next = toggleOrdered(prev, id, DIFFICULTY_IDS)
+                  return next.length ? next : prev
+                })}
+                onAllDifficulties={() => setDifficulties([...DIFFICULTY_IDS])}
+                customPairs={customPairs}
+                draftCivil={draftCivil}
+                draftUndercover={draftUndercover}
+                onDraftCivil={setDraftCivil}
+                onDraftUndercover={setDraftUndercover}
+                onAddPair={() => {
+                  const pair = sanitizeMisterPair({ civil: draftCivil, undercover: draftUndercover }, { custom: true })
+                  if (!pair) return
+                  setCustomPairs((prev) => sanitizeCustomPairs([...prev, pair]))
+                  setDraftCivil('')
+                  setDraftUndercover('')
+                }}
+                onRemovePair={(i) => setCustomPairs((prev) => prev.filter((_, idx) => idx !== i))}
+                discussionSeconds={discussionSeconds}
+                onDiscussionSeconds={setDiscussionSeconds}
+              />
             </motion.div>
           )}
 
@@ -338,12 +378,11 @@ export default function MisterWhiteGame() {
                 <motion.button
                   whileTap={{scale:0.96}}
                   onClick={()=>setShowRole(true)}
-                  className="group relative w-full h-48 overflow-hidden rounded-[2rem] border border-violet-300/20 bg-gradient-to-br from-slate-950 via-violet-950/50 to-black shadow-2xl flex flex-col items-center justify-center gap-3 text-slate-300"
+                  className="group relative flex h-48 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[2rem] border border-white/10 bg-[#1c1c21] text-slate-300"
                 >
-                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
-                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-violet-500/20 blur-2xl transition group-active:scale-125" />
-                  <div className="grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-white/[0.06]">
-                    <EyeOff className="w-8 h-8 text-violet-200"/>
+                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#fbbf24]/70 to-transparent" />
+                  <div className="grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-[#141419]">
+                    <EyeOff className="h-8 w-8 text-[#fbbf24]"/>
                   </div>
                   <span className="font-black text-white">Toca para revelar</span>
                   <span className="text-xs text-slate-500">Mantém o ecrã virado só para ti</span>
@@ -358,13 +397,7 @@ export default function MisterWhiteGame() {
                   {roles[revealCursor].role==='mister_white'&&<span className="text-red-300 text-xs">Tenta descobrir a palavra civil!</span>}
                 </motion.div>
               )}
-              {showRole&&(
-                <button onClick={nextReveal}
-                  className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4">
-                  {revealCount < roles.length - 1 ? `Próximo: ${roles[(revealCursor + 1) % roles.length]?.name} →` : 'Começar Ronda →'}
-                </button>
-              )}
-              <p className="text-slate-600 text-xs">{revealCount + 1} de {roles.length}</p>
+              <p className="text-xs text-slate-500">{revealCount + 1} de {roles.length}</p>
             </motion.div>
           )}
 
@@ -400,10 +433,6 @@ export default function MisterWhiteGame() {
                   ))}
                 </div>
               )}
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={startVoting}
-                className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold rounded-2xl py-4">
-                🗳️ Votar na Eliminação
-              </motion.button>
             </motion.div>
           )}
 
@@ -430,13 +459,7 @@ export default function MisterWhiteGame() {
                   className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 text-center space-y-3">
                   <p className="text-amber-300 font-bold">Eliminar <span className="text-white">{roles[voteCandidate]?.name}</span>?</p>
                   <p className="text-slate-400 text-sm">Toda a gente concorda?</p>
-                  <div className="flex gap-3">
-                    <button onClick={() => {setVoteCandidate(null)}} className="flex-1 bg-white/[0.06] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">← Voltar atrás</button>
-                    <motion.button whileTap={{scale:0.96}} onClick={confirmElimination}
-                      className="flex-1 bg-gradient-to-r from-red-600 to-rose-700 text-white font-black rounded-2xl py-3">
-                      Eliminar! ✂️
-                    </motion.button>
-                  </div>
+                  <button type="button" onClick={() => setVoteCandidate(null)} className="w-full py-2 text-sm font-bold text-white/40">Voltar atrás</button>
                 </motion.div>
               )}
               {voteCandidate===null&&(
@@ -455,10 +478,6 @@ export default function MisterWhiteGame() {
                 placeholder="A palavra civil é..."
                 className="w-full bg-white/[0.05] text-white text-center text-lg font-bold rounded-2xl px-4 py-4 outline-none border border-white/[0.08] focus:border-slate-400/50"
                 onKeyDown={e=>e.key==='Enter'&&mwGuess.trim()&&handleMWGuess()}/>
-              <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.98}} onClick={handleMWGuess} disabled={!mwGuess.trim()}
-                className="w-full bg-gradient-to-r from-slate-500 to-slate-700 text-white font-bold rounded-2xl py-4 disabled:opacity-40">
-                Revelar! 🎭
-              </motion.button>
             </motion.div>
           )}
 
@@ -485,10 +504,7 @@ export default function MisterWhiteGame() {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-3">
-                <button onClick={startGame} className="flex-1 bg-white/[0.07] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">🔄 Nova Ronda</button>
-                <button onClick={resetGame} className="flex-1 bg-white/[0.07] border border-white/[0.08] text-white rounded-2xl py-3 font-medium">🏠 Início</button>
-              </div>
+              <button type="button" onClick={resetGame} className="w-full py-2 text-sm font-bold text-white/40">Início</button>
             </motion.div>
           )}
 

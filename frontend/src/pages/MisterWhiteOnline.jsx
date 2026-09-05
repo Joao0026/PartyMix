@@ -2,8 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Eye, EyeOff } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import NightShell, { NightTitle, NightCta } from '../components/layout/NightShell'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekMwLobbyHandoff, clearMwLobbyHandoff } from '../utils/socketStore'
@@ -12,6 +11,7 @@ import { getSocketUrl } from '../utils/api'
 import { MW_COLORS, roleLabel } from '../utils/misterWhiteShared'
 
 const API_URL = getSocketUrl()
+const GOLD = '#fbbf24'
 
 export default function MisterWhiteOnline() {
   const navigate = useNavigate()
@@ -38,6 +38,7 @@ export default function MisterWhiteOnline() {
     s.off('mw_room_updated')
     s.off('mw_guess_prompt')
     s.off('mw_rejoined')
+    s.off('error')
     s.off('disconnect')
     s.off('connect')
 
@@ -78,7 +79,14 @@ export default function MisterWhiteOnline() {
       if (r.status === 'vote') setMyVote(null)
       if (r.status === 'playing') setRevealedReady(true)
     })
-    s.on('mw_vote_update', (r) => setRoom(r))
+    s.on('mw_vote_update', (r) => {
+      setRoom(r)
+      if ((r.votesCast ?? 0) === 0) {
+        setMyVote(null)
+        setVoteTarget(null)
+      }
+    })
+    s.on('error', (msg) => { if (msg) window.alert(String(msg)) })
     s.on('mw_room_updated', (r) => {
       const nowHost = r.host === playerNameRef.current
       setIsHost(nowHost)
@@ -204,41 +212,50 @@ export default function MisterWhiteOnline() {
 
   if (!room) {
     return (
-      <PageShell mode="misterwhite" className="justify-center" innerClassName="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
-        {reconnecting && (
-          <p className="text-slate-500 text-sm">A reconectar…</p>
-        )}
-      </PageShell>
+      <NightShell onBack={() => navigate('/MisterWhite')}>
+        <div className="flex flex-col items-center gap-3 pt-16">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#fbbf24] border-t-transparent" />
+          {reconnecting && <p className="text-sm text-slate-500">A reconectar…</p>}
+        </div>
+      </NightShell>
     )
   }
 
   const status = room.status
   const isMwGuesser = status === 'mw_guess' && room.mwGuessIdx != null
     && room.rolesPublic?.[room.mwGuessIdx]?.name === playerName
-  const mysteryBackground = {
-    background: 'radial-gradient(ellipse at 50% 0%, rgba(139,92,246,0.20) 0%, #111827 45%, #050711 100%)',
-  }
+
+  const footer = status === 'reveal' && showRole && !revealedReady ? (
+    <NightCta accent={GOLD} onClick={confirmReveal}>Pronto — vi o meu papel</NightCta>
+  ) : status === 'playing' && isHost ? (
+    <NightCta accent="#ff4d7a" onClick={startVote}>Iniciar votação</NightCta>
+  ) : status === 'vote' && !amEliminated && myVote == null && voteTarget != null ? (
+    <NightCta accent="#ff4d7a" onClick={castVote}>
+      Votar em {activeRoles.find((r) => r.origIdx === voteTarget)?.name}
+    </NightCta>
+  ) : status === 'mw_guess' && isMwGuesser ? (
+    <NightCta accent={GOLD} onClick={submitGuess} disabled={!mwGuess.trim()}>Revelar</NightCta>
+  ) : status === 'result' ? (
+    isHost ? (
+      <NightCta accent={GOLD} onClick={restart}>Nova sala</NightCta>
+    ) : (
+      <NightCta accent={GOLD} onClick={() => navigate('/MisterWhite')}>Início</NightCta>
+    )
+  ) : null
 
   return (
-    <PageShell mode="misterwhite" innerClassName="space-y-0 w-full" style={mysteryBackground}>
-      <div className="w-full max-w-lg">
+    <NightShell wide onBack={() => navigate('/MisterWhite')} footer={footer}>
         <ReconnectBanner
           reconnecting={reconnecting && !disconnected}
           disconnected={disconnected}
           onRetry={() => socket?.connect()}
         />
-        <div className="flex items-center gap-3 mb-6">
-          <BackButton onClick={() => navigate('/MisterWhite')} />
-          <div>
-            <h1 className="text-white font-bold text-xl">👁️ Sala {room.code}</h1>
-            {status !== 'reveal' && status !== 'waiting' && (
-              <p className="text-slate-500 text-xs">Ronda {room.roundNum} · {playerName}</p>
-            )}
-          </div>
-        </div>
+        <NightTitle>Sala {room.code}</NightTitle>
+        {status !== 'reveal' && status !== 'waiting' && (
+          <p className="mt-1.5 text-center text-[13px] text-white/45">Ronda {room.roundNum} · {playerName}</p>
+        )}
 
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="mt-5 flex flex-wrap justify-center gap-2">
           {(room.players || []).map((p) => (
             <span
               key={p.id || p.name}
@@ -257,12 +274,11 @@ export default function MisterWhiteOnline() {
                 <motion.button
                   whileTap={{ scale: 0.96 }}
                   onClick={() => setShowRole(true)}
-                  className="group relative w-full h-48 overflow-hidden rounded-[2rem] border border-violet-300/20 bg-gradient-to-br from-slate-950 via-violet-950/50 to-black shadow-2xl flex flex-col items-center justify-center gap-3 text-slate-300"
+                  className="group relative flex h-48 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[2rem] border border-white/10 bg-[#1c1c21] text-slate-300"
                 >
-                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
-                  <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-violet-500/20 blur-2xl transition group-active:scale-125" />
-                  <div className="grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-white/[0.06]">
-                    <EyeOff className="w-8 h-8 text-violet-200" />
+                  <div className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-[#fbbf24]/70 to-transparent" />
+                  <div className="grid h-16 w-16 place-items-center rounded-3xl border border-white/10 bg-[#141419]">
+                    <EyeOff className="h-8 w-8 text-[#fbbf24]" />
                   </div>
                   <span className="font-black text-white">Toca para revelar</span>
                   <span className="text-xs text-slate-500">Mantém o ecrã virado só para ti</span>
@@ -276,13 +292,6 @@ export default function MisterWhiteOnline() {
                   {myRole.role === 'undercover' && <p className="text-blue-300 text-xs mt-2">Palavra parecida, mas diferente!</p>}
                   {myRole.role === 'mister_white' && <p className="text-red-300 text-xs mt-2">Descobre a palavra civil!</p>}
                 </motion.div>
-              )}
-              {showRole && !revealedReady && (
-                <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
-                  <button onClick={confirmReveal} className="w-full bg-gradient-to-r from-violet-600 to-slate-700 text-white font-bold rounded-2xl py-4">
-                    Pronto — vi o meu papel ✓
-                  </button>
-                </div>
               )}
               {revealedReady && (
                 <p className="text-slate-500 text-sm animate-pulse">
@@ -311,12 +320,7 @@ export default function MisterWhiteOnline() {
                   </div>
                 ))}
               </div>
-              {isHost && (
-                <button onClick={startVote} className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-bold rounded-2xl py-4">
-                  🗳️ Iniciar votação
-                </button>
-              )}
-              {!isHost && <p className="text-center text-slate-600 text-sm">O host inicia a votação quando estiverem prontos</p>}
+              {!isHost && <p className="text-center text-sm text-white/45">O host inicia a votação quando estiverem prontos</p>}
             </motion.div>
           )}
 
@@ -363,13 +367,6 @@ export default function MisterWhiteOnline() {
                   )
                 })}
               </div>
-              {myVote == null && voteTarget != null && (
-                <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
-                  <button onClick={castVote} className="w-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-black rounded-2xl py-4">
-                    Votar em {activeRoles.find((r) => r.origIdx === voteTarget)?.name} 🗳️
-                  </button>
-                </div>
-              )}
               {myVote != null && (room.votesCast ?? 0) < (room.votesNeeded ?? activeRoles.length) && (
                 <p className="text-center text-slate-500 text-sm animate-pulse">
                   À espera dos outros votos ({room.votesCast}/{room.votesNeeded})…
@@ -405,12 +402,6 @@ export default function MisterWhiteOnline() {
               <input value={mwGuess} onChange={(e) => setMwGuess(e.target.value)} placeholder="A palavra civil é…"
                 className="w-full bg-white/[0.05] text-white text-center text-lg font-bold rounded-2xl px-4 py-4 outline-none border border-white/[0.08]"
                 onKeyDown={(e) => e.key === 'Enter' && mwGuess.trim() && submitGuess()} />
-              <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
-                <button onClick={submitGuess} disabled={!mwGuess.trim()}
-                  className="w-full bg-gradient-to-r from-violet-600 to-slate-700 text-white font-bold rounded-2xl py-4 disabled:opacity-40">
-                  Revelar 🎭
-                </button>
-              </div>
             </motion.div>
           )}
 
@@ -443,15 +434,9 @@ export default function MisterWhiteOnline() {
                   </div>
                 ))}
               </div>
-              {isHost ? (
-                <button onClick={restart} className="w-full bg-violet-600 text-white font-bold rounded-2xl py-3">Nova sala</button>
-              ) : (
-                <button onClick={() => navigate('/MisterWhite')} className="w-full bg-white/[0.07] text-white rounded-2xl py-3">Início</button>
-              )}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-    </PageShell>
+    </NightShell>
   )
 }

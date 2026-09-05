@@ -4,11 +4,21 @@ import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setMwLobbyHandoff, patchMwLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
-import { WORD_PACKS, adjustSpecialRoleCounts, mergeCommunityPairs } from '../utils/misterWhiteShared'
+import {
+  WORD_PACKS,
+  WORD_PACK_ORDER,
+  DIFFICULTY_IDS,
+  adjustSpecialRoleCounts,
+  collectPairPool,
+  sanitizeCustomPairs,
+  sanitizeMisterPair,
+  toggleOrdered,
+} from '../utils/misterWhiteShared'
 import { loadNightRoster } from '../utils/nightRoster'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, pessoaLabel,
 } from '../components/layout/NightShell'
+import MisterMatchSettings from '../components/mister/MisterMatchSettings'
 
 const API_URL = getSocketUrl()
 const GOLD = '#fbbf24'
@@ -33,17 +43,40 @@ export default function MisterWhiteLobby() {
 
   const [numUndercover, setNumUndercover] = useState(1)
   const [numMW, setNumMW] = useState(0)
-  const [wordPack, setWordPack] = useState('geral')
-  const [difficulty, setDifficulty] = useState('normal')
+  const [wordPacks, setWordPacks] = useState(['geral'])
+  const [difficulties, setDifficulties] = useState([...DIFFICULTY_IDS])
   const [discussionSeconds, setDiscussionSeconds] = useState(90)
   const [communityPairs, setCommunityPairs] = useState([])
-  const wordPacks = useMemo(() => mergeCommunityPairs(WORD_PACKS, communityPairs), [communityPairs])
+  const [customPairs, setCustomPairs] = useState([])
+  const [draftCivil, setDraftCivil] = useState('')
+  const [draftUndercover, setDraftUndercover] = useState('')
+  const [lobbyStep, setLobbyStep] = useState('room')
+  const packOptions = WORD_PACK_ORDER.filter((id) => WORD_PACKS[id])
+  const packLabels = useMemo(
+    () => Object.fromEntries(packOptions.map((id) => [id, WORD_PACKS[id].label])),
+    [packOptions],
+  )
+  const matchSettings = { wordPacks, difficulties, customPairs, discussionSeconds }
+  const canStartMatch = collectPairPool(WORD_PACKS, matchSettings, communityPairs).length > 0
+
+  const addCustomPair = () => {
+    const pair = sanitizeMisterPair({ civil: draftCivil, undercover: draftUndercover }, { custom: true })
+    if (!pair) return
+    setCustomPairs((prev) => sanitizeCustomPairs([...prev, pair]))
+    setDraftCivil('')
+    setDraftUndercover('')
+  }
 
   useEffect(() => {
     api.getMisterPairs().then((d) => {
       if (Array.isArray(d?.pairs)) setCommunityPairs(d.pairs)
     }).catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!Array.isArray(room?.settings?.customPairs)) return
+    setCustomPairs(sanitizeCustomPairs(room.settings.customPairs))
+  }, [room?.settings?.customPairs])
 
   useEffect(() => {
     const q = searchParams.get('code')
@@ -144,7 +177,7 @@ export default function MisterWhiteLobby() {
       bindSocket(s, name.trim(), true)
       s.emit('mw_create_room', {
         playerName: name.trim(),
-        settings: { numUndercover, numMW, wordPack, difficulty, discussionSeconds },
+        settings: { numUndercover, numMW, wordPacks, difficulties, discussionSeconds, customPairs },
       })
     })
   }
@@ -175,6 +208,7 @@ export default function MisterWhiteLobby() {
     setRoom(null)
     setSocket(null)
     setConnecting(false)
+    setLobbyStep('room')
   }
 
   useEffect(() => {
@@ -205,14 +239,14 @@ export default function MisterWhiteLobby() {
     if (!socket || !room) return
     socket.emit('mw_update_settings', {
       code: room.code,
-      settings: { numUndercover, numMW, wordPack, difficulty, discussionSeconds },
+      settings: { numUndercover, numMW, wordPacks, difficulties, discussionSeconds, customPairs },
     })
   }
 
   useEffect(() => {
     if (!socket || !room || !isHostRef.current || room.status !== 'waiting') return
     updateSettings()
-  }, [numUndercover, numMW, wordPack, difficulty, discussionSeconds])
+  }, [numUndercover, numMW, wordPacks, difficulties, discussionSeconds, customPairs])
 
   const startGame = () => {
     if (!socket || !room) return
@@ -234,48 +268,85 @@ export default function MisterWhiteLobby() {
   }
 
   if (room) {
+    const rolesPage = isHost && lobbyStep === 'roles'
+    const settingsPage = isHost && lobbyStep === 'settings'
+    const roster = (
+      <div className="mt-5 space-y-2.5">
+        {(room.players || []).map((p, i) => (
+          <NightPlayerChip
+            key={p.id || i}
+            name={p.name}
+            index={i}
+            host={p.name === room.host}
+            mine={p.name === name.trim()}
+            disconnected={p.disconnected}
+            accent={GOLD}
+            onRemove={!settingsPage && p.name === name.trim() ? leaveRoom : undefined}
+            removeLabel="Sair da sala"
+          />
+        ))}
+      </div>
+    )
+
     return (
       <NightShell
-        onBack={() => { leaveRoom(); navigate('/MisterWhite') }}
+        wide={settingsPage}
+        onBack={() => {
+          if (settingsPage) setLobbyStep('roles')
+          else if (rolesPage) setLobbyStep('room')
+          else { leaveRoom(); navigate('/MisterWhite') }
+        }}
         footer={isHost ? (
-          <NightCta accent={GOLD} onClick={startGame} disabled={playerCount < 3}>
-            Começar com {pessoaLabel(playerCount)}
-          </NightCta>
+          settingsPage ? (
+            <NightCta accent={GOLD} onClick={startGame} disabled={playerCount < 3 || !canStartMatch}>
+              Começar com {pessoaLabel(playerCount)}
+            </NightCta>
+          ) : rolesPage ? (
+            <NightCta accent={GOLD} onClick={() => setLobbyStep('settings')} disabled={playerCount < 3}>
+              Continuar com {pessoaLabel(playerCount)}
+            </NightCta>
+          ) : (
+            <NightCta accent={GOLD} onClick={() => setLobbyStep('roles')} disabled={playerCount < 3}>
+              Continuar com {pessoaLabel(playerCount)}
+            </NightCta>
+          )
         ) : (
           <p className="py-2 text-center text-sm text-white/45">À espera que o host inicie…</p>
         )}
       >
-        <NightTitle>Mister White</NightTitle>
-        <GlowCode code={room.code} accent={GOLD} mode="mister" />
-
-        <div className="mt-5 space-y-2.5">
-          {(room.players || []).map((p, i) => (
-            <NightPlayerChip
-              key={p.id || i}
-              name={p.name}
-              index={i}
-              host={p.name === room.host}
-              mine={p.name === name.trim()}
-              disconnected={p.disconnected}
-              accent={GOLD}
-              onRemove={p.name === name.trim() ? leaveRoom : undefined}
-              removeLabel="Sair da sala"
-            />
-          ))}
-        </div>
-
-        {isHost && (
-          <div className="mt-5 space-y-3">
-            <select
-              value={wordPack}
-              onChange={(e) => setWordPack(e.target.value)}
-              className="h-12 w-full appearance-none rounded-full border border-white/10 bg-[#1c1c21] px-5 text-sm text-white outline-none"
-            >
-              {Object.entries(wordPacks).map(([id, pack]) => (
-                <option key={id} value={id}>{pack.label}</option>
-              ))}
-            </select>
-            <div className="grid grid-cols-2 gap-2">
+        {settingsPage ? (
+          <MisterMatchSettings
+            packIds={packOptions}
+            packLabels={packLabels}
+            wordPacks={wordPacks}
+            onTogglePack={(id) => setWordPacks((prev) => {
+              const next = toggleOrdered(prev, id, packOptions)
+              return next.length ? next : prev
+            })}
+            onAllPacks={() => setWordPacks([...packOptions])}
+            difficulties={difficulties}
+            onToggleDifficulty={(id) => setDifficulties((prev) => {
+              const next = toggleOrdered(prev, id, DIFFICULTY_IDS)
+              return next.length ? next : prev
+            })}
+            onAllDifficulties={() => setDifficulties([...DIFFICULTY_IDS])}
+            customPairs={customPairs}
+            draftCivil={draftCivil}
+            draftUndercover={draftUndercover}
+            onDraftCivil={setDraftCivil}
+            onDraftUndercover={setDraftUndercover}
+            onAddPair={addCustomPair}
+            onRemovePair={(i) => setCustomPairs((prev) => prev.filter((_, idx) => idx !== i))}
+            discussionSeconds={discussionSeconds}
+            onDiscussionSeconds={setDiscussionSeconds}
+          />
+        ) : rolesPage ? (
+          <>
+            <NightTitle>Mister White</NightTitle>
+            <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Papéis</p>
+            <p className="mt-1.5 text-center text-[13px] text-white/45">Infiltrados e Mister Whites.</p>
+            {roster}
+            <div className="mt-5 grid grid-cols-2 gap-2">
               {[{ label: 'Infiltrados', val: numUndercover, role: 'undercover' }, { label: 'Mister Whites', val: numMW, role: 'mw' }].map(({ label, val, role }) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-[#1c1c21] p-3 text-center">
                   <p className="mb-1 text-xs text-slate-500">{label}</p>
@@ -291,24 +362,22 @@ export default function MisterWhiteLobby() {
                 </div>
               ))}
             </div>
-            <p className="text-center text-xs text-slate-500">
+            <p className="mt-2 text-center text-xs text-slate-500">
               {playerCount < 3
-                ? 'Quando entrarem 3 jogadores podes escolher os papéis.'
+                ? 'Precisas de 3 jogadores na sala.'
                 : `${maxSpec === 1 ? '1 papel especial' : `${maxSpec} papéis especiais`} no máximo · ficam sempre 2 civis.`}
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[60, 90, 120].map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setDiscussionSeconds(s)}
-                  className={`rounded-full border py-2 text-xs font-bold ${discussionSeconds === s ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
-                >
-                  {s}s
-                </button>
-              ))}
-            </div>
-          </div>
+          </>
+        ) : (
+          <>
+            <NightTitle>Mister White</NightTitle>
+            <p className="mt-3 text-center text-[1.05rem] font-medium text-white">A mesa</p>
+            <p className="mt-1.5 text-center text-[13px] text-white/45">
+              {playerCount < 3 ? 'À espera de mais gente.' : 'Já dá para continuar.'}
+            </p>
+            <GlowCode code={room.code} accent={GOLD} mode="mister" />
+            {roster}
+          </>
         )}
       </NightShell>
     )
@@ -349,32 +418,7 @@ export default function MisterWhiteLobby() {
       <NameField value={name} onChange={setName} />
       <NightTabs tab={tab} onChange={setTab} />
 
-      {tab === 'create' ? (
-        <div className="mt-5 space-y-3">
-          <p className="text-left text-[13px] text-white/45">Pacote de palavras</p>
-          <select
-            value={wordPack}
-            onChange={(e) => setWordPack(e.target.value)}
-            className="h-12 w-full appearance-none rounded-full border border-white/10 bg-[#1c1c21] px-5 text-sm text-white outline-none"
-          >
-            {Object.entries(wordPacks).map(([id, pack]) => (
-              <option key={id} value={id}>{pack.label}</option>
-            ))}
-          </select>
-          <div className="flex gap-2">
-            {[['facil', 'Fácil'], ['normal', 'Normal'], ['dificil', 'Difícil']].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setDifficulty(id)}
-                className={`min-h-[48px] flex-1 rounded-full border text-xs font-bold ${difficulty === id ? 'border-[#fbbf24]/40 text-[#fbbf24]' : 'border-white/10 bg-[#2a2a2e] text-slate-400'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
+      {tab === 'join' && (
         <CodeField value={code} onChange={setCode} />
       )}
 

@@ -191,7 +191,25 @@ export function NightPlayerChip({
   )
 }
 
-export function NightBlobs() {
+export function NightBlobs({ phase } = {}) {
+  if (phase === 'day') {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-[#ffb04f]/35 to-transparent" />
+        <div className="pointer-events-none absolute -left-16 top-[8%] h-[26rem] w-[26rem] rounded-full bg-[#ffb04f]/70 blur-[80px]" />
+        <div className="pointer-events-none absolute -right-16 top-[18%] h-[24rem] w-[24rem] rounded-full bg-[#ff9a3c]/55 blur-[90px]" />
+      </>
+    )
+  }
+  if (phase === 'night') {
+    return (
+      <>
+        <div className="pointer-events-none absolute inset-0 bg-black/25" />
+        <div className="pointer-events-none absolute -left-24 top-[22%] h-[22rem] w-[22rem] rounded-full bg-[#3b82f6]/40 blur-[90px]" />
+        <div className="pointer-events-none absolute -right-20 top-[28%] h-[24rem] w-[24rem] rounded-full bg-[#6366f1]/35 blur-[90px]" />
+      </>
+    )
+  }
   return (
     <>
       <div className="pointer-events-none absolute -left-24 top-[22%] h-[22rem] w-[22rem] rounded-full bg-[#ff9a3c]/55 blur-[90px]" />
@@ -243,10 +261,10 @@ export function NightChoice({ selected, accent, onClick, title, desc, icon }) {
   )
 }
 
-export default function NightShell({ onBack, children, footer, wide = false }) {
+export default function NightShell({ onBack, children, footer, wide = false, phase }) {
   return (
-    <div className="relative flex h-[var(--app-vh,100dvh)] min-h-0 flex-col overflow-hidden bg-black">
-      <NightBlobs />
+    <div className={`relative flex h-[var(--app-vh,100dvh)] min-h-0 flex-col overflow-hidden ${phase === 'day' ? 'bg-[#1a140c]' : 'bg-black'}`}>
+      <NightBlobs phase={phase} />
 
       {onBack && (
         <div className="absolute left-2 top-2 z-20">

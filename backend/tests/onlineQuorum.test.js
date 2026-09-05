@@ -21,6 +21,32 @@ test('Mister White quorum ignores disconnected and eliminated players', () => {
   assert.equal(websocketHelpers.connectedMwVotesCast(room), 1)
 })
 
+test('AldeiaMix dead players cannot vote or be voted', () => {
+  const room = {
+    players: [
+      { id: 'n', name: 'Narrador', disconnected: false },
+      { id: 'a', name: 'Ana', disconnected: false },
+      { id: 'b', name: 'Bruno', disconnected: false },
+      { id: 'c', name: 'Carla', disconnected: false },
+    ],
+    roles: [
+      { name: 'Narrador', role: 'narrador' },
+      { name: 'Ana', role: 'aldeao' },
+      { name: 'Bruno', role: 'lobo' },
+      { name: 'Carla', role: 'aldeao' },
+    ],
+    eliminated: [2],
+    dayVotes: { Ana: 2, Bruno: 1, Carla: 1 },
+  }
+
+  assert.deepEqual(aldeiaHelpers.aliveVoters(room).map((p) => p.name), ['Ana', 'Carla'])
+  assert.equal(aldeiaHelpers.countValidVotes(room), 2)
+  assert.deepEqual(aldeiaHelpers.connectedDayVotes(room), { Ana: 2, Carla: 1 })
+
+  const { computeVoteCounts } = require('../lib/aldeiaMix')
+  assert.deepEqual(computeVoteCounts(aldeiaHelpers.connectedDayVotes(room), room.roles, room.eliminated), { 1: 1 })
+})
+
 test('AldeiaMix day quorum and votes only include connected players', () => {
   const room = {
     players: [

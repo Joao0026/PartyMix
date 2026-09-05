@@ -3,8 +3,8 @@ import { Plus, User, X } from 'lucide-react'
 import BackButton from './BackButton'
 
 const GENDERS = [
-  { id: 'm', symbol: '♂', label: 'Ele', on: 'text-sky-300' },
-  { id: 'f', symbol: '♀', label: 'Ela', on: 'text-[#ff7ab0]' },
+  { id: 'm', symbol: '♂', label: 'Ele', on: 'text-[#3b82f6]', tone: '#3b82f6' },
+  { id: 'f', symbol: '♀', label: 'Ela', on: 'text-[#ff7ab0]', tone: '#ff7ab0' },
 ]
 
 const PLAYER_TONES = ['#ff5c8d', '#fb7185', '#e2e8f0', '#22d3ee', '#fbbf24', '#8b5cf6', '#4ade80', '#f87171']
@@ -51,10 +51,20 @@ export default function MesaNoite({
     )
   }
 
+  const toggleGenderAt = (index) => {
+    onChange(
+      names,
+      names.map((_, i) => {
+        if (i !== index) return genders[i] ?? null
+        return genders[i] === 'f' ? 'm' : 'f'
+      }),
+    )
+  }
+
   return (
     <div className="relative flex h-[var(--app-vh,100dvh)] min-h-0 flex-col overflow-hidden bg-black">
-      <div className="pointer-events-none absolute -left-24 top-[28%] h-[22rem] w-[22rem] rounded-full bg-[#ff9a3c]/55 blur-[90px]" />
-      <div className="pointer-events-none absolute -right-20 top-[30%] h-[24rem] w-[24rem] rounded-full bg-[#ff2d9b]/50 blur-[90px]" />
+      <div className="pointer-events-none absolute -left-24 top-[28%] h-[22rem] w-[22rem] rounded-full bg-[#ff9a3c]/55 blur-[90px] [transform:translateZ(0)]" />
+      <div className="pointer-events-none absolute -right-20 top-[30%] h-[24rem] w-[24rem] rounded-full bg-[#ff2d9b]/50 blur-[90px] [transform:translateZ(0)]" />
 
       {onBack && (
         <div className="absolute left-2 top-2 z-20">
@@ -62,8 +72,9 @@ export default function MesaNoite({
         </div>
       )}
 
-      <div className="relative z-10 mx-auto flex min-h-0 w-full max-w-[22rem] flex-1 flex-col px-6 pt-14">
-        <div className="shrink-0">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <div className="mx-auto w-full max-w-[22rem] px-6 pt-14">
           <h1 className="text-center text-[1.7rem] font-black leading-snug tracking-tight">
             <span className="bg-gradient-to-r from-[#ff4d7a] to-[#ffb04f] bg-clip-text text-transparent">
               A mesa desta noite
@@ -110,7 +121,7 @@ export default function MesaNoite({
                   <button
                     type="button"
                     onClick={() => setGender(opt.id)}
-                    className={gender === opt.id ? opt.on : 'text-slate-400'}
+                    className={gender === opt.id ? `${opt.on} font-bold` : 'text-slate-400'}
                   >
                     {opt.symbol} {opt.label}
                   </button>
@@ -118,24 +129,25 @@ export default function MesaNoite({
               ))}
             </div>
           </div>
-        </div>
 
-        <div className="mt-5 min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="space-y-2.5 pb-2">
+          <div className="mt-5 space-y-2.5 pb-3">
             {names.map((name, i) => {
-              const color = PLAYER_TONES[i % PLAYER_TONES.length]
+              const color = GENDERS.find((g) => g.id === genders[i])?.tone || PLAYER_TONES[i % PLAYER_TONES.length]
               return (
                 <div key={`${name}-${i}`} className="relative">
                   <div className="flex w-full items-center gap-3 rounded-full border border-white/10 bg-[#1c1c21] px-2.5 py-2 pr-8">
-                    <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#141419]"
+                    <button
+                      type="button"
+                      onClick={() => toggleGenderAt(i)}
+                      aria-label={`Mudar género de ${name}`}
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#141419] active:scale-95"
                       style={{
                         border: `1px solid ${color}66`,
                         boxShadow: `0 8px 24px -8px ${color}88`,
                       }}
                     >
                       <User className="h-5 w-5" style={{ color }} strokeWidth={1.75} />
-                    </span>
+                    </button>
                     <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-white">{name}</span>
                   </div>
                   <button
@@ -150,9 +162,10 @@ export default function MesaNoite({
               )
             })}
           </div>
+          </div>
         </div>
 
-        <div className="shrink-0 pt-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+        <div className="mx-auto w-full max-w-[22rem] shrink-0 px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
           <button
             type="button"
             onClick={confirm}

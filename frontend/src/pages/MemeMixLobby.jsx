@@ -23,9 +23,13 @@ const LEGENDA_PACK_LABELS = {
   trabalho: 'Trabalho/Escola',
   relacionamentos: 'Relacionamentos',
   nostalgia: 'Nostalgia',
-  amigos: 'Amigos',
+  amigos: 'A malta',
   community: 'Comunidade',
 }
+
+const FALLBACK_LEGENDA_PACKS = [
+  'base', 'br', 'house-party', 'picante', 'trabalho', 'relacionamentos', 'nostalgia', 'amigos',
+]
 
 function normalizeLegendaPacks(value) {
   const raw = Array.isArray(value) ? value : [value]
@@ -606,7 +610,7 @@ export default function MemeMixLobby() {
             {legendaMode !== 'escritas' && (
               <NightBox title="Packs de legendas">
                 <div className="grid grid-cols-2 gap-1.5">
-                  {['todas', ...availablePacks.filter((p) => p !== 'community')].map((p) => (
+                  {['todas', ...[...new Set([...FALLBACK_LEGENDA_PACKS, ...availablePacks])].filter((p) => p !== 'community')].map((p) => (
                     <NightChip key={p} {...chip(legendaPacks.includes(p))} onClick={() => toggleLegendaPack(p)}>
                       {LEGENDA_PACK_LABELS[p] || p}
                     </NightChip>

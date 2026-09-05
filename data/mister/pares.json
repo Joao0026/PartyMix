@@ -1,0 +1,137 @@
+{
+  "name": "Mister White — Pares por tema",
+  "mode": "mister",
+  "pack": "temas",
+  "description": "15 pares por tema. Mesma família, um detalhe que parte. PT-PT. Formato igual a WORD_PACKS.",
+  "packs": {
+    "comida": {
+      "label": "Comida",
+      "pairs": [
+        { "civil": "Hambúrguer", "undercover": "Prego", "difficulty": "normal" },
+        { "civil": "Gelado", "undercover": "Iogurte", "difficulty": "normal" },
+        { "civil": "Laranja", "undercover": "Tangerina", "difficulty": "facil" },
+        { "civil": "Sopa", "undercover": "Chá", "difficulty": "normal" },
+        { "civil": "Sandes", "undercover": "Tosta", "difficulty": "normal" },
+        { "civil": "Batata frita", "undercover": "Batata assada", "difficulty": "facil" },
+        { "civil": "Arroz", "undercover": "Massa", "difficulty": "facil" },
+        { "civil": "Bolo", "undercover": "Tarte", "difficulty": "normal" },
+        { "civil": "Sumo", "undercover": "Chá", "difficulty": "facil" },
+        { "civil": "Francesinha", "undercover": "Cachorro", "difficulty": "normal" },
+        { "civil": "Azeite", "undercover": "Óleo", "difficulty": "normal" },
+        { "civil": "Mel", "undercover": "Compota", "difficulty": "normal" },
+        { "civil": "Maçã", "undercover": "Pêra", "difficulty": "facil" },
+        { "civil": "Natas", "undercover": "Leite condensado", "difficulty": "dificil" }
+      ]
+    },
+    "animais": {
+      "label": "Animais",
+      "pairs": [
+        { "civil": "Cão", "undercover": "Lobo", "difficulty": "normal" },
+        { "civil": "Abelha", "undercover": "Vespa", "difficulty": "normal" },
+        { "civil": "Cavalo", "undercover": "Burro", "difficulty": "facil" },
+        { "civil": "Pato", "undercover": "Ganso", "difficulty": "dificil" },
+        { "civil": "Galinha", "undercover": "Melro", "difficulty": "facil" },
+        { "civil": "Coruja", "undercover": "Águia", "difficulty": "normal" },
+        { "civil": "Porco", "undercover": "Javali", "difficulty": "normal" },
+        { "civil": "Ovelha", "undercover": "Cabra", "difficulty": "normal" },
+        { "civil": "Mosquito", "undercover": "Mosca", "difficulty": "facil" },
+        { "civil": "Golfinho", "undercover": "Foca", "difficulty": "normal" },
+        { "civil": "Vaca", "undercover": "Touro", "difficulty": "facil" },
+        { "civil": "Papagaio", "undercover": "Canário", "difficulty": "normal" },
+        { "civil": "Formiga", "undercover": "Besouro", "difficulty": "facil" }
+      ]
+    },
+    "casa": {
+      "label": "Casa",
+      "pairs": [
+        { "civil": "Frigorífico", "undercover": "Congelador", "difficulty": "normal" },
+        { "civil": "Elevador", "undercover": "Escadas", "difficulty": "facil" },
+        { "civil": "Fogão", "undercover": "Forno", "difficulty": "normal" },
+        { "civil": "Toalha", "undercover": "Lençol", "difficulty": "normal" },
+        { "civil": "Candeeiro", "undercover": "Lanterna", "difficulty": "facil" },
+        { "civil": "Quarto", "undercover": "Sala", "difficulty": "facil" },
+        { "civil": "Armário", "undercover": "Cómoda", "difficulty": "normal" },
+        { "civil": "Mesa", "undercover": "Secretária", "difficulty": "normal" },
+        { "civil": "Lareira", "undercover": "Forno a lenha", "difficulty": "normal" }
+      ]
+    },
+    "objetos": {
+      "label": "Objetos",
+      "pairs": [
+        { "civil": "Caneta", "undercover": "Lápis", "difficulty": "facil" },
+        { "civil": "Mochila", "undercover": "Saco", "difficulty": "normal" },
+        { "civil": "Tesoura", "undercover": "X-ato", "difficulty": "normal" },
+        { "civil": "Garrafa", "undercover": "Copo", "difficulty": "facil" },
+        { "civil": "Guarda-chuva", "undercover": "Gabardina", "difficulty": "normal" },
+        { "civil": "Carteira", "undercover": "Pochete", "difficulty": "dificil" },
+        { "civil": "Escova", "undercover": "Pente", "difficulty": "normal" },
+        { "civil": "Faca", "undercover": "Navalha", "difficulty": "dificil" },
+        { "civil": "Colher", "undercover": "Garfo", "difficulty": "facil" },
+        { "civil": "Fita-cola", "undercover": "Cola", "difficulty": "normal" },
+        { "civil": "Isqueiro", "undercover": "Fósforo", "difficulty": "normal" },
+        { "civil": "Saco do lixo", "undercover": "Caixote do lixo", "difficulty": "normal" }
+      ]
+    },
+    "profissoes": {
+      "label": "Profissões",
+      "pairs": [
+        { "civil": "Cozinheiro", "undercover": "Padeiro", "difficulty": "normal" },
+        { "civil": "Polícia", "undercover": "Segurança", "difficulty": "normal" },
+        { "civil": "Cabeleireiro", "undercover": "Barbeiro", "difficulty": "dificil" },
+        { "civil": "Jornalista", "undercover": "Apresentador", "difficulty": "normal" },
+        { "civil": "Bombeiro", "undercover": "Médico", "difficulty": "normal" },
+        { "civil": "Advogado", "undercover": "Juiz", "difficulty": "facil" },
+        { "civil": "Carpinteiro", "undercover": "Pedreiro", "difficulty": "normal" },
+        { "civil": "Agricultor", "undercover": "Pastor", "difficulty": "normal" },
+        { "civil": "Cantor", "undercover": "Músico", "difficulty": "dificil" },
+        { "civil": "Pintor", "undercover": "Decorador", "difficulty": "normal" },
+        { "civil": "Dentista", "undercover": "Ortodontista", "difficulty": "dificil" }
+      ]
+    },
+    "desporto": {
+      "label": "Desporto",
+      "pairs": [
+        { "civil": "Ténis", "undercover": "Padel", "difficulty": "normal" },
+        { "civil": "Andebol", "undercover": "Basquetebol", "difficulty": "normal" },
+        { "civil": "Corrida", "undercover": "Caminhada", "difficulty": "facil" },
+        { "civil": "Boxe", "undercover": "UFC", "difficulty": "dificil" },
+        { "civil": "Surf", "undercover": "Bodyboard", "difficulty": "dificil" },
+        { "civil": "Yoga", "undercover": "Pilates", "difficulty": "dificil" },
+        { "civil": "Voleibol", "undercover": "Badminton", "difficulty": "normal" },
+        { "civil": "Ski", "undercover": "Snowboard", "difficulty": "normal" },
+        { "civil": "Hóquei", "undercover": "Patinagem", "difficulty": "normal" },
+        { "civil": "Fórmula 1", "undercover": "MotoGP", "difficulty": "facil" },
+        { "civil": "Ginástica", "undercover": "Ballet", "difficulty": "normal" }
+      ]
+    },
+    "transportes": {
+      "label": "Transportes",
+      "pairs": [
+        { "civil": "Autocarro", "undercover": "Elétrico", "difficulty": "normal" },
+        { "civil": "Bicicleta", "undercover": "Trotinete", "difficulty": "facil" },
+        { "civil": "Metro", "undercover": "Comboio", "difficulty": "facil" },
+        { "civil": "Táxi", "undercover": "Uber", "difficulty": "normal" },
+        { "civil": "Barco", "undercover": "Ferry", "difficulty": "normal" },
+        { "civil": "Iate", "undercover": "Barco à vela", "difficulty": "normal" },
+        { "civil": "Patins", "undercover": "Skate", "difficulty": "facil" },
+        { "civil": "Ambulância", "undercover": "Carro da polícia", "difficulty": "facil" },
+        { "civil": "Trator", "undercover": "Camião", "difficulty": "normal" }
+      ]
+    },
+    "entretenimento": {
+      "label": "Entretenimento",
+      "pairs": [
+        { "civil": "Série", "undercover": "Filme", "difficulty": "facil" },
+        { "civil": "Podcast", "undercover": "Rádio", "difficulty": "normal" },
+        { "civil": "Concerto", "undercover": "Festival", "difficulty": "normal" },
+        { "civil": "Jogos de computador", "undercover": "Aplicação", "difficulty": "facil" },
+        { "civil": "Karaoke", "undercover": "Concerto", "difficulty": "normal" },
+        { "civil": "Stand-up", "undercover": "Teatro", "difficulty": "normal" },
+        { "civil": "Puzzle", "undercover": "Sudoku", "difficulty": "normal" },
+        { "civil": "Vinil", "undercover": "CD", "difficulty": "dificil" },
+        { "civil": "Spotify", "undercover": "Rádio", "difficulty": "normal" },
+        { "civil": "YouTube", "undercover": "Twitch", "difficulty": "normal" }
+      ]
+    }
+  }
+}

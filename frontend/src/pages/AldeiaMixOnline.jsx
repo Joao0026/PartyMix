@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { EyeOff, ChevronRight, Trash2, WifiOff } from 'lucide-react'
-import BackButton from '../components/layout/BackButton'
-import PageShell from '../components/layout/PageShell'
+import { EyeOff, Trash2, WifiOff } from 'lucide-react'
+import NightShell, { NightTitle, NightCta } from '../components/layout/NightShell'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekAmLobbyHandoff, clearAmLobbyHandoff } from '../utils/socketStore'
@@ -19,6 +18,8 @@ import {
 } from '../utils/aldeiaMixShared'
 
 const API_URL = getSocketUrl()
+const CYAN = '#22d3ee'
+const GOLD = '#fbbf24'
 
 function DayTimer({ secondsLeft }) {
   const mins = Math.floor(secondsLeft / 60)
@@ -33,8 +34,54 @@ function DayTimer({ secondsLeft }) {
   )
 }
 
-function VotePanel({ room, playerName, socket, amEliminated, amJuiz }) {
-  const alive = (room.rolesPublic || []).filter((r) => !r.eliminated && !r.isNarrator)
+function isDeadPlayer(room, r) {
+  if (!r || !room) return false
+  if (r.eliminated) return true
+  if ((room.eliminated || []).includes(r.origIdx)) return true
+  if ((room.deadNames || []).includes(r.name)) return true
+  if (room.lastNight?.killed != null && r.origIdx === room.lastNight.killed) return true
+  if (room.lastNight?.killedName && r.name === room.lastNight.killedName) return true
+  return false
+}
+
+function mergeRoomState(prev, next) {
+  if (!prev) return next
+  if (!next) return prev
+  const phaseChanged = next.status !== prev.status
+    || next.dayNum !== prev.dayNum
+    || (next.matchNum || 1) !== (prev.matchNum || 1)
+  const myVote = next.myVote !== undefined
+    ? next.myVote
+    : (phaseChanged ? null : prev.myVote)
+  const merged = { ...prev, ...next, myVote }
+  const sameMatch = (next.matchNum || 1) === (prev.matchNum || 1)
+  if (sameMatch) {
+    merged.eliminated = [...new Set([...(prev.eliminated || []), ...(next.eliminated || [])])]
+    merged.deadNames = [...new Set([...(prev.deadNames || []), ...(next.deadNames || [])])]
+    merged.rolesPublic = (next.rolesPublic || prev.rolesPublic || []).map((r) => ({
+      ...r,
+      eliminated: r.eliminated
+        || merged.eliminated.includes(r.origIdx)
+        || merged.deadNames.includes(r.name),
+    }))
+  }
+  if (
+    prev.votingClosed
+    && prev.status === 'day'
+    && next.status === 'day'
+    && prev.dayNum === next.dayNum
+    && !next.votingClosed
+  ) {
+    merged.votingClosed = true
+    if (!next.voteTally?.length && prev.voteTally?.length) merged.voteTally = prev.voteTally
+    merged.lastVoteEliminatedName = next.lastVoteEliminatedName || prev.lastVoteEliminatedName
+    merged.lastVoteTie = next.lastVoteTie || prev.lastVoteTie
+  }
+  return merged
+}
+
+function VotePanel({ room, playerName, amEliminated, amJuiz, voteTarget, onSelect }) {
+  const alive = (room.rolesPublic || []).filter((r) => !r.isNarrator && !isDeadPlayer(room, r))
   const myIdx = room.rolesPublic?.find((r) => r.name === playerName && !r.isNarrator)?.origIdx
   const myVote = room.myVote
   const closed = room.votingClosed
@@ -85,8 +132,13 @@ function VotePanel({ room, playerName, socket, amEliminated, amJuiz }) {
         Votos: {room.votesCast}/{room.votesExpected}
       </p>
       {myVote != null && (
-        <p className="text-emerald-400 text-xs text-center">
+        <p className="text-center text-xs text-[#22d3ee]">
           Votaste em {room.rolesPublic?.[myVote]?.name}
+        </p>
+      )}
+      {voteTarget != null && myVote == null && (
+        <p className="text-center text-sm text-white/70">
+          Votar em <span className="font-bold text-white">{room.rolesPublic?.[voteTarget]?.name}</span>?
         </p>
       )}
       {alive.filter((r) => r.origIdx !== myIdx).map((r) => (
@@ -94,11 +146,11 @@ function VotePanel({ room, playerName, socket, amEliminated, amJuiz }) {
           key={r.origIdx}
           type="button"
           disabled={myVote != null}
-          onClick={() => socket?.emit('am_cast_vote', { code: room.code, targetOrigIdx: r.origIdx })}
-          className={`w-full py-3 rounded-xl font-medium ${
-            myVote === r.origIdx
-              ? 'bg-red-600 text-white ring-2 ring-red-300'
-              : 'bg-white/[0.06] text-slate-200 disabled:opacity-50'
+          onClick={() => onSelect(r.origIdx)}
+          className={`w-full rounded-full border py-3 text-[15px] font-bold disabled:opacity-50 ${
+            voteTarget === r.origIdx || myVote === r.origIdx
+              ? 'border-[#ff4d7a]/50 bg-[#1c1c21] text-white'
+              : 'border-white/10 bg-[#1c1c21] text-slate-200'
           }`}
         >
           {r.name}
@@ -109,7 +161,7 @@ function VotePanel({ room, playerName, socket, amEliminated, amJuiz }) {
 }
 
 function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
-  const alive = (room.rolesPublic || []).filter((r) => !r.eliminated && !r.isNarrator)
+  const alive = (room.rolesPublic || []).filter((r) => !r.isNarrator && !isDeadPlayer(room, r))
   const step = room.nightStep
   const script = room.nightScript || stepScript(step)
 
@@ -128,9 +180,9 @@ function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
   if (room.status === 'night') {
     return (
       <div className="space-y-4">
-        <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-2xl p-4">
-          <p className="text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">Narrador — lê em voz alta</p>
-          <p className="text-white text-lg leading-snug">{script}</p>
+        <div className="rounded-2xl border border-white/10 bg-[#1c1c21] p-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-[#22d3ee]">Narrador — lê em voz alta</p>
+          <p className="text-lg leading-snug text-white">{script}</p>
         </div>
         {pickField && (
           <div className="space-y-2">
@@ -140,8 +192,8 @@ function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
               return nightPickVisible(step, role)
             }).map((r) => (
               <button key={r.origIdx} type="button" onClick={() => onPick(pickField, r.origIdx)}
-                className={`w-full py-3 px-4 rounded-xl text-left font-medium ${
-                  selected === r.origIdx ? 'bg-indigo-600 text-white ring-2 ring-indigo-300' : 'bg-white/[0.06] text-slate-200'
+                className={`w-full rounded-full border px-4 py-3 text-left text-[15px] font-bold ${
+                  selected === r.origIdx ? 'border-[#22d3ee]/50 bg-[#1c1c21] text-white' : 'border-white/10 bg-[#1c1c21] text-slate-200'
                 }`}>
                 {r.name}
               </button>
@@ -162,11 +214,6 @@ function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
             </p>
           </div>
         )}
-        <button type="button" onClick={() => socket.emit('am_narrator_next', { code: room.code })}
-          className="w-full flex items-center justify-center gap-2 bg-indigo-600 text-white font-bold rounded-2xl py-4">
-          {step === 'dawn' ? 'Aldeia acorda — ir para o Dia' : 'Seguinte'}
-          <ChevronRight className="w-5 h-5" />
-        </button>
       </div>
     )
   }
@@ -194,21 +241,9 @@ function NarratorPanel({ room, socket, narr, onPick, timerLeft }) {
           <p className="text-red-300 text-center text-sm">Eliminado: {room.lastVoteEliminatedName}</p>
         )}
         {!room.votingClosed && (
-          <>
-            <button type="button" onClick={() => socket.emit('am_close_voting', { code: room.code })}
-              className="w-full bg-amber-700/50 text-amber-100 rounded-xl py-3 text-sm font-semibold">
-              Fechar votação — eliminar o mais votado
-            </button>
-            <button type="button" onClick={() => socket.emit('am_skip_day', { code: room.code })}
-              className="w-full bg-white/[0.06] border border-white/10 text-slate-300 rounded-xl py-3 text-sm font-semibold">
-              ⏭️ Saltar dia — ninguém sai (próxima noite)
-            </button>
-          </>
-        )}
-        {room.votingClosed && (
-          <button type="button" onClick={() => socket.emit('am_narrator_start_night', { code: room.code })}
-            className="w-full bg-indigo-700 text-white font-bold rounded-2xl py-4">
-            🌙 Próxima noite
+          <button type="button" onClick={() => socket.emit('am_skip_day', { code: room.code })}
+            className="w-full py-2 text-center text-xs font-bold text-white/40">
+            Saltar dia — ninguém sai
           </button>
         )}
       </div>
@@ -234,6 +269,7 @@ export default function AldeiaMixOnline() {
   const [timerLeft, setTimerLeft] = useState(0)
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
+  const [voteTarget, setVoteTarget] = useState(null)
   const initRef = useRef(false)
   const playerNameRef = useRef('')
 
@@ -248,6 +284,7 @@ export default function AldeiaMixOnline() {
     s.off('am_rejoined')
     s.off('am_session_ended')
     s.off('am_vote_progress')
+    s.off('am_voting_closed')
 
     s.on('disconnect', () => {
       setDisconnected(true)
@@ -273,17 +310,22 @@ export default function AldeiaMixOnline() {
       setRevealProgress({ ready: 0, total: r.revealTotal || 0 })
     })
     s.on('am_phase', (r) => {
-      setRoom((prev) => ({
-        ...prev,
-        ...r,
-        myVote: r.myVote ?? prev?.myVote,
-      }))
+      setRoom((prev) => mergeRoomState(prev, r))
       if (r.discussionEndsAt) {
         setTimerLeft(Math.max(0, Math.ceil((r.discussionEndsAt - Date.now()) / 1000)))
       }
     })
+    s.on('am_voting_closed', (payload) => {
+      setRoom((prev) => (prev ? {
+        ...prev,
+        votingClosed: true,
+        voteTally: payload?.tally || prev.voteTally || [],
+        lastVoteEliminatedName: payload?.eliminatedName || null,
+        lastVoteTie: !!payload?.tied,
+      } : prev))
+    })
     s.on('am_narrator_state', (state) => {
-      setRoom(state)
+      setRoom((prev) => mergeRoomState(prev, state))
       setNarr({
         wolfTarget: state.wolfTarget,
         medicTarget: state.medicTarget,
@@ -301,7 +343,27 @@ export default function AldeiaMixOnline() {
     s.on('am_dawn_news', (news) => {
       setDawnNews(news)
       setDaySkippedNotice(false)
-      setRoom((prev) => (prev ? { ...prev, status: 'day', dayNum: news.dayNum, votingClosed: false } : prev))
+      setRoom((prev) => {
+        if (!prev) return prev
+        const killed = news.killed
+        const eliminated = [...(prev.eliminated || [])]
+        if (killed != null && !eliminated.includes(killed)) eliminated.push(killed)
+        const sameDay = prev.status === 'day' && prev.dayNum === news.dayNum
+        return {
+          ...prev,
+          status: 'day',
+          dayNum: news.dayNum,
+          votingClosed: sameDay ? prev.votingClosed : false,
+          eliminated,
+          deadNames: news.killedName
+            ? [...new Set([...(prev.deadNames || []), news.killedName])]
+            : (prev.deadNames || []),
+          rolesPublic: (prev.rolesPublic || []).map((r) => ({
+            ...r,
+            eliminated: eliminated.includes(r.origIdx) || r.name === news.killedName,
+          })),
+        }
+      })
     })
     s.on('am_day_skipped', ({ reason } = {}) => {
       setDawnNews(null)
@@ -385,9 +447,22 @@ export default function AldeiaMixOnline() {
     return () => clearInterval(id)
   }, [room?.status, room?.discussionEndsAt, room?.dayNum])
 
+  useEffect(() => {
+    setVoteTarget(null)
+  }, [room?.status, room?.dayNum, room?.myVote])
+
   const amJuiz = room?.juizName === playerName
-  const myOrigIdx = room?.rolesPublic?.find((r) => r.name === playerName && !r.isNarrator)?.origIdx
-  const amEliminated = myOrigIdx != null && room?.eliminated?.includes(myOrigIdx)
+  const myPublic = room?.rolesPublic?.find((r) => r.name === playerName && !r.isNarrator)
+  const amEliminated = isDeadPlayer(room, myPublic)
+
+  const confirmVote = () => {
+    if (!socket || !room || voteTarget == null || room.myVote != null || room.votingClosed) return
+    if (amEliminated) return
+    const target = room.rolesPublic?.find((r) => r.origIdx === voteTarget)
+    if (!target || isDeadPlayer(room, target)) return
+    socket.emit('am_cast_vote', { code: room.code, targetOrigIdx: voteTarget })
+    setVoteTarget(null)
+  }
 
   const confirmReveal = () => {
     if (!socket || !room || revealedReady) return
@@ -416,113 +491,87 @@ export default function AldeiaMixOnline() {
 
   if (!room) {
     return (
-      <PageShell mode="aldeia" className="justify-center" innerClassName="flex flex-col items-center gap-3">
-        <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-        {reconnecting && <p className="text-slate-500 text-sm flex items-center gap-2"><WifiOff className="w-4 h-4" /> A reconectar…</p>}
-      </PageShell>
+      <NightShell onBack={() => navigate('/AldeiaMix')}>
+        <div className="flex flex-col items-center gap-3 pt-16">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#22d3ee] border-t-transparent" />
+          {reconnecting && (
+            <p className="flex items-center gap-2 text-sm text-slate-500"><WifiOff className="h-4 w-4" /> A reconectar…</p>
+          )}
+        </div>
+      </NightShell>
     )
   }
 
   const status = room.status
   const readyCount = revealProgress.total > 0 ? revealProgress.ready : room.revealReady
   const readyTotal = revealProgress.total > 0 ? revealProgress.total : room.revealTotal
-  const phaseVisual = {
-    day: {
-      emoji: '☀️',
-      label: `Dia ${room.dayNum}`,
-      tone: 'from-amber-400/20 via-orange-500/10 to-emerald-500/10',
-      border: 'border-amber-300/25',
-      text: 'text-amber-100',
-      background: 'radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.18) 0%, #111827 48%, #080b14 100%)',
-    },
-    night: {
-      emoji: '🌙',
-      label: 'Noite',
-      tone: 'from-indigo-500/20 via-violet-500/10 to-slate-900/30',
-      border: 'border-indigo-300/25',
-      text: 'text-indigo-100',
-      background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.22) 0%, #101426 48%, #050711 100%)',
-    },
-    reveal: {
-      emoji: '🕯️',
-      label: 'Papéis secretos',
-      tone: 'from-emerald-500/15 via-slate-500/10 to-black/20',
-      border: 'border-emerald-300/20',
-      text: 'text-emerald-100',
-      background: 'radial-gradient(ellipse at 50% 0%, rgba(16,185,129,0.14) 0%, #111827 48%, #080b14 100%)',
-    },
-  }[status]
+  const phase = status === 'day' ? 'day' : status === 'night' ? 'night' : undefined
+
+  const footer = !amJuiz && status === 'reveal' && showRole && !revealedReady ? (
+    <NightCta accent={CYAN} onClick={confirmReveal}>Vi o papel — pronto</NightCta>
+  ) : !amJuiz && status === 'day' && !amEliminated && !room.votingClosed && room.myVote == null && voteTarget != null ? (
+    <NightCta accent="#ff4d7a" onClick={confirmVote}>
+      Votar em {room.rolesPublic?.[voteTarget]?.name}
+    </NightCta>
+  ) : amJuiz && status === 'night' ? (
+    <NightCta accent={CYAN} onClick={() => socket.emit('am_narrator_next', { code: room.code })}>
+      {room.nightStep === 'dawn' ? 'Aldeia acorda' : 'Seguinte'}
+    </NightCta>
+  ) : amJuiz && status === 'day' && !room.votingClosed ? (
+    <NightCta accent={GOLD} onClick={() => socket?.emit('am_close_voting', { code: room.code })}>
+      Fechar votação
+    </NightCta>
+  ) : amJuiz && status === 'day' && room.votingClosed ? (
+    <NightCta accent={CYAN} onClick={() => socket.emit('am_narrator_start_night', { code: room.code })}>
+      Próxima noite
+    </NightCta>
+  ) : (amJuiz || isHost) && status === 'result' ? (
+    <NightCta accent={CYAN} onClick={playAgain}>Jogar outra vez</NightCta>
+  ) : null
 
   return (
-    <PageShell mode="aldeia" innerClassName="space-y-4" style={phaseVisual?.background ? { background: phaseVisual.background } : undefined}>
+    <NightShell wide phase={phase} onBack={() => navigate('/AldeiaMix')} footer={footer}>
         <ReconnectBanner
           reconnecting={reconnecting && !disconnected}
           disconnected={disconnected}
           onRetry={() => socket?.connect()}
         />
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <BackButton onClick={() => navigate('/AldeiaMix')} />
-            <div>
-              <h1 className="text-white font-bold text-xl">🏘️ {room.code}</h1>
-              <p className="text-slate-500 text-xs">
-                {status === 'day' && `Dia ${room.dayNum}`}
-                {status === 'night' && 'Noite'}
-                {amJuiz ? ' · Narrador (tu)' : ` · Narrador: ${room.juizName}`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {phaseVisual && (
-          <div className={`rounded-3xl border ${phaseVisual.border} bg-gradient-to-br ${phaseVisual.tone} p-4 shadow-2xl`}>
-            <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-black/25 text-3xl">
-                {phaseVisual.emoji}
-              </div>
-              <div>
-                <p className={`font-black ${phaseVisual.text}`}>{phaseVisual.label}</p>
-                <p className="text-slate-400 text-sm">
-                  {status === 'day'
-                    ? 'A aldeia discute, acusa e vota.'
-                    : status === 'night'
-                    ? 'Silêncio na mesa. O narrador guia as ações.'
-                    : 'Cada jogador vê o seu papel em segredo.'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        <NightTitle>Sala {room.code}</NightTitle>
+        <p className="mt-1.5 text-center text-[13px] text-white/45">
+          {status === 'day' && `Dia ${room.dayNum} · `}
+          {status === 'night' && 'Noite · '}
+          {status === 'reveal' && 'Papéis · '}
+          {amJuiz ? 'Narrador (tu)' : `Narrador: ${room.juizName}`}
+        </p>
 
         {amJuiz && (status === 'night' || status === 'day') && (
-          <NarratorPanel room={room} socket={socket} narr={narr} onPick={onNarratorPick} timerLeft={timerLeft} />
+          <div className="mt-5">
+            <NarratorPanel room={room} socket={socket} narr={narr} onPick={onNarratorPick} timerLeft={timerLeft} />
+          </div>
         )}
 
         {!amJuiz && (
           <AnimatePresence mode="wait">
             {status === 'reveal' && (
-              <motion.div key="reveal" className="space-y-4">
-                <p className="text-slate-400 text-sm text-center">{playerStatusMessage(room)}</p>
+              <motion.div key="reveal" className="mt-5 space-y-4">
+                <p className="text-center text-sm text-white/45">{playerStatusMessage(room)}</p>
                 {!showRole ? (
-                  <button type="button" onClick={() => setShowRole(true)}
-                    className="w-full h-40 bg-white/[0.04] border border-white/[0.08] rounded-3xl flex flex-col items-center justify-center text-slate-400">
-                    <EyeOff className="w-8 h-8 mb-2" /> Toca para ver o teu papel
+                  <button
+                    type="button"
+                    onClick={() => setShowRole(true)}
+                    className="flex h-48 w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[2rem] border border-white/10 bg-[#1c1c21] text-slate-400"
+                  >
+                    <EyeOff className="h-8 w-8 text-[#22d3ee]" />
+                    <span className="font-black text-white">Toca para ver o teu papel</span>
                   </button>
                 ) : myRole && (
-                  <div className={`rounded-3xl p-8 border text-center ${ROLE_STYLES[myRole.role] || ''}`}>
-                    <p className="text-sm opacity-80 uppercase tracking-wider">O teu papel</p>
-                    <p className="text-white font-black text-3xl mt-2">{roleLabel(myRole.role)}</p>
-                  </div>
-                )}
-                {showRole && !revealedReady && (
-                  <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
-                    <button type="button" onClick={confirmReveal} className="w-full bg-emerald-600 text-white font-bold rounded-2xl py-4">
-                      Vi o papel — pronto ✓
-                    </button>
+                  <div className={`rounded-[2rem] border p-8 text-center ${ROLE_STYLES[myRole.role] || 'border-white/10 bg-[#1c1c21]'}`}>
+                    <p className="text-sm uppercase tracking-wider text-white/60">O teu papel</p>
+                    <p className="mt-2 text-3xl font-black text-white">{roleLabel(myRole.role)}</p>
                   </div>
                 )}
                 {revealedReady && (
-                  <p className="text-center text-slate-500 text-sm animate-pulse">
+                  <p className="animate-pulse text-center text-sm text-slate-500">
                     À espera dos outros… ({readyCount}/{readyTotal})
                   </p>
                 )}
@@ -530,37 +579,44 @@ export default function AldeiaMixOnline() {
             )}
 
             {status === 'day' && (
-              <motion.div key="day" className="space-y-4">
+              <motion.div key="day" className="mt-5 space-y-4">
                 <DayTimer secondsLeft={timerLeft} />
                 {dawnNews && (
-                  <p className="text-slate-300 text-sm text-center px-4">
+                  <p className="px-4 text-center text-sm text-slate-300">
                     {dawnNews.killedName ? `${dawnNews.killedName} morreu esta noite.` : 'Ninguém morreu esta noite.'}
                   </p>
                 )}
-                <VotePanel room={room} playerName={playerName} socket={socket} amEliminated={amEliminated} amJuiz={amJuiz} />
+                <VotePanel
+                  room={room}
+                  playerName={playerName}
+                  amEliminated={amEliminated}
+                  amJuiz={amJuiz}
+                  voteTarget={voteTarget}
+                  onSelect={setVoteTarget}
+                />
               </motion.div>
             )}
 
             {status === 'night' && (
-              <motion.div key="night" className="text-center py-12 space-y-3">
+              <motion.div key="night" className="space-y-3 py-12 text-center">
                 <p className="text-4xl">🌙</p>
-                <p className="text-indigo-200 font-semibold">Olhos fechados</p>
+                <p className="font-semibold text-white">Olhos fechados</p>
                 {daySkippedNotice && (
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-sm text-slate-400">
                     {daySkippedNotice === 'tie'
                       ? 'Empate na votação — ninguém eliminado.'
                       : 'Ninguém foi eliminado hoje — nova noite.'}
                   </p>
                 )}
-                <p className="text-slate-500 text-sm">O narrador conduz a noite</p>
+                <p className="text-sm text-slate-500">O narrador conduz a noite</p>
               </motion.div>
             )}
 
             {status === 'result' && (
-              <motion.div key="result" className="text-center space-y-4">
-                <p className="text-white font-black text-3xl">{gameResultLabel(room.gameResult)}</p>
+              <motion.div key="result" className="mt-5 space-y-4 text-center">
+                <p className="text-3xl font-black text-white">{gameResultLabel(room.gameResult)}</p>
                 {(room.rolesPublic || []).map((r) => (
-                  <p key={r.origIdx} className="text-slate-400 text-sm">{r.name}: {roleLabel(r.role)}</p>
+                  <p key={r.origIdx} className="text-sm text-slate-400">{r.name}: {roleLabel(r.role)}</p>
                 ))}
               </motion.div>
             )}
@@ -568,32 +624,24 @@ export default function AldeiaMixOnline() {
         )}
 
         {amJuiz && status === 'reveal' && (
-          <div className="space-y-4">
-            <p className="text-center text-emerald-400 text-sm font-semibold">
-              Narrador — espera os jogadores verem o papel ({readyCount}/{readyTotal})
+          <div className="mt-5 space-y-2">
+            <p className="text-center text-sm font-semibold text-[#22d3ee]">
+              À espera dos papéis ({readyCount}/{readyTotal})
             </p>
-            <p className="text-slate-500 text-xs text-center">Tu não jogas nesta partida, só conduzes.</p>
-          </div>
-        )}
-
-        {amJuiz && status === 'result' && (
-          <div className="sticky-cta !bg-gradient-to-t !from-[#080b14] !via-[#080b14]/95 !to-transparent">
-            <button type="button" onClick={playAgain} className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold">
-              Jogar outra vez (narrador seguinte)
-            </button>
+            <p className="text-center text-xs text-slate-500">Tu não jogas nesta partida, só conduzes.</p>
           </div>
         )}
 
         {amEliminated && status !== 'result' && (
-          <p className="text-center text-slate-600 text-sm">Eliminado — observa em silêncio</p>
+          <p className="mt-4 text-center text-sm text-slate-500">Eliminado — observa em silêncio</p>
         )}
 
         {(isHost || amJuiz) && (
           <button type="button" onClick={closeRoom}
-            className="w-full flex items-center justify-center gap-2 text-red-400/80 text-xs py-2">
-            <Trash2 className="w-3 h-3" /> Fechar sala
+            className="mt-4 flex w-full items-center justify-center gap-2 py-2 text-xs font-bold text-red-400/80">
+            <Trash2 className="h-3 w-3" /> Fechar sala
           </button>
         )}
-    </PageShell>
+    </NightShell>
   )
 }

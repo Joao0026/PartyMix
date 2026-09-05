@@ -62,6 +62,7 @@ function normalizeLegendaPacks(input) {
   return unique
 }
 const MAX_LEGENDA_LEN = 200
+const MAX_SWAP_LEGENDAS = 3
 
 function removeMemeFromRoom(code, memeId, { socketId } = {}) {
   const c = String(code || '').toUpperCase()
@@ -681,7 +682,7 @@ function registerMemeMixHandlers(io, socket) {
     }
   })
 
-  socket.on('mm_swap_legenda', ({ code, text }) => {
+  socket.on('mm_swap_legenda', ({ code, text, texts }) => {
     const room = getMmRoom(code)
     if (!room || room.status !== 'playing') return
     if (normalizeLegendaMode(room.settings.legendaMode) !== 'pack') return
@@ -689,18 +690,26 @@ function registerMemeMixHandlers(io, socket) {
     const juiz = room.players[room.juizIdx]
     if (!player || player.id === juiz?.id) return
     if ((player.score || 0) < 1) {
-      socket.emit('error', 'Precisas de 1 ponto para trocar uma legenda')
+      socket.emit('error', 'Precisas de 1 ponto para trocar legendas')
       return
     }
 
-    const legenda = String(text || '').trim().slice(0, MAX_LEGENDA_LEN)
-    const hand = room.hands[socket.id] || []
-    const idx = hand.indexOf(legenda)
-    if (idx < 0) return
+    const raw = Array.isArray(texts) ? texts : [text]
+    const wanted = [...new Set(
+      raw.map((t) => String(t || '').trim().slice(0, MAX_LEGENDA_LEN)).filter(Boolean),
+    )].slice(0, MAX_SWAP_LEGENDAS)
+    if (!wanted.length) return
 
-    hand.splice(idx, 1)
-    const replacement = room.legendasDeck.shift()
-    if (replacement) hand.push(replacement)
+    const hand = room.hands[socket.id] || []
+    if (!wanted.every((legenda) => hand.includes(legenda))) return
+
+    wanted.forEach((legenda) => {
+      const idx = hand.indexOf(legenda)
+      if (idx < 0) return
+      hand.splice(idx, 1)
+      const replacement = room.legendasDeck.shift()
+      if (replacement) hand.push(replacement)
+    })
     player.score = Math.max(0, (player.score || 0) - 1)
 
     io.to(code).emit('mm_round_update', sanitizeMm(room))

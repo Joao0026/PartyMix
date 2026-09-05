@@ -293,7 +293,20 @@ export default function CoupleGame(){
   const [loopGoal,setLoopGoal]=useState('free')
   const [targetLaps,setTargetLaps]=useState(3)
 
-  const players=game?.players||[{name:'Jogador 1',color:'from-pink-400 to-rose-500'},{name:'Jogador 2',color:'from-cyan-400 to-blue-500'}]
+  const coupleReady = game?.mode === 'couple' && Array.isArray(game.players) && game.players.length === 2
+  if (!coupleReady) {
+    return (
+      <NightShell
+        onBack={() => navigate('/')}
+        footer={<NightCta accent="#f87171" onClick={() => navigate('/GameSetup?mode=couple')}>Configurar mesa</NightCta>}
+      >
+        <NightTitle>Modo Casal</NightTitle>
+        <p className="mt-3 text-center text-sm text-white/60">Não há jogo de casal guardado. Configura a mesa para começar.</p>
+      </NightShell>
+    )
+  }
+
+  const players=game.players
   const player=players[turn%2]
 
   const playableActs=selected.filter(s=>s!=='scratch'&&s!=='map')

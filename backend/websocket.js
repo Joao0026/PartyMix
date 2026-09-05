@@ -6,7 +6,8 @@
 //   server.listen(PORT, ...)  // replace app.listen with server.listen
 
 const { Server } = require('socket.io')
-const { assignRolesAsync: mwAssignRoles, checkEndCondition: mwCheckEnd, invalidateCommunityPairsCache } = require('./lib/misterWhite')
+const { assignRolesAsync: mwAssignRoles, checkEndCondition: mwCheckEnd, invalidateCommunityPairsCache, sanitizeCustomPairs } = require('./lib/misterWhite')
+const { sanitizeWordPacks, sanitizeDifficulties, DIFFICULTY_IDS } = require('./lib/misterPairs')
 const { registerAldeiaMixHandlers, handleAldeiaDisconnect, amRooms } = require('./lib/aldeiaMixSocket')
 const { registerMemeMixHandlers, handleMemeMixDisconnect } = require('./lib/mememixSocket')
 const { cleanupOrphanUploads, destroyMemeMixSession, cleanupStaleUploads } = require('./lib/mememixSessions')
@@ -331,9 +332,16 @@ function initWebSocket(httpServer, options = {}) {
         settings: {
           numUndercover: toNonNegativeInt(cfg.numUndercover, 1),
           numMW: toNonNegativeInt(cfg.numMW, 0),
-          wordPack: String(cfg.wordPack || 'geral').slice(0, 40),
+          wordPack: String((Array.isArray(cfg.wordPacks) ? cfg.wordPacks[0] : cfg.wordPack) || 'geral').slice(0, 40),
+          wordPacks: Array.isArray(cfg.wordPacks)
+            ? sanitizeWordPacks(cfg.wordPacks)
+            : sanitizeWordPacks(cfg.wordPack ? [cfg.wordPack] : ['geral']),
           difficulty: String(cfg.difficulty || 'normal').slice(0, 20),
+          difficulties: Array.isArray(cfg.difficulties)
+            ? sanitizeDifficulties(cfg.difficulties)
+            : sanitizeDifficulties(cfg.difficulty ? [cfg.difficulty] : DIFFICULTY_IDS),
           discussionSeconds: [60, 90, 120].includes(Number(cfg.discussionSeconds)) ? Number(cfg.discussionSeconds) : 90,
+          customPairs: sanitizeCustomPairs(cfg.customPairs),
         },
         status: 'waiting',
         roles: null,
@@ -393,10 +401,23 @@ function initWebSocket(httpServer, options = {}) {
       if (settings) {
         if (settings.numUndercover != null) room.settings.numUndercover = toNonNegativeInt(settings.numUndercover, 0)
         if (settings.numMW != null) room.settings.numMW = toNonNegativeInt(settings.numMW, 0)
-        if (settings.wordPack) room.settings.wordPack = settings.wordPack
+        if (settings.wordPack) room.settings.wordPack = String(settings.wordPack).slice(0, 40)
+        if (settings.wordPacks) {
+          room.settings.wordPacks = sanitizeWordPacks(settings.wordPacks)
+          room.settings.wordPack = room.settings.wordPacks[0] || 'geral'
+        }
         if (settings.difficulty) room.settings.difficulty = settings.difficulty
+        if (settings.difficulties) {
+          room.settings.difficulties = sanitizeDifficulties(settings.difficulties)
+          room.settings.difficulty = room.settings.difficulties.length === 1
+            ? room.settings.difficulties[0]
+            : 'normal'
+        }
         if ([60, 90, 120].includes(Number(settings.discussionSeconds))) {
           room.settings.discussionSeconds = Number(settings.discussionSeconds)
+        }
+        if (settings.customPairs != null) {
+          room.settings.customPairs = sanitizeCustomPairs(settings.customPairs)
         }
       }
       io.to(room.code).emit('mw_room_updated', sanitizeMw(room))
@@ -415,6 +436,13 @@ function initWebSocket(httpServer, options = {}) {
       }
       if (room.settings.numMW + room.settings.numUndercover > maxSpec) {
         socket.emit('error', 'Demasiados especiais para este número de jogadores'); return
+      }
+      const selectedPacks = Array.isArray(room.settings.wordPacks) && room.settings.wordPacks.length
+        ? room.settings.wordPacks
+        : [room.settings.wordPack || 'geral']
+      const salaOnly = selectedPacks.every((id) => id === 'sala')
+      if ((salaOnly || !selectedPacks.length) && !sanitizeCustomPairs(room.settings.customPairs).length) {
+        socket.emit('error', 'Adiciona pelo menos um par de palavras da sala'); return
       }
 
       try {

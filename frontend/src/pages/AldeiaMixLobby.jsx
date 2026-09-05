@@ -32,7 +32,7 @@ export default function AldeiaMixLobby() {
 
   const [numLobos, setNumLobos] = useState(1)
   const [numCurandeiras, setNumCurandeiras] = useState(1)
-  const [numVidentes, setNumVidentes] = useState(0)
+  const [numVidentes, setNumVidentes] = useState(1)
   const [discussionSeconds, setDiscussionSeconds] = useState(120)
 
   const goToGame = (incomingRoom, playerName, isHost, role) => {
@@ -201,7 +201,7 @@ export default function AldeiaMixLobby() {
     setConnecting(false)
   }
 
-  const maxSpec = room ? Math.max(1, (room.players?.length || 0) - 2) : 0
+  const maxSpec = room ? Math.max(3, (room.players?.length || 0) - 1) : 3
   const isHost = room && room.host === name.trim()
   const juizName = room?.juizName || room?.players?.[0]?.name
   const savedSession = loadAmSession()
@@ -256,7 +256,12 @@ export default function AldeiaMixLobby() {
                 <div key={label} className="rounded-2xl border border-white/10 bg-[#1c1c21] p-3 text-center">
                   <p className="mb-1 text-[11px] text-slate-500">{label}</p>
                   <div className="flex items-center justify-center gap-1">
-                    <button type="button" onClick={() => set((v) => Math.max(0, v - 1))} className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400">−</button>
+                    <button
+                      type="button"
+                      disabled={val <= 1}
+                      onClick={() => set((v) => Math.max(1, v - 1))}
+                      className="h-7 w-7 rounded-lg bg-white/[0.06] text-slate-400 disabled:opacity-25"
+                    >−</button>
                     <span className="font-black text-white">{val}</span>
                     <button
                       type="button"
@@ -268,6 +273,7 @@ export default function AldeiaMixLobby() {
                 </div>
               ))}
             </div>
+            <p className="text-center text-xs text-slate-500">Sempre pelo menos 1 lobo, 1 beijoqueira/o e 1 xerife.</p>
             <div className="grid grid-cols-4 gap-2">
               {[60, 90, 120, 180].map((s) => (
                 <button

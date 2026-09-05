@@ -27,7 +27,7 @@ test('community vote updates are identity-scoped and idempotency-ready', () => {
 test('MemeMix local fallback exposes real base and selected-pack captions', () => {
   const packs = getLocalLegendaPacks({ includeCommunity: false })
   assert.ok(packs.some((pack) => pack.pack === 'base' && pack.count >= 10))
-  assert.ok(packs.some((pack) => pack.pack === 'amigos' && pack.name.includes('Amigos') && pack.count === 2))
+  assert.ok(packs.some((pack) => pack.pack === 'amigos' && pack.name.toLowerCase().includes('malta') && pack.count >= 40))
   assert.ok(!packs.some((pack) => pack.pack === 'community'))
 
   const base = getLocalLegendas({ packs: ['base'], includeCommunity: false })
@@ -36,7 +36,7 @@ test('MemeMix local fallback exposes real base and selected-pack captions', () =
   const community = getLocalLegendas({ packs: ['community'], includeCommunity: true })
   assert.ok(base.length >= 10)
   assert.ok(houseParty.length >= 10)
-  assert.equal(amigos.length, 2)
+  assert.ok(amigos.length >= 40)
   assert.ok(amigos.every((caption) => !community.includes(caption)))
   assert.notDeepEqual(base, houseParty)
 })

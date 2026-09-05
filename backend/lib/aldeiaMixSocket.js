@@ -30,7 +30,9 @@ function getAmRoom(code) {
 
 function isJuiz(room, socketId) {
   const juiz = room.players[room.juizIdx]
-  return juiz && juiz.id === socketId && !juiz.disconnected
+  if (juiz && juiz.id === socketId && !juiz.disconnected) return true
+  const me = room.players.find((p) => p.id === socketId && !p.disconnected)
+  return Boolean(me && juiz && me.name === juiz.name)
 }
 
 function aliveRoleCount(room) {
@@ -109,16 +111,35 @@ function promoteHostIfNeeded(room) {
   }
 }
 
+function connectedPlayerIdxs(room) {
+  return room.players
+    .map((p, i) => (!p.disconnected && p.id ? i : -1))
+    .filter((i) => i >= 0)
+}
+
+function pickRandomConnectedIdx(room) {
+  const idxs = connectedPlayerIdxs(room)
+  if (!idxs.length) return 0
+  return idxs[Math.floor(Math.random() * idxs.length)]
+}
+
+function nextConnectedJuizIdx(room, fromIdx) {
+  const n = room.players.length
+  if (!n) return 0
+  for (let step = 1; step <= n; step++) {
+    const i = (fromIdx + step) % n
+    if (!room.players[i]?.disconnected) return i
+  }
+  return fromIdx
+}
+
 function ensureConnectedJuiz(room) {
   const juiz = room.players[room.juizIdx]
   if (!juiz?.disconnected) return false
-  const start = room.juizIdx
-  for (let i = 0; i < room.players.length; i++) {
-    room.juizIdx = (room.juizIdx + 1) % room.players.length
-    if (!room.players[room.juizIdx]?.disconnected && room.players[room.juizIdx]?.id) return true
-    if (room.juizIdx === start) break
-  }
-  return false
+  const next = nextConnectedJuizIdx(room, room.juizIdx)
+  if (next === room.juizIdx && juiz.disconnected) return false
+  room.juizIdx = next
+  return true
 }
 
 function sanitizeAm(room, revealAll = false, viewerName = null) {
@@ -209,13 +230,19 @@ function broadcastPhase(io, room) {
   })
 }
 
+function markEliminated(room, idx) {
+  if (!Number.isInteger(idx) || room.eliminated.includes(idx)) return false
+  room.eliminated.push(idx)
+  room.lastEliminatedIdx = idx
+  const name = room.roles[idx]?.name
+  if (name && room.dayVotes) delete room.dayVotes[name]
+  return true
+}
+
 function applyNightDeath(room) {
   const outcome = resolveNight(room)
   room.lastNight = outcome
-  if (outcome.killed != null) {
-    room.eliminated.push(outcome.killed)
-    room.lastEliminatedIdx = outcome.killed
-  }
+  if (outcome.killed != null) markEliminated(room, outcome.killed)
   return outcome
 }
 
@@ -256,8 +283,22 @@ function advanceToNightAfterDay(room, io, code, reason = 'skip') {
   io.to(code).emit('am_day_skipped', { dayNum: room.dayNum, reason })
 }
 
+function emitVotingClosed(io, room, code, { skipElimination = false, tied = false } = {}) {
+  broadcastPhase(io, room)
+  io.to(code).emit('am_voting_closed', {
+    tally: room.voteTally,
+    eliminatedName: room.lastVoteEliminatedName,
+    skipped: skipElimination,
+    tied,
+  })
+}
+
 function closeDayVoting(room, io, code, { skipElimination = false } = {}) {
-  if (room.status !== 'day' || room.votingClosed) return
+  if (room.status !== 'day') return
+  if (room.votingClosed) {
+    emitVotingClosed(io, room, code, { skipElimination, tied: !!room.lastVoteTie })
+    return
+  }
   clearDayTimer(room)
   room.votingClosed = true
   room.discussionEndsAt = null
@@ -277,21 +318,13 @@ function closeDayVoting(room, io, code, { skipElimination = false } = {}) {
 
   if (!skipElimination && !tie) {
     const target = pickMostVoted(counts)
-    if (target != null && !room.eliminated.includes(target)) {
-      room.eliminated.push(target)
-      room.lastEliminatedIdx = target
+    if (target != null && markEliminated(room, target)) {
       room.lastVoteEliminatedName = room.roles[target]?.name
       if (checkWinOrContinue(room, code, io)) return
     }
   }
 
-  broadcastPhase(io, room)
-  io.to(code).emit('am_voting_closed', {
-    tally: room.voteTally,
-    eliminatedName: room.lastVoteEliminatedName,
-    skipped: skipElimination,
-    tied: tie,
-  })
+  emitVotingClosed(io, room, code, { skipElimination, tied: tie })
 
   if (skipElimination || tie) {
     advanceToNightAfterDay(room, io, code, tie ? 'tie' : 'skip')
@@ -378,8 +411,8 @@ function registerAldeiaMixHandlers(io, socket) {
       settings: {
         ...defaultSettings(),
         numLobos: Math.max(1, Number(cfg.numLobos) || 1),
-        numCurandeiras: Math.max(0, Number(cfg.numCurandeiras) ?? 1),
-        numVidentes: Math.max(0, Number(cfg.numVidentes) ?? 1),
+        numCurandeiras: Math.max(1, Number(cfg.numCurandeiras) || 1),
+        numVidentes: Math.max(1, Number(cfg.numVidentes) || 1),
         discussionSeconds: [60, 90, 120, 180].includes(Number(cfg.discussionSeconds))
           ? Number(cfg.discussionSeconds) : 120,
       },
@@ -454,6 +487,8 @@ function registerAldeiaMixHandlers(io, socket) {
     const active = room.players.filter((p) => !p.disconnected).length
     const v = validateSettings(room.settings, active)
     if (!v.ok) { socket.emit('error', v.error); return }
+
+    if (!room.matchNum) room.juizIdx = pickRandomConnectedIdx(room)
 
     const result = startNewMatch(room)
     if (!result.ok) { socket.emit('error', result.error); return }
@@ -564,10 +599,17 @@ function registerAldeiaMixHandlers(io, socket) {
 
     const voterIdx = room.players.findIndex((p) => p.id === socket.id)
     if (voterIdx < 0 || isNarratorIdx(room, voterIdx)) return
-    if (room.eliminated.includes(voterIdx)) return
+    if (room.eliminated.includes(voterIdx)) {
+      socket.emit('error', 'Os mortos não votam')
+      return
+    }
 
     const target = Number(targetOrigIdx)
-    if (!Number.isInteger(target) || room.eliminated.includes(target) || isNarratorIdx(room, target)) return
+    if (!Number.isInteger(target) || isNarratorIdx(room, target)) return
+    if (room.eliminated.includes(target)) {
+      socket.emit('error', 'Não podes votar num morto')
+      return
+    }
     if (target === voterIdx) {
       socket.emit('error', 'Não podes votar em ti próprio')
       return
@@ -592,7 +634,10 @@ function registerAldeiaMixHandlers(io, socket) {
 
   socket.on('am_close_voting', ({ code }) => {
     const room = getAmRoom(code)
-    if (!room || !isJuiz(room, socket.id) || room.status !== 'day') return
+    if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+    const allowed = isJuiz(room, socket.id) || room.hostId === socket.id
+    if (!allowed) { socket.emit('error', 'Só o narrador pode fechar a votação'); return }
+    if (room.status !== 'day') { socket.emit('error', 'A votação só fecha de dia'); return }
     closeDayVoting(room, io, code)
   })
 
@@ -630,10 +675,7 @@ function registerAldeiaMixHandlers(io, socket) {
       return
     }
 
-    room.juizIdx = (room.juizIdx + 1) % room.players.length
-    while (room.players[room.juizIdx]?.disconnected && room.players.length > 1) {
-      room.juizIdx = (room.juizIdx + 1) % room.players.length
-    }
+    room.juizIdx = nextConnectedJuizIdx(room, room.juizIdx)
 
     const result = startNewMatch(room)
     if (!result.ok) { socket.emit('error', result.error); return }
@@ -670,7 +712,7 @@ function registerAldeiaMixHandlers(io, socket) {
     if (!player) return
     const view = sanitizeAm(room, room.status === 'result', player.name)
     socket.emit('am_phase', view)
-    if (room.players[room.juizIdx]?.id === socket.id) {
+    if (isJuiz(room, socket.id)) {
       socket.emit('am_narrator_state', { ...view, ...sanitizeNarrator(room) })
     }
   })

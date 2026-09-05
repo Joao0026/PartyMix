@@ -28,9 +28,9 @@ function defaultSettings() {
 
 function normalizeSettings(settings) {
   const s = { ...defaultSettings(), ...settings }
-  s.numLobos = Math.max(0, Math.min(5, Number(s.numLobos) || 0))
-  s.numCurandeiras = Math.max(0, Math.min(3, Number(s.numCurandeiras) || 0))
-  s.numVidentes = Math.max(0, Math.min(3, Number(s.numVidentes) || 0))
+  s.numLobos = Math.max(1, Math.min(5, Number(s.numLobos) || 1))
+  s.numCurandeiras = Math.max(1, Math.min(3, Number(s.numCurandeiras) || 1))
+  s.numVidentes = Math.max(1, Math.min(3, Number(s.numVidentes) || 1))
   s.discussionSeconds = [60, 90, 120, 180].includes(Number(s.discussionSeconds))
     ? Number(s.discussionSeconds) : 120
   s.nightSeconds = [45, 60, 90].includes(Number(s.nightSeconds))
@@ -53,8 +53,10 @@ function validateSettings(settings, totalPlayers) {
   const specials = s.numLobos + s.numCurandeiras + s.numVidentes
   if (totalPlayers < 4) return { ok: false, error: 'Precisas de pelo menos 4 jogadores (3 + narrador)' }
   if (playingSlots < 3) return { ok: false, error: 'Precisas de pelo menos 3 jogadores além do narrador' }
-  if (specials >= playingSlots) return { ok: false, error: 'Demasiados papéis especiais para este número de jogadores' }
-  if (s.numLobos < 1) return { ok: false, error: 'Precisas de pelo menos 1 lobo' }
+  if (specials > playingSlots) return { ok: false, error: 'Demasiados papéis especiais para este número de jogadores' }
+  if (s.numLobos < 1 || s.numCurandeiras < 1 || s.numVidentes < 1) {
+    return { ok: false, error: 'Tem de haver pelo menos 1 lobo, 1 beijoqueira/o e 1 xerife' }
+  }
   return { ok: true, settings: s }
 }
 
@@ -90,7 +92,7 @@ function assignRolesForRoom(playerNames, narratorIdx, settings) {
     .filter(({ i }) => i !== narratorIdx)
   const assigned = assignRoles(playing.map((p) => p.name), settings)
   playing.forEach(({ i }, j) => {
-    roles[i] = { ...assigned[j], isNarrator: false }
+    roles[i] = { ...assigned[j], origIdx: i, isNarrator: false }
   })
   return roles
 }
