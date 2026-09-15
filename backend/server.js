@@ -12,6 +12,7 @@ const { blockMinors } = require('./lib/ageCookie')
 const { healthPayload, readyPayload } = require('./lib/health')
 const { onlineFlags } = require('./lib/featureFlags')
 const { legalPayload } = require('./lib/ugcPolicy')
+const { playPayload, assetLinksPayload } = require('./lib/playPolicy')
 const { WS_POLICY, assertSingleInstance, stickyCookieHeader } = require('./lib/wsPolicy')
 const { initSentry, installCrashReporting, log } = require('./lib/observability')
 const { ensureIndexes, purgeExpiredGameDocs } = require('./lib/mongoMaintenance')
@@ -63,6 +64,9 @@ app.use((req, res, next) => {
   res.append('Set-Cookie', stickyCookieHeader())
   next()
 })
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  res.type('application/json').json(assetLinksPayload())
+})
 app.use(express.json({ limit: '1mb' }))
 
 app.use('/api/age', require('./routes/age'))
@@ -98,6 +102,7 @@ app.get('/api/features', (_req, res) => {
     roomsEphemeral: true,
     online: onlineFlags(),
     legal: legalPayload(),
+    play: playPayload(),
   })
 })
 

@@ -76,4 +76,8 @@ Indexes: `code` unique; TTL `createdAt` em Lobby/CardRoom; `{ status, updatedAt 
 
 ## Variáveis novas
 
-Ver `backend/.env.example`: `INSTANCE_ID`, `SENTRY_DSN`, `ROOM_HASH_SALT`, `FEATURE_*_ONLINE`, `WEB_CONCURRENCY=1`, `PUBLIC_ORIGIN`.
+Ver `backend/.env.example`: `INSTANCE_ID`, `SENTRY_DSN`, `ROOM_HASH_SALT`, `FEATURE_*_ONLINE`, `WEB_CONCURRENCY=1`, `PUBLIC_ORIGIN`, `PLAY_SHA256_CERT`.
+
+## Play Store / TWA (Fase 4)
+
+Ver `docs/play-store.md`. Digital Asset Links: `GET /.well-known/assetlinks.json`. `GET /api/features` → `play.ready`.

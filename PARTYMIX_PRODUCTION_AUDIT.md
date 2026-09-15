@@ -86,3 +86,16 @@ Testes: `backend/tests/phase3.ugc.test.js`.
 
 **Fora de âmbito (Fase 4):** wrapper Capacitor/TWA, Play Console, Data safety form, paid packs. Não implementar sem confirmação.
 
+## Estado pós-fix — Fase 4
+
+**Wrapper:** Trusted Web Activity (não Capacitor). Cookies sticky + AgeGate + Socket.IO ficam no Chrome da PWA. Package `pt.partymix.app`. Sem permissões Android extra, sem IAP, sem Advertising ID, sem anúncios.
+
+**Código:** `backend/lib/playPolicy.js`; `GET /api/features` inclui `play`; `GET /.well-known/assetlinks.json` no backend; cópia estática em `frontend/public/.well-known/assetlinks.json`. `play.ready` só com `PUBLIC_ORIGIN` HTTPS + `PLAY_SHA256_CERT` real.
+
+**Consola:** ficha pt-PT, IARC 18+, Data safety e gráfico 1024×500 em `play/` + `docs/play-store.md`. Regenerar JSON com `node scripts/write-play-files.js`.
+
+**Ainda fora desta fase (precisa da tua conta Google):** pagar a Play Console, `bubblewrap` + Android SDK para o AAB, upload e revisão. Não há compras na app.
+
+Testes: `backend/tests/phase4.play.test.js`.
+
+

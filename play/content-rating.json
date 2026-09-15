@@ -1,0 +1,16 @@
+{
+  "questionnaire": "IARC",
+  "expectedRating": "18+",
+  "alcohol": true,
+  "sexualContent": true,
+  "strongLanguage": true,
+  "violence": false,
+  "gambling": false,
+  "userGeneratedContent": true,
+  "usersInteract": true,
+  "sharesLocation": false,
+  "inAppPurchases": false,
+  "designedForChildren": false,
+  "targetAge": "18+",
+  "notesPt": "Álcool e conteúdo sexual em modos adultos. Modo Família existe na app mas a ficha da loja é 18+."
+}
