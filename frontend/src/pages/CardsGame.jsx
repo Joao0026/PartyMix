@@ -13,6 +13,7 @@ import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
 import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { shareNight } from '../utils/shareNight'
 import { confirmHostStart } from '../utils/confirmHost'
@@ -738,7 +739,7 @@ export default function CardsGame() {
 
   // Connect socket for online mode
   const connectSocket = () => {
-    const s = io(API_URL, { transports:['websocket','polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     return s
   }

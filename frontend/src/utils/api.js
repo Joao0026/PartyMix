@@ -235,6 +235,7 @@ export const api = {
   rejectCommunity:    (id) => post(`/community/${id}/reject`, {}),
   deleteCommunity:    (id) => del(`/community/${id}`),
   getMisterPairs:     () => get('/mister/pairs'),
+  getFeatures:        () => get('/features'),
 
   getMemeMixPacks:    () => get('/mememix/packs'),
 

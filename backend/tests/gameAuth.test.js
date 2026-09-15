@@ -3,6 +3,7 @@ const test = require('node:test')
 
 const {
   cardsInHand,
+  createSocketRateLimiter,
   detachSocketFromRooms,
   dropDisconnectedPlayers,
   generateRoomCode,
@@ -87,4 +88,13 @@ test('dropDisconnectedPlayers remaps host and juiz onto remaining seats', () => 
   assert.equal(room.host, 'Bruno')
   assert.equal(room.hostId, 'b')
   assert.equal(room.juizIdx, 0)
+})
+
+test('socket rate limiter Map drops idle sockets on prune', () => {
+  const allow = createSocketRateLimiter({ windowMs: 20, max: 4 })
+  assert.equal(allow('gone'), true)
+  assert.equal(allow.size() > 0, true)
+  const size = allow.prune(Date.now() + 50)
+  assert.equal(size, 0)
+  assert.equal(allow.size(), 0)
 })

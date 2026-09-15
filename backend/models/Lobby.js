@@ -8,4 +8,5 @@ const s = new mongoose.Schema({
   gameData: { type: mongoose.Schema.Types.Mixed, default: {} }
 }, { timestamps: true });
 s.index({ createdAt: 1 }, { expireAfterSeconds: 7200 });
+s.index({ status: 1, updatedAt: 1 });
 module.exports = mongoose.model('Lobby', s);

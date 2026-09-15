@@ -8,6 +8,7 @@ import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '..
 import { compressImageFile, fullMemeUrl } from '../utils/mememixImage'
 import { loadNightRoster } from '../utils/nightRoster'
 import { confirmHostStart } from '../utils/confirmHost'
+import { socketIoOptions } from '../utils/socketOptions'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, NightBox, NightChip, pessoaLabel,
 } from '../components/layout/NightShell'
@@ -209,7 +210,7 @@ export default function MemeMixLobby() {
       fn(existing)
       return
     }
-    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
     s.once('connect', () => fn(s))

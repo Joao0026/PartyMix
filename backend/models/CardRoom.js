@@ -42,5 +42,6 @@ const s = new mongoose.Schema({
 
 // Auto-delete rooms after 24 hours
 s.index({ createdAt: 1 }, { expireAfterSeconds: 86400 });
+s.index({ status: 1, updatedAt: 1 });
 
 module.exports = mongoose.model('CardRoom', s);

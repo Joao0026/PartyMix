@@ -22,6 +22,8 @@ const {
   socketSeatedIn,
   removeCardsFromHand,
 } = require('./gameAuth')
+const { guardSocketMode } = require('./featureFlags')
+const { trackRoom, trackRejoinFailed } = require('./observability')
 
 const mmRooms = {}
 
@@ -425,6 +427,7 @@ function registerMemeMixHandlers(io, socket) {
   mmIo = io
 
   socket.on('mm_create_room', ({ playerName, settings }) => {
+    if (!guardSocketMode(socket, 'mememix')) return
     const name = normalizePlayerName(playerName)
     if (!name) { socket.emit('error', 'Nome inválido'); return }
     if (roomsAtCapacity(mmRooms)) { socket.emit('error', 'Servidor cheio'); return }
@@ -472,9 +475,11 @@ function registerMemeMixHandlers(io, socket) {
     const token = createUploadToken(code, socket.id, name)
     mmRooms[code].playerTokens[name] = token
     socket.emit('mm_room_created', { code, room: sanitizeMm(mmRooms[code]), uploadToken: token, playerToken, playerName: name })
+    trackRoom('room_created', 'mememix', mmRooms[code])
   })
 
   socket.on('mm_join_room', ({ code, playerName }) => {
+    if (!guardSocketMode(socket, 'mememix')) return
     const c = String(code || '').toUpperCase()
     const room = mmRooms[c]
     if (!room) { socket.emit('error', 'Sala não encontrada'); return }
@@ -500,32 +505,36 @@ function registerMemeMixHandlers(io, socket) {
   socket.on('mm_rejoin_room', ({ code, playerName, uploadToken: oldToken, playerToken }) => {
     const c = String(code || '').toUpperCase()
     const room = mmRooms[c]
-    if (!room) { socket.emit('error', 'Sala não encontrada'); return }
+    const fail = (message) => {
+      trackRejoinFailed('mememix', room, message)
+      socket.emit('error', message)
+    }
+    if (!room) { fail('Sala não encontrada'); return }
 
     const name = normalizePlayerName(playerName)
     const existing = room.players.find((p) => p.name === name)
-    if (!existing) { socket.emit('error', 'Jogador não encontrado nesta sala'); return }
+    if (!existing) { fail('Jogador não encontrado nesta sala'); return }
     if (!tokensEqual(existing.token, playerToken)) {
-      socket.emit('error', 'Sessão inválida')
+      fail('Sessão inválida')
       return
     }
     const stored = room.playerTokens[name]
     if (!stored || !tokensEqual(stored, oldToken)) {
-      socket.emit('error', 'Sessão inválida')
+      fail('Sessão inválida')
       return
     }
     if (!existing.disconnected && existing.id && existing.id !== socket.id) {
-      socket.emit('error', 'Este jogador ainda está ligado')
+      fail('Este jogador ainda está ligado')
       return
     }
     const seated = room.players.find((p) => p.id === socket.id && !p.disconnected)
     if (seated && seated.name !== name) {
-      socket.emit('error', 'Já estás nesta sala')
+      fail('Já estás nesta sala')
       return
     }
     const nextToken = rotateUploadToken(stored, socket.id)
     if (!nextToken) {
-      socket.emit('error', 'Sessão inválida')
+      fail('Sessão inválida')
       return
     }
     room.playerTokens[name] = nextToken
@@ -662,6 +671,7 @@ function registerMemeMixHandlers(io, socket) {
         io.to(p.id).emit('mm_state', buildGameView(room, p.id))
       })
       io.to(room.code).emit('mm_game_started', sanitizeMm(room))
+      trackRoom('game_started', 'mememix', room)
     } catch {
       if (room.status === 'starting') room.status = 'waiting'
       socket.emit('error', 'Erro ao iniciar jogo')
@@ -776,6 +786,7 @@ function registerMemeMixHandlers(io, socket) {
       room.gameWinner = winner.name
       room.status = 'ended'
       io.to(room.code).emit('mm_game_ended', sanitizeMm(room))
+      trackRoom('game_completed', 'mememix', room)
       room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
         io.to(p.id).emit('mm_state', buildGameView(room, p.id))
       })

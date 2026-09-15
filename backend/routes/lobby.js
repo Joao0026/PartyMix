@@ -3,10 +3,13 @@ const Lobby = require('../models/Lobby');
 const { asyncRoute, cleanString, jsonWithinLimit, roomCode } = require('../lib/validate');
 const { allocRoomCode, generateHostSecret, generatePlayerToken, tokensEqual } = require('../lib/gameAuth');
 const { lobbyJoinFilter, lobbyStartFilter, publicLobby } = require('../lib/cardroomPlay');
+const { assertModeEnabled } = require('../lib/featureFlags');
 
 const MAX_LOBBY_PLAYERS = 15
 
 router.post('/create', asyncRoute(async (req, res) => {
+  const disabled = assertModeEnabled('cards')
+  if (!disabled.ok) return res.status(503).json({ error: disabled.error })
   const host = cleanString(req.body.host, { field: 'host', max: 50, required: true });
   let code
   for (let i = 0; i < 12; i += 1) {

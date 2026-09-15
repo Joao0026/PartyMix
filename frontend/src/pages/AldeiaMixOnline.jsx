@@ -9,6 +9,7 @@ import { getGlobalSocket, setGlobalSocket, peekAmLobbyHandoff, clearAmLobbyHando
 import { saveAmSession, loadAmSession, clearAmSession, patchAmSession } from '../utils/amSession'
 import { confirmHostRestart } from '../utils/confirmHost'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import {
   roleLabel,
   ROLE_STYLES,
@@ -426,7 +427,7 @@ export default function AldeiaMixOnline() {
       setup(s)
     } else {
       setReconnecting(true)
-      s = io(API_URL, { transports: ['websocket', 'polling'] })
+      s = io(API_URL, socketIoOptions())
       s.once('connect', () => setup(s))
     }
 

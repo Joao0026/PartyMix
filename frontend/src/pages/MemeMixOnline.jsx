@@ -10,6 +10,7 @@ import { getGlobalSocket, setGlobalSocket, clearMmLobbyHandoff, peekMmLobbyHando
 import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
 import { fullMemeUrl } from '../utils/mememixImage'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import { shareNight } from '../utils/shareNight'
 import { confirmHostRestart } from '../utils/confirmHost'
 
@@ -156,7 +157,7 @@ export default function MemeMixOnline() {
       setup(existing)
     } else {
       setReconnecting(true)
-      s = io(API_URL, { transports: ['websocket', 'polling'] })
+      s = io(API_URL, socketIoOptions())
       setGlobalSocket(s)
       s.once('connect', () => setup(s))
       s.on('connect_error', () => setReconnecting(true))

@@ -24,6 +24,8 @@ const {
   socketSeatedIn,
   touchRoom,
 } = require('./gameAuth')
+const { guardSocketMode } = require('./featureFlags')
+const { trackRoom, trackRejoinFailed } = require('./observability')
 
 const amRooms = {}
 
@@ -256,6 +258,7 @@ function checkWinOrContinue(room, io) {
     room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
       io.to(p.id).emit('am_phase', sanitizeAm(room, true, p.name))
     })
+    trackRoom('game_completed', 'aldeia', room)
     return true
   }
   return false
@@ -395,6 +398,7 @@ function finishRejoin(io, room, socket, player) {
 
 function registerAldeiaMixHandlers(io, socket) {
   socket.on('am_create_room', ({ playerName, settings }) => {
+    if (!guardSocketMode(socket, 'aldeia')) return
     const name = normalizePlayerName(playerName)
     if (!name) { socket.emit('error', 'Nome inválido'); return }
     if (roomsAtCapacity(amRooms)) { socket.emit('error', 'Servidor cheio'); return }
@@ -434,9 +438,11 @@ function registerAldeiaMixHandlers(io, socket) {
     })
     socket.join(code)
     socket.emit('am_room_created', { code, room: sanitizeAm(amRooms[code]), playerToken: token, playerName: name })
+    trackRoom('room_created', 'aldeia', amRooms[code])
   })
 
   socket.on('am_join_room', ({ code, playerName }) => {
+    if (!guardSocketMode(socket, 'aldeia')) return
     const c = String(code || '').toUpperCase()
     const room = amRooms[c]
     if (!room) { socket.emit('error', 'Sala não encontrada'); return }
@@ -461,7 +467,7 @@ function registerAldeiaMixHandlers(io, socket) {
     const c = String(code || '').toUpperCase()
     const room = amRooms[c]
     const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
-    if (!auth.ok) { socket.emit('error', auth.error); return }
+    if (!auth.ok) { trackRejoinFailed('aldeia', room, auth.error); socket.emit('error', auth.error); return }
     touchRoom(room)
     auth.player.id = socket.id
     auth.player.disconnected = false
@@ -508,6 +514,7 @@ function registerAldeiaMixHandlers(io, socket) {
       })
     })
     io.to(room.code).emit('am_game_started', sanitizeAm(room))
+    trackRoom('game_started', 'aldeia', room)
     broadcastPhase(io, room)
   })
 

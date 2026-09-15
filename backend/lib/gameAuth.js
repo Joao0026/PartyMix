@@ -180,10 +180,19 @@ function removeCardsFromHand(hand, submitted) {
 
 function createSocketRateLimiter({ windowMs = 10_000, max = 50 } = {}) {
   const hits = new Map()
-  return function allow(socketId) {
+  function prune(now = Date.now()) {
+    for (const [id, times] of hits) {
+      const fresh = (times || []).filter((t) => now - t < windowMs)
+      if (!fresh.length) hits.delete(id)
+      else hits.set(id, fresh)
+    }
+    return hits.size
+  }
+  function allow(socketId) {
     const now = Date.now()
     const prev = hits.get(socketId) || []
     const fresh = prev.filter((t) => now - t < windowMs)
+    if (!fresh.length) hits.delete(socketId)
     if (fresh.length >= max) {
       hits.set(socketId, fresh)
       return false
@@ -192,6 +201,11 @@ function createSocketRateLimiter({ windowMs = 10_000, max = 50 } = {}) {
     hits.set(socketId, fresh)
     return true
   }
+  allow.prune = prune
+  allow.size = () => hits.size
+  const timer = setInterval(() => prune(), Math.max(windowMs, 30_000))
+  if (typeof timer.unref === 'function') timer.unref()
+  return allow
 }
 
 function startRoomGc(rooms, { onDestroy } = {}) {

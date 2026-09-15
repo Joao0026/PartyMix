@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import { getGlobalSocket, setGlobalSocket, setMwLobbyHandoff, patchMwLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
 import { confirmHostStart } from '../utils/confirmHost'
@@ -163,7 +164,7 @@ export default function MisterWhiteLobby() {
       fn(existing)
       return
     }
-    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
     s.once('connect', () => fn(s))

@@ -58,14 +58,14 @@ Cobertura mínima pedida:
 
 **Fechado nesta fase:** P1–P17 (P0 + P1-level). Testes de integração Socket.IO em `backend/tests/phase1.multiplayer.test.js`; unidade em `gameAuth.test.js`, `onlineQuorum.test.js`, `cardroomPlay.test.js`.
 
-**Fora de âmbito (Fase 2+):** sticky/Redis, Sentry/logs estruturados, analytics, feature flags, runbook, UGC report/block, privacy/terms vivos, PWA polish, wrapper Play Store. Não implementar sem confirmação.
+**Fora de âmbito (Fase 3+):** UGC report/block, privacy/terms vivos alinhados, PWA polish, wrapper Play Store. Não implementar sem confirmação.
 
-**Riscos remanescentes (não são P0 desta lista):**
+## Estado pós-fix — Fase 2
 
-- Salas in-memory: restart do processo perde todas as salas (Fase 2).
-- Multi-instância sem sticky/Redis parte joins (Fase 2).
-- CardRoom result lock é optimista (`findOneAndUpdate` no snapshot); correcto em Mongo, sem replica-set tests aqui.
-- MemeMix ainda transfere o juiz da ronda se o juiz actual desligar a meio do jogo (não é o leak P1 do mapa de papéis da Aldeia).
-- Confirmação host é `window.confirm` (PT-PT); não substitui as regras no servidor.
+**Política WS escolhida:** `single-instance-sticky` (não Redis). Salas continuam em memória; Redis adapter sozinho não persiste o estado. Documentado em `docs/runbook.md`. Cookie `pmx_instance`, `connectionStateRecovery` 2 min, `WEB_CONCURRENCY>1` recusado em produção.
+
+**Fechado:** logs JSON com `errorCode` + `roomHash` (sem PII); crash hooks + Sentry opcional (`SENTRY_DSN`); `/api/health` + `/api/ready`; analytics `room_created` / `game_started` / `game_completed` / `rejoin_failed` / `socket_disconnect_reason` / `error_code`; prune TTL nos Maps de rate limit; indexes + purge Lobby/CardRoom/embeddings; flags `FEATURE_*_ONLINE`; runbook.
+
+**Ainda verdade:** restart do processo perde salas in-memory (esperado nesta política). Multi-instância sem sticky continua incorrecto — o processo recusa cluster > 1.
 
 Não há deploy. Não há PR GitHub nesta fase.

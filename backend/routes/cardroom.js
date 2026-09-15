@@ -11,6 +11,7 @@ const {
 } = require('../lib/validate');
 const { allocRoomCode, generateHostSecret, generatePlayerToken, tokensEqual } = require('../lib/gameAuth');
 const { applyCardRoomResult, cardroomJoinFilter, cardroomStartFilter } = require('../lib/cardroomPlay');
+const { assertModeEnabled } = require('../lib/featureFlags');
 
 const GAME_TYPES = ['dare','truth','drinking','trivia'];
 
@@ -33,6 +34,8 @@ function requireHost(room, token) {
 }
 
 router.post('/create', asyncRoute(async (req, res) => {
+  const disabled = assertModeEnabled('cards')
+  if (!disabled.ok) return res.status(503).json({ error: disabled.error })
   const creator = cleanString(req.body.creator, { field: 'creator', max: 50, required: true });
   let code
   for (let i = 0; i < 12; i += 1) {

@@ -9,6 +9,7 @@ import { getGlobalSocket, setGlobalSocket, peekMwLobbyHandoff, clearMwLobbyHando
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
 import { confirmHostRestart } from '../utils/confirmHost'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import { MW_COLORS, roleLabel } from '../utils/misterWhiteShared'
 
 const API_URL = getSocketUrl()
@@ -147,7 +148,7 @@ export default function MisterWhiteOnline() {
       setup(existing)
     } else {
       setReconnecting(true)
-      s = io(API_URL, { transports: ['websocket', 'polling'] })
+      s = io(API_URL, socketIoOptions())
       setGlobalSocket(s)
       s.once('connect', () => setup(s))
       s.on('connect_error', () => setReconnecting(true))
