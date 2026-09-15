@@ -11,12 +11,13 @@ import NightShell, {
 import { shuffle } from '../utils/game'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekCardsLobbyHandoff, clearCardsLobbyHandoff } from '../utils/socketStore'
-import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
+import { saveCardsSession, loadCardsSession, clearCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
 import { socketIoOptions } from '../utils/socketOptions'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { shareNight } from '../utils/shareNight'
 import { confirmHostStart } from '../utils/confirmHost'
+import { isExpiredRoomMessage } from '../utils/reconnectUi'
 import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
@@ -214,6 +215,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
   const [playerMeta,   setPlayerMeta]   = useState(initialRoom?.players || initialGameState?.players || [])
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
+  const [expired, setExpired] = useState(false)
   const playerNameRef = useRef(playerName)
   playerNameRef.current = playerName
 
@@ -318,6 +320,14 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
         socket.emit('cards_rejoin_room', { code: saved.code, playerName: playerNameRef.current, playerToken: saved.playerToken })
       }
     }
+    const onError = (msg) => {
+      if (isExpiredRoomMessage(msg)) {
+        setExpired(true)
+        setDisconnected(true)
+        setReconnecting(false)
+        clearCardsSession()
+      }
+    }
     const onRoomUpdated = (r) => {
       setPlayers(r.players.map((p) => p.name))
       setScores(Object.fromEntries(r.players.map((p) => [p.name, p.score])))
@@ -329,6 +339,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
 
     socket.on('disconnect', onDisconnect)
     socket.on('connect', onConnect)
+    socket.on('error', onError)
     socket.on('cards_rejoined', onCardsRejoined)
     socket.on('room_updated', onRoomUpdated)
     socket.on('game_started', onGameStarted)
@@ -341,6 +352,7 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
     return () => {
       socket.off('disconnect', onDisconnect)
       socket.off('connect', onConnect)
+      socket.off('error', onError)
       socket.off('cards_rejoined', onCardsRejoined)
       socket.off('room_updated', onRoomUpdated)
       socket.off('game_started', onGameStarted)
@@ -487,9 +499,11 @@ function GameScreen({ mode, socket, room: initialRoom, playerName, players: loca
       <div className="flex-1 px-4 py-4 max-w-lg mx-auto w-full space-y-4">
         {mode === 'online' && (
           <ReconnectBanner
-            reconnecting={reconnecting && !disconnected}
-            disconnected={disconnected}
+            reconnecting={reconnecting && !disconnected && !expired}
+            disconnected={disconnected && !expired}
+            expired={expired}
             onRetry={() => socket?.connect()}
+            onLeave={() => { clearCardsSession(); navigate('/', { replace: true }) }}
           />
         )}
         {/* Black card */}

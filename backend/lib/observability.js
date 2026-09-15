@@ -7,6 +7,8 @@ const EVENTS = [
   'rejoin_failed',
   'socket_disconnect_reason',
   'error_code',
+  'ugc_reported',
+  'ugc_reviewed',
 ]
 
 const recent = []

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ThumbsUp, Send, CheckCircle, Lightbulb } from 'lucide-react'
+import { Flag, ThumbsUp, Send, CheckCircle, Lightbulb } from 'lucide-react'
 import NightShell, { NightTitle } from '../components/layout/NightShell'
+import ReportSheet from '../components/ugc/ReportSheet'
 import { api } from '../utils/api'
 import { DRINK_BARALHOS, DRINK_ESPECIAL_TYPES, DRINK_BARALHO_PLACEHOLDERS, drinkBaralhoLabel } from '../utils/drinkBaralhos'
 import { isUnder18 } from '../utils/ageGate'
@@ -82,6 +83,8 @@ const ANSWER_TYPES = ['perguntas','quiz','casal_pergunta']
 
 function loadVoted() { try { return new Set(JSON.parse(localStorage.getItem('partymix_voted_v5')||'[]')) } catch { return new Set() } }
 function saveVoted(s) { localStorage.setItem('partymix_voted_v5', JSON.stringify([...s])) }
+function loadBlocked() { try { return new Set(JSON.parse(localStorage.getItem('partymix_blocked_v1')||'[]')) } catch { return new Set() } }
+function saveBlocked(s) { localStorage.setItem('partymix_blocked_v1', JSON.stringify([...s])) }
 
 export default function CommunityCards() {
   const navigate = useNavigate()
@@ -92,6 +95,9 @@ export default function CommunityCards() {
   const [modeFilter, setModeFilter] = useState(() => (isUnder18() ? 'family' : 'all'))
   const [submitted,  setSubmitted]  = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [blocked,    setBlocked]    = useState(() => loadBlocked())
+  const [reportId,   setReportId]   = useState(null)
+  const [reportBusy, setReportBusy] = useState(false)
 
   // Card form state
   const [cMode,     setCMode]     = useState(() => (isUnder18() ? 'family' : ''))
@@ -270,12 +276,36 @@ export default function CommunityCards() {
   }
   const getIdeaLabel = id => IDEA_TYPES.find(t=>t.id===id)?.label||id
 
+  const hideLocal = (id) => {
+    setBlocked((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      saveBlocked(next)
+      return next
+    })
+    setItems((prev) => prev.filter((item) => item._id !== id))
+  }
+
+  const submitReport = async ({ reason, details }) => {
+    if (!reportId) return
+    setReportBusy(true)
+    try {
+      await api.reportCommunity(reportId, { reason, details })
+      hideLocal(reportId)
+      setReportId(null)
+    } catch (e) {
+      window.alert(e?.message || 'Não foi possível denunciar')
+    }
+    setReportBusy(false)
+  }
+
   const inp = 'w-full bg-slate-800 border border-slate-600 text-white rounded-xl px-3 py-2.5 outline-none focus:border-violet-500 text-sm placeholder-slate-500'
 
   const visibleItems = useMemo(() => items.filter((item) => {
+    if (blocked.has(item._id)) return false
     if (modeFilter !== 'all' && item.mode !== modeFilter) return false
     return true
-  }), [items, modeFilter])
+  }), [items, modeFilter, blocked])
 
   const stats = {
     approved: visibleItems.length,
@@ -286,7 +316,12 @@ export default function CommunityCards() {
     <NightShell wide onBack={() => navigate('/')}>
       <NightTitle>Comunidade</NightTitle>
       <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Cartas da comunidade</p>
-      <p className="mt-1.5 text-center text-[13px] text-white/45">Vota nas melhores. Só o admin aprova para o jogo.</p>
+      <p className="mt-1.5 text-center text-[13px] text-slate-300">Vota nas melhores. Só o admin aprova para o jogo. Podes denunciar e bloquear conteúdo.</p>
+      {isUnder18() && (
+        <p className="mt-3 rounded-2xl border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-center text-sm text-emerald-100">
+          Menor de 18: só vês e submetes cartas do Modo Família. Sem álcool nem conteúdo adulto.
+        </p>
+      )}
 
       <AnimatePresence>
         {submitted&&(
@@ -390,8 +425,17 @@ export default function CommunityCards() {
                           <p className="text-slate-500 text-xs mt-1">🕵️ Undercover: {item.undercoverWord}</p>
                         )}
                         <p className="text-slate-600 text-xs mt-1.5">@{item.author}</p>
+                        <button
+                          type="button"
+                          onClick={() => setReportId(item._id)}
+                          aria-label="Denunciar esta carta"
+                          className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-slate-300 min-h-[44px] px-1"
+                        >
+                          <Flag className="w-3 h-3" /> Denunciar
+                        </button>
                       </div>
                       <button type="button" onClick={() => toggleVote(item._id)}
+                        aria-label={voted.has(item._id) ? 'Retirar voto' : 'Gostar desta carta'}
                         title={voted.has(item._id) ? 'Retirar voto' : 'Gostei'}
                         className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border flex-shrink-0 transition-all ${voted.has(item._id) ? 'bg-violet-600/25 border-violet-500/60 text-violet-300 hover:bg-violet-600/15' : 'bg-white/[0.04] border-white/[0.07] text-slate-400 hover:text-violet-400 hover:border-violet-500/30'}`}>
                         <ThumbsUp className={`w-4 h-4 ${voted.has(item._id) ? 'fill-current' : ''}`}/>
@@ -723,6 +767,13 @@ export default function CommunityCards() {
 
         </AnimatePresence>
       </div>
+      <ReportSheet
+        open={!!reportId}
+        title="Denunciar carta"
+        busy={reportBusy}
+        onClose={() => setReportId(null)}
+        onSubmit={submitReport}
+      />
     </NightShell>
   )
 }

@@ -6,8 +6,9 @@ import NightShell, { NightTitle, NightCta } from '../components/layout/NightShel
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekMwLobbyHandoff, clearMwLobbyHandoff } from '../utils/socketStore'
-import { saveMwSession, loadMwSession } from '../utils/mwSession'
+import { saveMwSession, loadMwSession, clearMwSession } from '../utils/mwSession'
 import { confirmHostRestart } from '../utils/confirmHost'
+import { isExpiredRoomMessage } from '../utils/reconnectUi'
 import { getSocketUrl } from '../utils/api'
 import { socketIoOptions } from '../utils/socketOptions'
 import { MW_COLORS, roleLabel } from '../utils/misterWhiteShared'
@@ -30,6 +31,7 @@ export default function MisterWhiteOnline() {
   const [mwGuess, setMwGuess] = useState('')
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
+  const [expired, setExpired] = useState(false)
   const playerNameRef = useRef('')
 
   const bindGameSocket = (s) => {
@@ -88,7 +90,16 @@ export default function MisterWhiteOnline() {
         setVoteTarget(null)
       }
     })
-    s.on('error', (msg) => { if (msg) window.alert(String(msg)) })
+    s.on('error', (msg) => {
+      if (isExpiredRoomMessage(msg)) {
+        setExpired(true)
+        setDisconnected(true)
+        setReconnecting(false)
+        clearMwSession()
+        return
+      }
+      if (msg) window.alert(String(msg))
+    })
     s.on('mw_room_updated', (r) => {
       const nowHost = r.host === playerNameRef.current
       setIsHost(nowHost)
@@ -249,9 +260,11 @@ export default function MisterWhiteOnline() {
   return (
     <NightShell wide onBack={() => navigate('/MisterWhite')} footer={footer}>
         <ReconnectBanner
-          reconnecting={reconnecting && !disconnected}
-          disconnected={disconnected}
+          reconnecting={reconnecting && !disconnected && !expired}
+          disconnected={disconnected && !expired}
+          expired={expired}
           onRetry={() => socket?.connect()}
+          onLeave={() => { clearMwSession(); navigate('/', { replace: true }) }}
         />
         <NightTitle>Sala {room.code}</NightTitle>
         {status !== 'reveal' && status !== 'waiting' && (

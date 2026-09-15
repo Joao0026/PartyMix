@@ -69,3 +69,20 @@ Cobertura mínima pedida:
 **Ainda verdade:** restart do processo perde salas in-memory (esperado nesta política). Multi-instância sem sticky continua incorrecto — o processo recusa cluster > 1.
 
 Não há deploy. Não há PR GitHub nesta fase.
+
+## Estado pós-fix — Fase 3
+
+**UGC:** `POST /api/community/:id/report` e `POST /api/mememix/rooms/:code/memes/:memeId/report` (token de upload). Denúncia entra na fila (`GET /api/reports`, admin); o conteúdo fica oculto **só para o denunciante**. Admin pode arquivar / ocultar para todos / remover. Modelo `ContentReport` com TTL 30 dias. Sem PII: `reporterHash`.
+
+**Limites MemeMix:** 2 MB por foto, 12 fotos/jogador, 36/sala (antes 5 MB / 50). Política nos Termos e no consentimento do lobby.
+
+**Legal:** `/privacy` e `/terms` cobrem 18+, álcool, Modo Família, denúncia/bloqueio, eventos de analytics, retenção, URL HTTPS do operador (`PUBLIC_ORIGIN`). `GET /api/features` inclui `legal`. AgeGate 18+; `/community` continua acessível a menores **só Família**.
+
+**Rejoin:** banner distinto se a sala expirou («já não existe» + voltar ao início) vs ligação caída (Tentar).
+
+**PWA / a11y:** `icon-192.png` / `icon-512.png`, splash Apple, `viewport-fit=cover`, safe-areas, `focus-visible`, alvos ≥44px nos CTAs críticos. Meta description sem «dados eróticos».
+
+Testes: `backend/tests/phase3.ugc.test.js`.
+
+**Fora de âmbito (Fase 4):** wrapper Capacitor/TWA, Play Console, Data safety form, paid packs. Não implementar sem confirmação.
+

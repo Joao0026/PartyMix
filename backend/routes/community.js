@@ -9,9 +9,12 @@ const { appendMisterCommunityPair, appendMememixCommunityLegenda } = require('..
 const { invalidateCommunityPairsCache } = require('../lib/misterWhite')
 const { auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, bool, cleanString, intInRange, mongoId, oneOf } = require('../lib/validate')
-const { resolveVoterId, unvoteUpdate, voteUpdate } = require('../lib/communityVotes')
+const { resolveVoterId, peekVoterId, unvoteUpdate, voteUpdate } = require('../lib/communityVotes')
 const { communityVoteLimiter } = require('../middleware/rateLimits')
 const { isUnder18 } = require('../lib/ageCookie')
+const { createReport, blockedIdsFor, hiddenIds } = require('../lib/ugcStore')
+const { filterVisibleItems } = require('../lib/ugcPolicy')
+const { track } = require('../lib/observability')
 
 const SUBMISSION_TYPES = ['card', 'idea']
 const MODES = ['friends','family','couple','drink','cards','mister','mememix']
@@ -41,7 +44,11 @@ router.get('/', asyncRoute(async (req, res) => {
     CommunitySubmission.find(filter).sort({ votes: -1, createdAt: -1 }).skip(skip).limit(limit),
     CommunitySubmission.countDocuments(filter),
   ])
-  res.json({ items, total, page })
+  const reporterId = peekVoterId(req)
+  const hidden = hiddenIds('community')
+  const blocked = blockedIdsFor(reporterId, 'community')
+  const visible = admin ? items : filterVisibleItems(items, { hiddenIds: hidden, blockedIds: blocked })
+  res.json({ items: visible, total, page })
 }))
 
 // POST /api/community — submit a card or idea
@@ -144,6 +151,43 @@ router.post('/:id/unvote', communityVoteLimiter, asyncRoute(async (req, res) => 
   const existing = await CommunitySubmission.findById(id)
   if (!existing) return res.status(404).json({ error: 'Not found' })
   res.json(existing)
+}))
+
+// POST /api/community/:id/report — denúncia + bloqueio para o denunciante
+router.post('/:id/report', communityVoteLimiter, asyncRoute(async (req, res) => {
+  const id = mongoId(req.params.id)
+  const target = await CommunitySubmission.findById(id).select('_id mode').lean()
+  if (!target) return res.status(404).json({ error: 'Não encontrada' })
+  if (isUnder18(req) && target.mode !== 'family') {
+    return res.status(403).json({ error: 'Menores só podem denunciar cartas do Modo Família.', code: 'AGE_RESTRICTED' })
+  }
+  const reporterId = resolveVoterId(req, res)
+  const result = createReport({
+    kind: 'community',
+    targetId: String(id),
+    reporterId,
+    reason: req.body?.reason,
+    details: req.body?.details,
+  })
+  if (!result.ok && !result.blocked) {
+    return res.status(400).json({ error: result.error, code: result.code })
+  }
+  track('ugc_reported', { errorCode: 'ugc_reported' })
+  res.status(result.ok ? 201 : 200).json({
+    ok: true,
+    blocked: true,
+    alreadyReported: !!result.code,
+    report: result.report || null,
+  })
+}))
+
+// POST /api/community/:id/block — só esconde para ti (sem fila extra se já denunciaste)
+router.post('/:id/block', communityVoteLimiter, asyncRoute(async (req, res) => {
+  const id = mongoId(req.params.id)
+  const reporterId = resolveVoterId(req, res)
+  const { blockForReporter } = require('../lib/ugcStore')
+  blockForReporter('community', String(id), reporterId)
+  res.json({ ok: true, blocked: true })
 }))
 
 // POST /api/community/:id/approve — admin manually approves + creates real card/challenge

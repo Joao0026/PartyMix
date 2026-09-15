@@ -1,6 +1,6 @@
 /** Comprime imagem no telemóvel antes do upload MemeMix */
 
-export function compressImageFile(file, maxDim = 1200, quality = 0.82) {
+export function compressImageFile(file, maxDim = 1080, quality = 0.72) {
   return new Promise((resolve, reject) => {
     const img = new Image()
     const url = URL.createObjectURL(file)

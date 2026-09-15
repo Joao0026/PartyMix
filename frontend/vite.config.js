@@ -10,7 +10,7 @@ export default defineConfig({
       manifest: {
         name: "PartyMix",
         short_name: "PartyMix",
-        description: "O jogo de festa definitivo",
+        description: "Jogos de festa 18+. Modo Família para menores. Sem compras na app.",
         theme_color: "#6d28d9",
         background_color: "#0f172a",
         display: "standalone",

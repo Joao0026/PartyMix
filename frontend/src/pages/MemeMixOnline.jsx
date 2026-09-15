@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Crown, RefreshCw, Share2, Trash2, WifiOff } from 'lucide-react'
+import { Crown, RefreshCw, Share2, Trash2, WifiOff, Flag } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
+import ReportSheet from '../components/ugc/ReportSheet'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, clearMmLobbyHandoff, peekMmLobbyHandoff } from '../utils/socketStore'
 import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
 import { fullMemeUrl } from '../utils/mememixImage'
-import { getSocketUrl } from '../utils/api'
+import { getSocketUrl, api } from '../utils/api'
 import { socketIoOptions } from '../utils/socketOptions'
 import { shareNight } from '../utils/shareNight'
 import { confirmHostRestart } from '../utils/confirmHost'
+import { isExpiredRoomMessage } from '../utils/reconnectUi'
 
 const API_URL = getSocketUrl()
 
@@ -40,6 +42,10 @@ export default function MemeMixOnline() {
   const [typedLegenda, setTypedLegenda] = useState('')
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
+  const [expired, setExpired] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [blockedMemeIds, setBlockedMemeIds] = useState([])
+  const [reportBusy, setReportBusy] = useState(false)
   const playerNameRef = useRef('')
 
   const bindGameSocket = (s) => {
@@ -76,6 +82,7 @@ export default function MemeMixOnline() {
     s.on('mm_state', (state) => {
       setGame(state)
       if (state?.code) setRoom(state)
+      if (Array.isArray(state?.blockedMemeIds)) setBlockedMemeIds(state.blockedMemeIds)
     })
     s.on('mm_round_update', (r) => { setRoom(r); setGame((g) => ({ ...g, ...r, pendingSubmissions: r.submissions })) })
     s.on('mm_reveal_submissions', (r) => setRoom(r))
@@ -103,8 +110,20 @@ export default function MemeMixOnline() {
         setRoom(r)
       }
     })
-    s.on('error', (msg) => { if (msg) window.alert(String(msg)) })
-    s.on('mm_rejoined', ({ room: r, uploadToken: tok, playerName: pn, isHost: ih, playerToken }) => {
+    s.on('error', (msg) => {
+      if (isExpiredRoomMessage(msg)) {
+        setExpired(true)
+        setDisconnected(true)
+        setReconnecting(false)
+        clearMmSession()
+        return
+      }
+      if (msg) window.alert(String(msg))
+    })
+    s.on('mm_meme_blocked', ({ blockedMemeIds: ids }) => {
+      if (Array.isArray(ids)) setBlockedMemeIds(ids)
+    })
+    s.on('mm_rejoined', ({ room: r, uploadToken: tok, playerName: pn, isHost: ih, playerToken, blockedMemeIds: ids }) => {
       setRoom(r)
       setUploadToken(tok)
       setPlayerName(pn)
@@ -112,6 +131,8 @@ export default function MemeMixOnline() {
       patchMmSession({ uploadToken: tok, isHost: ih, playerToken })
       setReconnecting(false)
       setDisconnected(false)
+      setExpired(false)
+      if (Array.isArray(ids)) setBlockedMemeIds(ids)
       s.emit('mm_request_state', { code: r.code })
     })
   }
@@ -250,6 +271,7 @@ export default function MemeMixOnline() {
   const hand = g.hand || []
   const memeHand = g.memeHand || []
   const currentMeme = room.currentMeme
+  const memeHidden = !!(currentMeme && (currentMeme.blocked || blockedMemeIds.includes(currentMeme.id)))
   const submissions = g.submissionsPublic || []
   const scores = room.players || []
   const myScore = scores.find((p) => p.name === playerName)?.score || 0
@@ -264,12 +286,28 @@ export default function MemeMixOnline() {
   const pickedLegenda = pickedLegendas.length === 1 ? pickedLegendas[0] : null
   const swapLabel = pickedLegendas.length <= 1 ? 'Trocar esta −1 pt' : `Trocar ${pickedLegendas.length} −1 pt`
 
+  const submitMemeReport = async ({ reason, details }) => {
+    if (!room?.currentMeme?.id || !uploadToken) return
+    setReportBusy(true)
+    try {
+      const res = await api.reportMemeMixPhoto(room.code, uploadToken, room.currentMeme.id, { reason, details })
+      if (Array.isArray(res.blockedMemeIds)) setBlockedMemeIds(res.blockedMemeIds)
+      else setBlockedMemeIds((ids) => [...new Set([...ids, room.currentMeme.id])])
+      setReportOpen(false)
+    } catch (e) {
+      window.alert(e?.message || 'Não foi possível denunciar')
+    }
+    setReportBusy(false)
+  }
+
   return (
     <PageShell mode="mememix" innerClassName="space-y-4">
         <ReconnectBanner
-          reconnecting={reconnecting && !disconnected}
-          disconnected={disconnected}
+          reconnecting={reconnecting && !disconnected && !expired}
+          disconnected={disconnected && !expired}
+          expired={expired}
           onRetry={() => socket?.connect()}
+          onLeave={() => { clearMmSession(); navigate('/', { replace: true }) }}
         />
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -406,12 +444,28 @@ export default function MemeMixOnline() {
                   className="rounded-[2rem] bg-white p-3 pb-8 shadow-2xl"
                 >
                   <div className="overflow-hidden rounded-2xl bg-black">
-                    <img src={memeImgUrl(currentMeme.url, uploadToken)} alt="Meme" className="w-full max-h-72 object-contain mx-auto" />
+                    {memeHidden ? (
+                      <div className="min-h-[12rem] grid place-items-center px-4 py-8 text-center">
+                        <p className="text-slate-300 font-bold">Conteúdo oculto — denunciaste este meme.</p>
+                      </div>
+                    ) : (
+                      <img src={memeImgUrl(currentMeme.url, uploadToken)} alt="Meme da ronda" className="w-full max-h-72 object-contain mx-auto" />
+                    )}
                   </div>
                   <p className="mt-3 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-600">
                     Meme da ronda #{room.round}
                   </p>
                 </motion.div>
+                {currentMeme && !memeHidden && (
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(true)}
+                    aria-label="Denunciar este meme"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 py-3 min-h-[48px] text-slate-200 font-bold"
+                  >
+                    <Flag className="w-4 h-4" /> Denunciar meme
+                  </button>
+                )}
                 {!room.revealed && (
                   <p className="text-center text-white text-2xl font-black">Legendas {pending}/{expected}</p>
                 )}
@@ -548,6 +602,13 @@ export default function MemeMixOnline() {
             <Trash2 className="w-4 h-4" /> Fechar sala
           </button>
         )}
+      <ReportSheet
+        open={reportOpen}
+        title="Denunciar meme"
+        busy={reportBusy}
+        onClose={() => setReportOpen(false)}
+        onSubmit={submitMemeReport}
+      />
     </PageShell>
   )
 }

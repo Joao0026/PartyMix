@@ -28,6 +28,12 @@ function setVoterCookie(res, voterId) {
   res.append('Set-Cookie', flags.join('; '))
 }
 
+function peekVoterId(req) {
+  const fromCookie = parseCookie(req.headers.cookie, COOKIE)
+  if (VOTER_ID_RE.test(fromCookie)) return fromCookie
+  return ''
+}
+
 function resolveVoterId(req, res) {
   const fromCookie = parseCookie(req.headers.cookie, COOKIE)
   if (VOTER_ID_RE.test(fromCookie)) return fromCookie
@@ -77,6 +83,7 @@ function unvoteUpdate(voterId) {
 
 module.exports = {
   normalizeVoterId,
+  peekVoterId,
   resolveVoterId,
   unvoteUpdate,
   voteUpdate,

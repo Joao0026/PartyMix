@@ -60,7 +60,7 @@ O servidor rejeita create/join. O hub mostra “Online indisponível”.
 
 Logs JSON em stdout: `ts`, `level`, `event`, `errorCode`, `roomHash` (nunca o código da sala nem nomes).
 
-Eventos: `room_created`, `game_started`, `game_completed`, `rejoin_failed`, `socket_disconnect_reason`, `error_code`.
+Eventos: `room_created`, `game_started`, `game_completed`, `rejoin_failed`, `socket_disconnect_reason`, `error_code`, `ugc_reported`, `ugc_reviewed`.
 
 Crash: `uncaughtException` / `unhandledRejection` vão para log. Se `SENTRY_DSN` estiver definido, inicializa `@sentry/node` (instalar o pacote no servidor). Sem DSN, só o log.
 
@@ -68,6 +68,12 @@ Crash: `uncaughtException` / `unhandledRejection` vão para log. Se `SENTRY_DSN`
 
 Indexes: `code` unique; TTL `createdAt` em Lobby/CardRoom; `{ status, updatedAt }`; Community `{ status, votes }`; embeddings TTL 30 dias. Purge de segurança de hora a hora além do TTL monitor.
 
+## UGC / denúncias (Fase 3)
+
+- Jogadores denunciam cartas (`POST /api/community/:id/report`) e memes (`POST /api/mememix/rooms/:code/memes/:id/report`).
+- Fila admin: `GET /api/reports?status=pending` e `POST /api/reports/:id/review` com `action=dismiss|hide|remove`.
+- `PUBLIC_ORIGIN` (HTTPS) aparece em privacidade/termos e `/api/features`.
+
 ## Variáveis novas
 
-Ver `backend/.env.example`: `INSTANCE_ID`, `SENTRY_DSN`, `ROOM_HASH_SALT`, `FEATURE_*_ONLINE`, `WEB_CONCURRENCY=1`.
+Ver `backend/.env.example`: `INSTANCE_ID`, `SENTRY_DSN`, `ROOM_HASH_SALT`, `FEATURE_*_ONLINE`, `WEB_CONCURRENCY=1`, `PUBLIC_ORIGIN`.

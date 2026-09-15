@@ -231,9 +231,13 @@ export const api = {
   submitCommunity:    (d) => post('/community', d),
   voteCommunity:      (id) => post(`/community/${id}/vote`, { voterId: getCommunityVoterId() }),
   unvoteCommunity:    (id) => post(`/community/${id}/unvote`, { voterId: getCommunityVoterId() }),
+  reportCommunity:    (id, d) => post(`/community/${id}/report`, { ...d, voterId: getCommunityVoterId() }),
+  blockCommunity:     (id) => post(`/community/${id}/block`, { voterId: getCommunityVoterId() }),
   approveCommunity:   (id) => post(`/community/${id}/approve`, {}),
   rejectCommunity:    (id) => post(`/community/${id}/reject`, {}),
   deleteCommunity:    (id) => del(`/community/${id}`),
+  getReports:         (p = {}) => get(`/reports?${new URLSearchParams(p)}`, { auth: true }),
+  reviewReport:       (id, action) => post(`/reports/${id}/review`, { action }),
   getMisterPairs:     () => get('/mister/pairs'),
   getFeatures:        () => get('/features'),
 
@@ -264,6 +268,20 @@ export const api = {
     }).then(async (r) => {
       const data = await r.json().catch(() => ({}))
       if (!r.ok) throw new Error(data.error || 'Não foi possível remover')
+      return data
+    }),
+
+  reportMemeMixPhoto: (roomCode, token, memeId, body) =>
+    fetch(`${BASE}/mememix/rooms/${encodeURIComponent(roomCode)}/memes/${encodeURIComponent(memeId)}/report`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-MemeMix-Token': token,
+      },
+      body: JSON.stringify({ token, ...body }),
+    }).then(async (r) => {
+      const data = await r.json().catch(() => ({}))
+      if (!r.ok) throw new Error(data.error || 'Não foi possível denunciar')
       return data
     }),
 }

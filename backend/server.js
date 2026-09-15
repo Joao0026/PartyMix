@@ -11,9 +11,11 @@ const { weakSecret } = require('./lib/gameAuth')
 const { blockMinors } = require('./lib/ageCookie')
 const { healthPayload, readyPayload } = require('./lib/health')
 const { onlineFlags } = require('./lib/featureFlags')
+const { legalPayload } = require('./lib/ugcPolicy')
 const { WS_POLICY, assertSingleInstance, stickyCookieHeader } = require('./lib/wsPolicy')
 const { initSentry, installCrashReporting, log } = require('./lib/observability')
 const { ensureIndexes, purgeExpiredGameDocs } = require('./lib/mongoMaintenance')
+const { hydrateFromMongo } = require('./lib/ugcStore')
 
 const isProd = process.env.NODE_ENV === 'production'
 if (isProd) {
@@ -74,6 +76,7 @@ app.use('/api/cardroom', blockMinors, lobbyWriteLimiter, require('./routes/cardr
 app.use('/api/positions', blockMinors, require('./routes/positions'))
 app.use('/api/ai', blockMinors, aiDailyLimiter, aiLimiter, require('./routes/ai'))
 app.use('/api/community', communityWriteLimiter, require('./routes/community'))
+app.use('/api/reports', require('./routes/reports'))
 app.use('/api/mememix', blockMinors, require('./routes/mememix'))
 app.use('/api/mister', blockMinors, require('./routes/mister'))
 
@@ -94,6 +97,7 @@ app.get('/api/features', (_req, res) => {
     wsPolicy: WS_POLICY,
     roomsEphemeral: true,
     online: onlineFlags(),
+    legal: legalPayload(),
   })
 })
 
@@ -103,6 +107,7 @@ const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/partymix
 mongoose.connect(MONGO_URI)
   .then(async () => {
     try { await ensureIndexes() } catch (err) { log('error', { event: 'mongo_indexes_failed', message: String(err.message || err).slice(0, 160) }) }
+    try { await hydrateFromMongo() } catch (err) { log('error', { event: 'ugc_hydrate_failed', message: String(err.message || err).slice(0, 160) }) }
     try {
       const purged = await purgeExpiredGameDocs()
       log('info', { event: 'mongo_purge', ...purged })

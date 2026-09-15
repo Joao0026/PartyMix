@@ -19,11 +19,13 @@ async function ensureIndexes() {
   const CardRoom = require('../models/CardRoom')
   const CommunitySubmission = require('../models/CommunitySubmission')
   const ContentEmbeddingCache = require('../models/ContentEmbeddingCache')
+  const ContentReport = require('../models/ContentReport')
   await Promise.all([
     Lobby.syncIndexes(),
     CardRoom.syncIndexes(),
     CommunitySubmission.syncIndexes(),
     ContentEmbeddingCache.syncIndexes(),
+    ContentReport.syncIndexes(),
   ])
 }
 
