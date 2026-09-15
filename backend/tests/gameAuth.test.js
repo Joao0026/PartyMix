@@ -3,9 +3,13 @@ const test = require('node:test')
 
 const {
   cardsInHand,
+  detachSocketFromRooms,
+  dropDisconnectedPlayers,
   generateRoomCode,
   guessMatchesWord,
   normalizePlayerName,
+  removeCardsFromHand,
+  socketSeatedIn,
   sanitizeDeck,
   tokensEqual,
   ROOM_CODE_LEN,
@@ -44,4 +48,43 @@ test('guessMatchesWord requires an exact match', () => {
   assert.equal(guessMatchesWord('Casa', 'casa'), true)
   assert.equal(guessMatchesWord('c', 'casa'), false)
   assert.equal(guessMatchesWord('casamento', 'casa'), false)
+})
+
+test('removeCardsFromHand removes one copy of a duplicate card', () => {
+  assert.deepEqual(removeCardsFromHand(['foo', 'foo', 'bar'], ['foo']), ['foo', 'bar'])
+})
+
+test('socketSeatedIn rejects a second seat for the same connection', () => {
+  const room = { players: [{ id: 's1', name: 'Ana', disconnected: false }] }
+  assert.equal(socketSeatedIn(room, 's1'), true)
+  assert.equal(socketSeatedIn(room, 's2'), false)
+})
+
+test('detachSocketFromRooms marks the socket disconnected except in the kept room', () => {
+  const rooms = {
+    AAA111: { players: [{ id: 's1', name: 'Ana', disconnected: false }] },
+    BBB222: { players: [{ id: 's1', name: 'Ana', disconnected: false }] },
+  }
+  const affected = detachSocketFromRooms(rooms, 's1', 'BBB222')
+  assert.equal(affected.length, 1)
+  assert.equal(rooms.AAA111.players[0].disconnected, true)
+  assert.equal(rooms.AAA111.players[0].id, null)
+  assert.equal(rooms.BBB222.players[0].id, 's1')
+})
+
+test('dropDisconnectedPlayers remaps host and juiz onto remaining seats', () => {
+  const room = {
+    host: 'Ana',
+    hostId: null,
+    juizIdx: 0,
+    players: [
+      { id: null, name: 'Ana', disconnected: true },
+      { id: 'b', name: 'Bruno', disconnected: false },
+    ],
+  }
+  dropDisconnectedPlayers(room)
+  assert.equal(room.players.length, 1)
+  assert.equal(room.host, 'Bruno')
+  assert.equal(room.hostId, 'b')
+  assert.equal(room.juizIdx, 0)
 })

@@ -15,10 +15,13 @@ const { nextNightStep, stepScript } = require('./aldeiaNarrator')
 const {
   allocRoomCode,
   authorizeRejoin,
+  detachSocketFromRooms,
+  dropDisconnectedPlayers,
   generatePlayerToken,
   normalizePlayerName,
   publicPlayers,
   roomsAtCapacity,
+  socketSeatedIn,
   touchRoom,
 } = require('./gameAuth')
 
@@ -133,13 +136,13 @@ function nextConnectedJuizIdx(room, fromIdx) {
   return fromIdx
 }
 
-function ensureConnectedJuiz(room) {
-  const juiz = room.players[room.juizIdx]
-  if (!juiz?.disconnected) return false
-  const next = nextConnectedJuizIdx(room, room.juizIdx)
-  if (next === room.juizIdx && juiz.disconnected) return false
-  room.juizIdx = next
-  return true
+function isAlivePlayingTarget(room, target) {
+  return Number.isInteger(target)
+    && target >= 0
+    && target < (room.roles || []).length
+    && isPlayingRole(room.roles[target]?.role)
+    && !room.eliminated.includes(target)
+    && !isNarratorIdx(room, target)
 }
 
 function sanitizeAm(room, revealAll = false, viewerName = null) {
@@ -213,7 +216,6 @@ function emitToPlayer(io, room, player, event, payload) {
 }
 
 function broadcastPhase(io, room) {
-  ensureConnectedJuiz(room)
   const juiz = room.players[room.juizIdx]
   const base = sanitizeAm(room, false)
   io.to(room.code).emit('am_phase', base)
@@ -246,7 +248,7 @@ function applyNightDeath(room) {
   return outcome
 }
 
-function checkWinOrContinue(room, code, io) {
+function checkWinOrContinue(room, io) {
   const end = checkEndCondition(room.roles, room.eliminated)
   if (end) {
     clearDayTimer(room)
@@ -260,7 +262,7 @@ function checkWinOrContinue(room, code, io) {
   return false
 }
 
-function startDayVoting(room, io, code) {
+function startDayVoting(room, io) {
   clearDayTimer(room)
   room.dayVotes = {}
   room.voteTally = []
@@ -269,23 +271,23 @@ function startDayVoting(room, io, code) {
   room.lastVoteTie = false
   const ms = (room.settings.discussionSeconds || 120) * 1000
   room.discussionEndsAt = Date.now() + ms
-  room.discussionTimer = setTimeout(() => closeDayVoting(room, io, code), ms)
+  room.discussionTimer = setTimeout(() => closeDayVoting(room, io), ms)
   broadcastPhase(io, room)
 }
 
-function advanceToNightAfterDay(room, io, code, reason = 'skip') {
+function advanceToNightAfterDay(room, io, reason = 'skip') {
   if (room.status === 'result') return
   room.status = 'night'
   room.nightStep = 'sleep'
   room.roundNum += 1
   resetNarratorNight(room)
   broadcastPhase(io, room)
-  io.to(code).emit('am_day_skipped', { dayNum: room.dayNum, reason })
+  io.to(room.code).emit('am_day_skipped', { dayNum: room.dayNum, reason })
 }
 
-function emitVotingClosed(io, room, code, { skipElimination = false, tied = false } = {}) {
+function emitVotingClosed(io, room, { skipElimination = false, tied = false } = {}) {
   broadcastPhase(io, room)
-  io.to(code).emit('am_voting_closed', {
+  io.to(room.code).emit('am_voting_closed', {
     tally: room.voteTally,
     eliminatedName: room.lastVoteEliminatedName,
     skipped: skipElimination,
@@ -293,10 +295,10 @@ function emitVotingClosed(io, room, code, { skipElimination = false, tied = fals
   })
 }
 
-function closeDayVoting(room, io, code, { skipElimination = false } = {}) {
+function closeDayVoting(room, io, { skipElimination = false } = {}) {
   if (room.status !== 'day') return
   if (room.votingClosed) {
-    emitVotingClosed(io, room, code, { skipElimination, tied: !!room.lastVoteTie })
+    emitVotingClosed(io, room, { skipElimination, tied: !!room.lastVoteTie })
     return
   }
   clearDayTimer(room)
@@ -320,20 +322,20 @@ function closeDayVoting(room, io, code, { skipElimination = false } = {}) {
     const target = pickMostVoted(counts)
     if (target != null && markEliminated(room, target)) {
       room.lastVoteEliminatedName = room.roles[target]?.name
-      if (checkWinOrContinue(room, code, io)) return
+      if (checkWinOrContinue(room, io)) return
     }
   }
 
-  emitVotingClosed(io, room, code, { skipElimination, tied: tie })
+  emitVotingClosed(io, room, { skipElimination, tied: tie })
 
   if (skipElimination || tie) {
-    advanceToNightAfterDay(room, io, code, tie ? 'tie' : 'skip')
+    advanceToNightAfterDay(room, io, tie ? 'tie' : 'skip')
   }
 }
 
-function skipDayToNight(room, io, code) {
+function skipDayToNight(room, io) {
   if (room.status !== 'day') return
-  closeDayVoting(room, io, code, { skipElimination: true })
+  closeDayVoting(room, io, { skipElimination: true })
 }
 
 function startNewMatch(room) {
@@ -402,6 +404,7 @@ function registerAldeiaMixHandlers(io, socket) {
     if (!code) { socket.emit('error', 'Não foi possível criar sala'); return }
     const token = generatePlayerToken()
     const cfg = settings || {}
+    notifyDetachedAm(io, detachSocketFromRooms(amRooms, socket.id))
     amRooms[code] = touchRoom({
       code,
       host: name,
@@ -444,9 +447,11 @@ function registerAldeiaMixHandlers(io, socket) {
     const name = normalizePlayerName(playerName)
     if (!name) { socket.emit('error', 'Nome inválido'); return }
     if (room.status !== 'waiting') { socket.emit('error', 'Jogo já começou — usa o mesmo nome para voltar'); return }
+    if (socketSeatedIn(room, socket.id)) { socket.emit('error', 'Já estás nesta sala'); return }
     if (room.players.find((p) => p.name === name)) { socket.emit('error', 'Nome já em uso'); return }
     if (room.players.length >= 15) { socket.emit('error', 'Sala cheia (máx. 15)'); return }
 
+    notifyDetachedAm(io, detachSocketFromRooms(amRooms, socket.id, c))
     const token = generatePlayerToken()
     room.players.push({ id: socket.id, name, token, disconnected: false })
     socket.join(c)
@@ -478,12 +483,14 @@ function registerAldeiaMixHandlers(io, socket) {
       && prev.nightSeconds === next.nightSeconds
     if (unchanged) return
     room.settings = next
-    io.to(code).emit('am_room_updated', sanitizeAm(room))
+    io.to(room.code).emit('am_room_updated', sanitizeAm(room))
   })
 
   socket.on('am_start_game', ({ code }) => {
     const room = getAmRoom(code)
     if (!room || room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
+    if (room.status !== 'waiting') { socket.emit('error', 'O jogo já está a decorrer'); return }
+    dropDisconnectedPlayers(room)
     const active = room.players.filter((p) => !p.disconnected).length
     const v = validateSettings(room.settings, active)
     if (!v.ok) { socket.emit('error', v.error); return }
@@ -502,7 +509,7 @@ function registerAldeiaMixHandlers(io, socket) {
         origIdx: idx,
       })
     })
-    io.to(code).emit('am_game_started', sanitizeAm(room))
+    io.to(room.code).emit('am_game_started', sanitizeAm(room))
     broadcastPhase(io, room)
   })
 
@@ -517,7 +524,7 @@ function registerAldeiaMixHandlers(io, socket) {
     if (!room.revealReady.includes(player.name)) room.revealReady.push(player.name)
 
     const total = playingReadyTotal(room)
-    io.to(code).emit('am_reveal_progress', {
+    io.to(room.code).emit('am_reveal_progress', {
       ready: room.revealReady.length,
       total,
     })
@@ -539,7 +546,7 @@ function registerAldeiaMixHandlers(io, socket) {
 
     if (next === 'dawn' && room.nightStep !== 'dawn') {
       applyNightDeath(room)
-      if (checkWinOrContinue(room, code, io)) return
+      if (checkWinOrContinue(room, io)) return
     }
 
     if (room.nightStep === 'dawn') {
@@ -547,13 +554,13 @@ function registerAldeiaMixHandlers(io, socket) {
       room.status = 'day'
       room.nightStep = null
       resetNarratorNight(room)
-      io.to(code).emit('am_dawn_news', {
+      io.to(room.code).emit('am_dawn_news', {
         killed: room.lastNight?.killed ?? null,
         killedName: room.lastNight?.killed != null ? room.roles[room.lastNight.killed]?.name : null,
         saved: room.lastNight?.saved,
         dayNum: room.dayNum,
       })
-      startDayVoting(room, io, code)
+      startDayVoting(room, io)
       return
     }
 
@@ -605,11 +612,7 @@ function registerAldeiaMixHandlers(io, socket) {
     }
 
     const target = Number(targetOrigIdx)
-    if (!Number.isInteger(target) || isNarratorIdx(room, target)) return
-    if (room.eliminated.includes(target)) {
-      socket.emit('error', 'Não podes votar num morto')
-      return
-    }
+    if (!isAlivePlayingTarget(room, target)) return
     if (target === voterIdx) {
       socket.emit('error', 'Não podes votar em ti próprio')
       return
@@ -618,7 +621,7 @@ function registerAldeiaMixHandlers(io, socket) {
     room.dayVotes[player.name] = target
 
     const total = aliveVoters(room).length
-    io.to(code).emit('am_vote_progress', {
+    io.to(room.code).emit('am_vote_progress', {
       cast: countValidVotes(room),
       total,
     })
@@ -628,7 +631,7 @@ function registerAldeiaMixHandlers(io, socket) {
     })
 
     if (countValidVotes(room) >= total) {
-      closeDayVoting(room, io, code)
+      closeDayVoting(room, io)
     }
   })
 
@@ -638,13 +641,13 @@ function registerAldeiaMixHandlers(io, socket) {
     const allowed = isJuiz(room, socket.id) || room.hostId === socket.id
     if (!allowed) { socket.emit('error', 'Só o narrador pode fechar a votação'); return }
     if (room.status !== 'day') { socket.emit('error', 'A votação só fecha de dia'); return }
-    closeDayVoting(room, io, code)
+    closeDayVoting(room, io)
   })
 
   socket.on('am_skip_day', ({ code }) => {
     const room = getAmRoom(code)
     if (!room || !isJuiz(room, socket.id) || room.status !== 'day') return
-    skipDayToNight(room, io, code)
+    skipDayToNight(room, io)
   })
 
   socket.on('am_narrator_start_night', ({ code }) => {
@@ -670,6 +673,7 @@ function registerAldeiaMixHandlers(io, socket) {
       return
     }
     if (room.status !== 'result') return
+    dropDisconnectedPlayers(room)
     if (room.players.filter((p) => !p.disconnected).length < 4) {
       socket.emit('error', 'Precisas de pelo menos 4 jogadores')
       return
@@ -689,7 +693,7 @@ function registerAldeiaMixHandlers(io, socket) {
         origIdx: idx,
       })
     })
-    io.to(code).emit('am_game_started', sanitizeAm(room))
+    io.to(room.code).emit('am_game_started', sanitizeAm(room))
     broadcastPhase(io, room)
   })
 
@@ -701,8 +705,8 @@ function registerAldeiaMixHandlers(io, socket) {
       return
     }
     clearDayTimer(room)
-    io.to(code).emit('am_session_ended')
-    delete amRooms[code]
+    io.to(room.code).emit('am_session_ended')
+    delete amRooms[room.code]
   })
 
   socket.on('am_request_state', ({ code }) => {
@@ -718,6 +722,13 @@ function registerAldeiaMixHandlers(io, socket) {
   })
 }
 
+function notifyDetachedAm(io, detached) {
+  for (const room of detached) {
+    promoteHostIfNeeded(room)
+    io.to(room.code).emit('am_room_updated', sanitizeAm(room))
+  }
+}
+
 function handleAldeiaDisconnect(io, socket) {
   const code = Object.keys(amRooms).find((c) => amRooms[c].players.some((p) => p.id === socket.id))
   if (!code) return
@@ -731,21 +742,18 @@ function handleAldeiaDisconnect(io, socket) {
   player.id = null
 
   if (room.hostId === socket.id) promoteHostIfNeeded(room)
-  if (room.players[room.juizIdx]?.disconnected) ensureConnectedJuiz(room)
 
   const connected = room.players.filter((p) => !p.disconnected)
   if (connected.length === 0) {
     clearDayTimer(room)
-    delete amRooms[code]
-    return
   }
 
-  io.to(code).emit('am_room_updated', sanitizeAm(room))
+  io.to(room.code).emit('am_room_updated', sanitizeAm(room))
   broadcastPhase(io, room)
   if (room.status === 'day' && !room.votingClosed) {
     const expected = aliveVoters(room).length
     if (expected > 0 && countValidVotes(room) >= expected) {
-      closeDayVoting(room, io, code)
+      closeDayVoting(room, io)
     }
   }
 }
@@ -759,5 +767,6 @@ module.exports = {
     aliveVoters,
     countValidVotes,
     connectedDayVotes,
+    isAlivePlayingTarget,
   },
 }

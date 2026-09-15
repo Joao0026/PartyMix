@@ -14,6 +14,7 @@ const {
 const {
   mmRooms,
   removeMemeFromRoom,
+  isAuthorizedMemeViewer,
 } = require('../lib/mememixSocket')
 
 const MAX_BYTES = 5 * 1024 * 1024
@@ -63,8 +64,11 @@ router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
     return res.status(403).json({ error: 'Só o host pode enviar fotos nesta sala' })
   }
 
-  const player = room.players.find((p) => p.id === auth.socketId || p.name === auth.playerName)
-  if (!player || player.disconnected) return res.status(403).json({ error: 'Não estás nesta sala' })
+  if (!isAuthorizedMemeViewer(room, { socketId: auth.socketId, playerName: auth.playerName })) {
+    return res.status(403).json({ error: 'Não estás nesta sala' })
+  }
+  const player = room.players.find((p) => p.id === auth.socketId && p.name === auth.playerName)
+  if (!player) return res.status(403).json({ error: 'Não estás nesta sala' })
 
   const mine = room.memes.filter((m) => m.uploadedBy === player.name || m.playerId === auth.socketId).length
   if (mine >= room.settings.maxMemesPerPlayer) {

@@ -144,7 +144,7 @@ test('Cards skip pending sits out missing submitters and ignores them in the quo
 })
 
 test('MemeMix expected submissions skip sitting-out players', () => {
-  const { memePlayersExpected, skipPendingMemePlayers } = require('../lib/mememixSocket')
+  const { memePlayersExpected, skipPendingMemePlayers, allExpectedHaveSubmitted } = require('../lib/mememixSocket')
   const room = {
     juizIdx: 0,
     players: [
@@ -157,10 +157,44 @@ test('MemeMix expected submissions skip sitting-out players', () => {
   }
 
   assert.equal(memePlayersExpected(room).length, 3)
+  assert.equal(allExpectedHaveSubmitted(room), false)
   assert.equal(skipPendingMemePlayers(room), 2)
   assert.equal(room.players[2].sittingOut, true)
   assert.equal(room.players[3].sittingOut, true)
   assert.equal(memePlayersExpected(room).length, 1)
+  assert.equal(allExpectedHaveSubmitted(room), true)
+})
+
+test('MemeMix reveal ignores leftover submissions from disconnected players', () => {
+  const { allExpectedHaveSubmitted } = require('../lib/mememixSocket')
+  const room = {
+    juizIdx: 0,
+    players: [
+      { id: 'j', name: 'Juiz', disconnected: false },
+      { id: null, name: 'Ana', disconnected: true },
+      { id: 'b', name: 'Bruno', disconnected: false },
+      { id: 'c', name: 'Carla', disconnected: false },
+    ],
+    submissions: { a: { text: 'old' }, b: { text: 'ok' } },
+  }
+  assert.equal(allExpectedHaveSubmitted(room), false)
+})
+
+test('AldeiaMix day votes reject out-of-range targets', () => {
+  const { _test: aldeiaHelpers } = require('../lib/aldeiaMixSocket')
+  const room = {
+    juizIdx: 0,
+    roles: [
+      { name: 'Narrador', role: 'narrador' },
+      { name: 'Ana', role: 'aldeao' },
+      { name: 'Bruno', role: 'lobo' },
+    ],
+    eliminated: [],
+  }
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 1), true)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 0), false)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 99), false)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, -1), false)
 })
 
 test('AldeiaMix night picks skip self-kill and self-investigate', () => {

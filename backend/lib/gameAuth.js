@@ -72,12 +72,64 @@ function findConnectedPlayer(room, socketId) {
   return (room?.players || []).find((p) => p.id === socketId && !p.disconnected) || null
 }
 
+function socketSeatedIn(room, socketId) {
+  return Boolean(findConnectedPlayer(room, socketId))
+}
+
+function markSocketDisconnected(room, socketId) {
+  const player = (room?.players || []).find((p) => p.id === socketId)
+  if (!player) return null
+  player.disconnected = true
+  player.previousSocketId = socketId
+  player.id = null
+  return player
+}
+
+function detachSocketFromRooms(rooms, socketId, exceptCode = null) {
+  const skip = exceptCode ? String(exceptCode).toUpperCase() : null
+  const affected = []
+  for (const [code, room] of Object.entries(rooms || {})) {
+    if (skip && code === skip) continue
+    if (markSocketDisconnected(room, socketId)) affected.push(room)
+  }
+  return affected
+}
+
+function firstInPlayIdx(room) {
+  return (room?.players || []).findIndex((p) => isInPlay(p))
+}
+
+function dropDisconnectedPlayers(room) {
+  if (!Array.isArray(room?.players)) return
+  const juizName = room.players[room.juizIdx]?.name
+  const hostName = room.host
+  const next = room.players.filter((p) => p.id && !p.disconnected)
+  if (next.length === room.players.length) return
+  room.players = next
+  if (juizName != null) {
+    const idx = room.players.findIndex((p) => p.name === juizName)
+    room.juizIdx = idx >= 0 ? idx : Math.max(0, firstInPlayIdx(room))
+  }
+  if (hostName) {
+    const host = room.players.find((p) => p.name === hostName)
+    if (host) {
+      room.host = host.name
+      if (host.id) room.hostId = host.id
+    } else if (room.players[0]) {
+      room.host = room.players[0].name
+      room.hostId = room.players[0].id
+    }
+  }
+}
+
 function authorizeRejoin(room, { playerName, playerToken, socketId }) {
   const name = normalizePlayerName(playerName)
   if (!room || !name) return { ok: false, error: 'Sala não encontrada' }
   const existing = room.players.find((p) => p.name === name)
   if (!existing) return { ok: false, error: 'Não estavas nesta sala' }
   if (!tokensEqual(existing.token, playerToken)) return { ok: false, error: 'Sessão inválida' }
+  const seated = findConnectedPlayer(room, socketId)
+  if (seated && seated.name !== name) return { ok: false, error: 'Já estás nesta sala' }
   if (!existing.disconnected && existing.id && existing.id !== socketId) {
     return { ok: false, error: 'Este jogador ainda está ligado' }
   }
@@ -115,6 +167,15 @@ function cardsInHand(hand, submitted) {
     available.splice(idx, 1)
   }
   return true
+}
+
+function removeCardsFromHand(hand, submitted) {
+  const next = [...(hand || [])]
+  for (const card of submitted) {
+    const idx = next.indexOf(card)
+    if (idx >= 0) next.splice(idx, 1)
+  }
+  return next
 }
 
 function createSocketRateLimiter({ windowMs = 10_000, max = 50 } = {}) {
@@ -175,17 +236,23 @@ module.exports = {
   authorizeRejoin,
   cardsInHand,
   createSocketRateLimiter,
+  detachSocketFromRooms,
+  dropDisconnectedPlayers,
   findConnectedPlayer,
+  firstInPlayIdx,
   generateHostSecret,
   isInPlay,
   generatePlayerToken,
   generateRoomCode,
   guessMatchesWord,
   isHostSocket,
+  markSocketDisconnected,
   normalizePlayerName,
   publicPlayers,
+  removeCardsFromHand,
   roomsAtCapacity,
   sanitizeDeck,
+  socketSeatedIn,
   startRoomGc,
   tokensEqual,
   touchRoom,

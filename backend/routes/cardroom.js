@@ -77,14 +77,26 @@ router.post('/:code/join', asyncRoute(async (req, res) => {
     const playerName = cleanString(req.body.playerName, { field: 'playerName', max: 50, required: true });
     const code = roomCode(req.params.code);
 
-    const room = await CardRoom.findOne({ code, status: 'waiting' });
-    if (!room) return res.status(404).json({ error: 'Room not found or already started' });
-    if (room.players.length >= room.maxPlayers) return res.status(400).json({ error: 'Room is full' });
-
     const playerId = generatePlayerToken()
     const playerToken = generatePlayerToken()
-    room.players.push({ id: playerId, token: playerToken, name: playerName, isJury: false });
-    await room.save();
+    const room = await CardRoom.findOneAndUpdate(
+      {
+        code,
+        status: 'waiting',
+        'players.name': { $ne: playerName },
+        $expr: { $lt: [{ $size: '$players' }, '$maxPlayers'] },
+      },
+      { $push: { players: { id: playerId, token: playerToken, name: playerName, isJury: false } } },
+      { new: true }
+    );
+    if (!room) {
+      const existing = await CardRoom.findOne({ code, status: 'waiting' });
+      if (!existing) return res.status(404).json({ error: 'Room not found or already started' });
+      if (existing.players.some((p) => p.name === playerName)) {
+        return res.status(400).json({ error: 'Nome já em uso' });
+      }
+      return res.status(400).json({ error: 'Room is full' });
+    }
     res.json({ ...publicRoom(room), playerToken, playerId });
 }));
 
@@ -117,6 +129,8 @@ router.post('/:code/jury', asyncRoute(async (req, res) => {
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (!requireHost(room, hostToken)) return res.status(403).json({ error: 'Only creator can set jury' });
 
+    if (room.status !== 'waiting') return res.status(400).json({ error: 'Cannot modify jury during game' });
+
     room.players.forEach(p => p.isJury = false);
     room.players.forEach(p => {
       if (juryIds.includes(p.id)) p.isJury = true;
@@ -133,6 +147,7 @@ router.post('/:code/start', asyncRoute(async (req, res) => {
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (!requireHost(room, hostToken)) return res.status(403).json({ error: 'Only creator can start game' });
+    if (room.status !== 'waiting') return res.status(400).json({ error: 'Game already started' });
     if (room.players.length < 2) return res.status(400).json({ error: 'Need at least 2 players' });
 
     room.status = 'playing';
@@ -156,6 +171,12 @@ router.post('/:code/result', asyncRoute(async (req, res) => {
 
     const player = room.players.find(p => tokensEqual(p.token, playerToken));
     if (!player) return res.status(403).json({ error: 'Jogador inválido' });
+    if (player.id !== room.currentPlayer) {
+      return res.status(400).json({ error: 'Não é a tua vez' });
+    }
+    if ((room.history || []).some((row) => row.round === room.currentRound && row.player === player.id)) {
+      return res.status(400).json({ error: 'Esta ronda já foi registada' });
+    }
 
     player.points = Math.max(0, (player.points || 0) + (pointsEarned || 0));
 
