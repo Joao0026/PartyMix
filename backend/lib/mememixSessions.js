@@ -69,12 +69,23 @@ function createUploadToken(roomCode, socketId, playerName) {
   return token
 }
 
+function rotateUploadToken(oldToken, socketId) {
+  const row = tokens.get(String(oldToken || ''))
+  if (!row) return null
+  tokens.delete(String(oldToken))
+  return createUploadToken(row.roomCode, socketId || row.socketId, row.playerName)
+}
+
 function updateTokenSocketId(token, socketId) {
   const row = tokens.get(String(token || ''))
   if (!row) return false
   row.socketId = socketId
   row.createdAt = Date.now()
   return true
+}
+
+function revokeUploadToken(token) {
+  return tokens.delete(String(token || ''))
 }
 
 function verifyUploadToken(token, roomCode) {
@@ -165,6 +176,8 @@ module.exports = {
   ensureDir,
   createUploadToken,
   updateTokenSocketId,
+  rotateUploadToken,
+  revokeUploadToken,
   verifyUploadToken,
   destroyMemeMixSession,
   cleanupOrphanUploads,

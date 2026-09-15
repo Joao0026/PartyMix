@@ -6,6 +6,7 @@ const { buildPackFilter } = require('../lib/packQuery')
 const { getLocalLegendaPacks, getLocalLegendas } = require('../lib/localMememix')
 const {
   verifyUploadToken,
+  rotateUploadToken,
   saveMemeImage,
   getMemeFilePath,
   detectImageKind,
@@ -95,10 +96,16 @@ router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
   }
 
   const saved = saveMemeImage(code, buffer, ext)
+  const nextToken = rotateUploadToken(token, auth.socketId)
+  if (nextToken) {
+    room.playerTokens = room.playerTokens || {}
+    room.playerTokens[player.name] = nextToken
+  }
   res.status(201).json({
     id: saved.id,
     url: saved.url,
     filename: saved.filename,
+    uploadToken: nextToken || token,
   })
 }))
 

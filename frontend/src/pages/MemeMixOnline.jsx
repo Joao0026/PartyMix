@@ -11,6 +11,7 @@ import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '..
 import { fullMemeUrl } from '../utils/mememixImage'
 import { getSocketUrl } from '../utils/api'
 import { shareNight } from '../utils/shareNight'
+import { confirmHostRestart } from '../utils/confirmHost'
 
 const API_URL = getSocketUrl()
 
@@ -339,7 +340,10 @@ export default function MemeMixOnline() {
             </button>
             {isHost && (
               <>
-                <button type="button" onClick={() => socket?.emit('mm_play_again', { code: room.code })}
+                <button type="button" onClick={() => {
+                  if (!confirmHostRestart('Nova sessão no lobby? Os pontos recomeçam.')) return
+                  socket?.emit('mm_play_again', { code: room.code })
+                }}
                   className="w-full bg-pink-600 text-white rounded-2xl py-4 font-bold">
                   Nova sessão (lobby)
                 </button>

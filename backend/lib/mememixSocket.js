@@ -2,7 +2,7 @@ const Card = require('../models/Card')
 const { getLocalLegendas } = require('./localMememix')
 const {
   createUploadToken,
-  updateTokenSocketId,
+  rotateUploadToken,
   destroyMemeMixSession,
   deleteMemeImage,
   memeViewUrl,
@@ -17,6 +17,7 @@ const {
   tokensEqual,
   touchRoom,
   detachSocketFromRooms,
+  dropDisconnectedPlayers,
   firstInPlayIdx,
   socketSeatedIn,
   removeCardsFromHand,
@@ -522,10 +523,12 @@ function registerMemeMixHandlers(io, socket) {
       socket.emit('error', 'Já estás nesta sala')
       return
     }
-    if (!updateTokenSocketId(stored, socket.id)) {
+    const nextToken = rotateUploadToken(stored, socket.id)
+    if (!nextToken) {
       socket.emit('error', 'Sessão inválida')
       return
     }
+    room.playerTokens[name] = nextToken
     touchRoom(room)
 
     const oldId = existing.id || existing.previousSocketId
@@ -534,7 +537,7 @@ function registerMemeMixHandlers(io, socket) {
     existing.disconnected = false
     existing.previousSocketId = null
     if (room.host === name) room.hostId = socket.id
-    finishRejoin(io, room, socket, existing, stored)
+    finishRejoin(io, room, socket, existing, nextToken)
   })
 
   socket.on('mm_update_settings', ({ code, settings }) => {
@@ -605,6 +608,7 @@ function registerMemeMixHandlers(io, socket) {
     const room = getMmRoom(code)
     if (!room || room.hostId !== socket.id) { socket.emit('error', 'Só o host pode iniciar'); return }
     if (room.status !== 'waiting') { socket.emit('error', 'O jogo já está a decorrer'); return }
+    dropDisconnectedPlayers(room)
     const active = room.players.filter((p) => !p.disconnected)
     if (active.length < 2) { socket.emit('error', 'Precisas de pelo menos 2 jogadores'); return }
     if ((room.memes || []).length < 3) {
@@ -913,6 +917,9 @@ function handleMemeMixDisconnect(io, socket) {
   const player = room.players[idx]
   player.disconnected = true
   player.previousSocketId = socket.id
+  if (room.submissions?.[socket.id] !== undefined) {
+    delete room.submissions[socket.id]
+  }
   player.id = null
 
   if (room.hostId === socket.id) {

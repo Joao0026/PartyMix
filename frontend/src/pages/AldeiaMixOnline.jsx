@@ -7,6 +7,7 @@ import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekAmLobbyHandoff, clearAmLobbyHandoff } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession, patchAmSession } from '../utils/amSession'
+import { confirmHostRestart } from '../utils/confirmHost'
 import { getSocketUrl } from '../utils/api'
 import {
   roleLabel,
@@ -472,6 +473,7 @@ export default function AldeiaMixOnline() {
 
   const playAgain = () => {
     if (!socket || !room) return
+    if (!confirmHostRestart('Começar uma nova partida da Aldeia?')) return
     socket.emit('am_play_again', { code: room.code })
     setRevealedReady(false)
     setShowRole(false)

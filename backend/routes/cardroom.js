@@ -10,7 +10,7 @@ const {
   roomCode,
 } = require('../lib/validate');
 const { allocRoomCode, generateHostSecret, generatePlayerToken, tokensEqual } = require('../lib/gameAuth');
-const { cardroomPointsForResult } = require('../lib/contentSafety');
+const { applyCardRoomResult, cardroomJoinFilter, cardroomStartFilter } = require('../lib/cardroomPlay');
 
 const GAME_TYPES = ['dare','truth','drinking','trivia'];
 
@@ -80,12 +80,7 @@ router.post('/:code/join', asyncRoute(async (req, res) => {
     const playerId = generatePlayerToken()
     const playerToken = generatePlayerToken()
     const room = await CardRoom.findOneAndUpdate(
-      {
-        code,
-        status: 'waiting',
-        'players.name': { $ne: playerName },
-        $expr: { $lt: [{ $size: '$players' }, '$maxPlayers'] },
-      },
+      cardroomJoinFilter(code, playerName),
       { $push: { players: { id: playerId, token: playerToken, name: playerName, isJury: false } } },
       { new: true }
     );
@@ -147,59 +142,42 @@ router.post('/:code/start', asyncRoute(async (req, res) => {
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
     if (!requireHost(room, hostToken)) return res.status(403).json({ error: 'Only creator can start game' });
-    if (room.status !== 'waiting') return res.status(400).json({ error: 'Game already started' });
     if (room.players.length < 2) return res.status(400).json({ error: 'Need at least 2 players' });
 
-    room.status = 'playing';
-    room.currentRound = 1;
-    room.currentPlayer = room.players[0].id;
-    await room.save();
+    const started = await CardRoom.findOneAndUpdate(
+      cardroomStartFilter(room._id),
+      { $set: { status: 'playing', currentRound: 1, currentPlayer: room.players[0].id } },
+      { new: true }
+    );
+    if (!started) return res.status(400).json({ error: 'Game already started' });
 
-    res.json(publicRoom(room));
+    res.json(publicRoom(started));
 }));
 
 router.post('/:code/result', asyncRoute(async (req, res) => {
     const playerToken = cleanString(req.body.playerToken, { field: 'playerToken', max: 80, required: true });
     const cardId = req.body.cardId ? mongoId(req.body.cardId, 'cardId') : undefined;
     const result = oneOf(req.body.result, ['completed', 'skipped', 'failed', 'success', 'win'], { field: 'result', defaultValue: 'completed' });
-    const pointsEarned = cardroomPointsForResult(result);
     const code = roomCode(req.params.code);
 
     const room = await CardRoom.findOne({ code });
     if (!room) return res.status(404).json({ error: 'Room not found' });
-    if (room.status !== 'playing') return res.status(400).json({ error: 'Game not in progress' });
 
-    const player = room.players.find(p => tokensEqual(p.token, playerToken));
-    if (!player) return res.status(403).json({ error: 'Jogador inválido' });
-    if (player.id !== room.currentPlayer) {
-      return res.status(400).json({ error: 'Não é a tua vez' });
-    }
-    if ((room.history || []).some((row) => row.round === room.currentRound && row.player === player.id)) {
-      return res.status(400).json({ error: 'Esta ronda já foi registada' });
-    }
+    const applied = applyCardRoomResult(room, { playerToken, result, cardId })
+    if (!applied.ok) return res.status(applied.status).json({ error: applied.error })
 
-    player.points = Math.max(0, (player.points || 0) + (pointsEarned || 0));
-
-    room.history.push({
-      round: room.currentRound,
-      player: player.id,
-      cardId,
-      result,
-      pointsEarned
-    });
-
-    if (player.points >= room.maxPoints) {
-      room.status = 'finished';
-      room.gameData = { winner: player.id, winnerName: player.name };
-    } else {
-      const currentIdx = room.players.findIndex(p => p.id === player.id);
-      const nextIdx = (currentIdx + 1) % room.players.length;
-      room.currentPlayer = room.players[nextIdx].id;
-      room.currentRound += 1;
-    }
-
-    await room.save();
-    res.json(publicRoom(room));
+    const saved = await CardRoom.findOneAndUpdate(applied.lock, {
+      $set: {
+        status: room.status,
+        currentPlayer: room.currentPlayer,
+        currentRound: room.currentRound,
+        players: room.players,
+        history: room.history,
+        gameData: room.gameData,
+      },
+    }, { new: true })
+    if (!saved) return res.status(409).json({ error: 'Esta ronda já foi registada' })
+    res.json(publicRoom(saved));
 }));
 
 router.post('/:code/leave', asyncRoute(async (req, res) => {

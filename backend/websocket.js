@@ -616,7 +616,7 @@ function initWebSocket(httpServer, options = {}) {
     socket.on('mw_restart', ({ code }) => {
       const room = getMwRoom(code)
       if (!room || room.hostId !== socket.id) return
-      if (room.status === 'waiting' || room.status === 'starting') return
+      if (room.status !== 'result') return
       room.status = 'waiting'
       room.roles = null
       room.eliminated = []
@@ -1033,5 +1033,11 @@ module.exports = {
     skipPendingCardsPlayers,
     promoteCardsHostIfNeeded,
     promoteMwHostIfNeeded,
+    rooms,
+    mwRooms,
+    resetInMemoryRooms() {
+      for (const key of Object.keys(rooms)) delete rooms[key]
+      for (const key of Object.keys(mwRooms)) delete mwRooms[key]
+    },
   },
 }

@@ -4,6 +4,7 @@ import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setMwLobbyHandoff, patchMwLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
+import { confirmHostStart } from '../utils/confirmHost'
 import {
   WORD_PACKS,
   WORD_PACK_ORDER,
@@ -250,6 +251,7 @@ export default function MisterWhiteLobby() {
 
   const startGame = () => {
     if (!socket || !room) return
+    if (!confirmHostStart('Começar o Mister White para toda a sala?')) return
     socket.emit('mw_start_game', { code: room.code })
   }
 

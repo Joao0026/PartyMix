@@ -33,9 +33,9 @@ function getAmRoom(code) {
 
 function isJuiz(room, socketId) {
   const juiz = room.players[room.juizIdx]
-  if (juiz && juiz.id === socketId && !juiz.disconnected) return true
-  const me = room.players.find((p) => p.id === socketId && !p.disconnected)
-  return Boolean(me && juiz && me.name === juiz.name)
+  if (!juiz || juiz.disconnected || juiz.id !== socketId) return false
+  if (room.roles?.[room.juizIdx] && room.roles[room.juizIdx].role !== 'narrador') return false
+  return true
 }
 
 function aliveRoleCount(room) {
@@ -216,14 +216,13 @@ function emitToPlayer(io, room, player, event, payload) {
 }
 
 function broadcastPhase(io, room) {
-  const juiz = room.players[room.juizIdx]
   const base = sanitizeAm(room, false)
   io.to(room.code).emit('am_phase', base)
 
   room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
     const view = sanitizeAm(room, false, p.name)
     io.to(p.id).emit('am_phase', view)
-    if (p.name === juiz?.name) {
+    if (isJuiz(room, p.id)) {
       io.to(p.id).emit('am_narrator_state', {
         ...view,
         ...sanitizeNarrator(room),
@@ -386,10 +385,9 @@ function finishRejoin(io, room, socket, player) {
     isHost: room.host === player.name,
   })
 
-  const juiz = room.players[room.juizIdx]
   const view = sanitizeAm(room, room.status === 'result', player.name)
   socket.emit('am_phase', view)
-  if (juiz?.name === player.name) {
+  if (isJuiz(room, socket.id)) {
     socket.emit('am_narrator_state', { ...view, ...sanitizeNarrator(room) })
   }
   io.to(c).emit('am_room_updated', sanitizeAm(room))
@@ -768,5 +766,6 @@ module.exports = {
     countValidVotes,
     connectedDayVotes,
     isAlivePlayingTarget,
+    isJuiz,
   },
 }

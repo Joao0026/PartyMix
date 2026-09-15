@@ -4,9 +4,10 @@ import { ImagePlus, Trash2, X } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, clearGlobalSocket, setMmLobbyHandoff } from '../utils/socketStore'
-import { saveMmSession, loadMmSession, clearMmSession } from '../utils/mmSession'
+import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
 import { compressImageFile, fullMemeUrl } from '../utils/mememixImage'
 import { loadNightRoster } from '../utils/nightRoster'
+import { confirmHostStart } from '../utils/confirmHost'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, NightBox, NightChip, pessoaLabel,
 } from '../components/layout/NightShell'
@@ -371,11 +372,18 @@ export default function MemeMixLobby() {
 
     setUploading(true)
     const results = { ok: 0, fail: 0, lastError: null }
+    let token = uploadTokenRef.current || uploadToken
     for (const file of toUpload) {
       setUploadStatus(`A enviar ${file.name}…`)
       try {
         const dataUrl = await compressImageFile(file)
-        const res = await api.uploadMemeMixPhoto(room.code, uploadToken, dataUrl)
+        const res = await api.uploadMemeMixPhoto(room.code, token, dataUrl)
+        if (res.uploadToken) {
+          token = res.uploadToken
+          uploadTokenRef.current = token
+          setUploadToken(token)
+          patchMmSession({ uploadToken: token })
+        }
         socket.emit('mm_register_meme', { code: room.code, meme: { id: res.id, url: res.url } })
         results.ok += 1
       } catch (err) {
@@ -448,6 +456,7 @@ export default function MemeMixLobby() {
 
   const startGame = () => {
     if (!socket || !room || starting) return
+    if (!confirmHostStart('Começar o MemeMix? As fotos ficam bloqueadas.')) return
     setStarting(true)
     setError(null)
     socket.emit('mm_start_game', { code: room.code })

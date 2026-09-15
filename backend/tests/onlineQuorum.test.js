@@ -207,3 +207,38 @@ test('AldeiaMix night picks skip self-kill and self-investigate', () => {
   assert.equal(isValidNightPick('sheriffTarget', 'vidente'), false)
   assert.equal(isValidNightPick('sheriffTarget', 'lobo'), true)
 })
+
+test('MemeMix upload auth requires a connected named seat', () => {
+  const { isAuthorizedMemeViewer } = require('../lib/mememixSocket')
+  const room = {
+    players: [
+      { id: 'sock-1', name: 'Ana', disconnected: false },
+      { id: null, name: 'Bruno', disconnected: true },
+    ],
+  }
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1', playerName: 'Ana' }), true)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1', playerName: 'Bruno' }), false)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'old', playerName: 'Bruno' }), false)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1' }), false)
+})
+
+test('AldeiaMix isJuiz never treats a living playing role as narrator', () => {
+  const { _test: aldeiaHelpers } = require('../lib/aldeiaMixSocket')
+  const room = {
+    juizIdx: 1,
+    players: [
+      { id: 'n', name: 'Narrador', disconnected: false },
+      { id: 'w', name: 'Lobo', disconnected: false },
+    ],
+    roles: [
+      { name: 'Narrador', role: 'narrador' },
+      { name: 'Lobo', role: 'lobo' },
+    ],
+  }
+  assert.equal(aldeiaHelpers.isJuiz(room, 'w'), false)
+  room.juizIdx = 0
+  assert.equal(aldeiaHelpers.isJuiz(room, 'n'), true)
+  room.players[0].disconnected = true
+  room.players[0].id = null
+  assert.equal(aldeiaHelpers.isJuiz(room, 'n'), false)
+})

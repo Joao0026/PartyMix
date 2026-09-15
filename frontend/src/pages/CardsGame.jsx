@@ -15,6 +15,7 @@ import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { getSocketUrl } from '../utils/api'
 import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { shareNight } from '../utils/shareNight'
+import { confirmHostStart } from '../utils/confirmHost'
 import { api } from '../utils/api'
 import festaPackJson from '../../../data/cards/festa.json'
 
@@ -766,6 +767,7 @@ export default function CardsGame() {
 
   const handleStartOnlineGame = () => {
     if (!socket||!room) return
+    if (!confirmHostStart('Começar as cartas para toda a sala?')) return
     socket.once('game_started', state => {
       setGameState(state)
       setPhase('game')

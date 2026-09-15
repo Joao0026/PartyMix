@@ -7,6 +7,7 @@ import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekMwLobbyHandoff, clearMwLobbyHandoff } from '../utils/socketStore'
 import { saveMwSession, loadMwSession } from '../utils/mwSession'
+import { confirmHostRestart } from '../utils/confirmHost'
 import { getSocketUrl } from '../utils/api'
 import { MW_COLORS, roleLabel } from '../utils/misterWhiteShared'
 
@@ -206,6 +207,7 @@ export default function MisterWhiteOnline() {
 
   const restart = () => {
     if (!socket || !room || !isHost) return
+    if (!confirmHostRestart('Voltar ao lobby e começar outra partida?')) return
     socket.emit('mw_restart', { code: room.code })
     navigate('/MisterWhiteLobby', { replace: true, state: { returnToLobby: true } })
   }

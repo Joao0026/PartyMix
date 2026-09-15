@@ -6,6 +6,7 @@ import { getSocketUrl } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession } from '../utils/amSession'
 import { loadNightRoster } from '../utils/nightRoster'
+import { confirmHostStart } from '../utils/confirmHost'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, pessoaLabel,
 } from '../components/layout/NightShell'
@@ -182,6 +183,7 @@ export default function AldeiaMixLobby() {
 
   const startGame = () => {
     if (!socket || !room) return
+    if (!confirmHostStart('Começar o jogo da Aldeia para toda a sala?')) return
     socket.emit('am_start_game', { code: room.code })
   }
 
