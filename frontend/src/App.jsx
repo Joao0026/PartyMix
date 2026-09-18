@@ -10,6 +10,7 @@ const MapGame = lazy(() => import('./pages/MapGame'))
 const ChallengesOnly = lazy(() => import('./pages/ChallengesOnly'))
 const CoupleGame = lazy(() => import('./pages/CoupleGame'))
 const DrinkGame = lazy(() => import('./pages/DrinkGame'))
+const DrinkTv = lazy(() => import('./pages/DrinkTv'))
 const CardsLobby = lazy(() => import('./pages/CardsLobby'))
 const CardsGame = lazy(() => import('./pages/CardsGame'))
 const MisterWhiteHub = lazy(() => import('./pages/MisterWhiteHub'))
@@ -110,6 +111,7 @@ export default function App() {
           <Route path="/ChallengesOnly"  element={<ChallengesOnly />} />
           <Route path="/CoupleGame"      element={<CoupleGame />} />
           <Route path="/DrinkGame"       element={<DrinkGame />} />
+          <Route path="/DrinkTv/:code"   element={<DrinkTv />} />
           <Route path="/CardsLobby"      element={<CardsLobby />} />
           <Route path="/CardsGame"       element={<CardsGame />} />
           <Route path="/MisterWhite"       element={<MisterWhiteHub />} />

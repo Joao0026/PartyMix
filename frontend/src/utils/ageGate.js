@@ -2,6 +2,7 @@ const AGE_KEY = 'partymix_age_gate_v1'
 
 const ADULT_PATHS = [
   '/DrinkGame',
+  '/DrinkTv',
   '/CoupleGame',
   '/daily',
   '/CardsLobby',

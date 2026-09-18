@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const DrinkPack = require('../models/DrinkPack')
 const { asyncRoute, cleanString } = require('../lib/validate')
+const { putBoard, getBoard, normalizeCode } = require('../lib/drinkDisplay')
 
 router.get('/packs', asyncRoute(async (req, res) => {
   const rows = await DrinkPack.find({}, {
@@ -43,6 +44,26 @@ router.get('/decks', asyncRoute(async (req, res) => {
     ageRating: row.ageRating || '18+',
     categories,
   })
+}))
+
+router.get('/tv/:code', asyncRoute(async (req, res) => {
+  const code = normalizeCode(req.params.code)
+  const row = getBoard(code)
+  if (!row) return res.status(404).json({ error: 'Ecrã não encontrado' })
+  res.json(row)
+}))
+
+router.post('/tv/:code', asyncRoute(async (req, res) => {
+  const code = normalizeCode(req.params.code)
+  if (code.length < 4) return res.status(400).json({ error: 'Código inválido' })
+  const row = putBoard(code, {
+    card: req.body?.card,
+    readerName: cleanString(req.body?.readerName, { max: 40 }),
+    turnCount: req.body?.turnCount,
+    rules: req.body?.rules,
+  })
+  if (!row) return res.status(400).json({ error: 'Código inválido' })
+  res.json(row)
 }))
 
 module.exports = router

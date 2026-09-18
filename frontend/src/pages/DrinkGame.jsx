@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, RotateCcw, Check, Plus, Beer, Share2, Users, SlidersHorizontal } from 'lucide-react'
+import { ChevronRight, RotateCcw, Check, Plus, Beer, Share2, Users, SlidersHorizontal, Monitor, Home } from 'lucide-react'
 import { shuffle } from '../utils/game'
 import { api } from '../utils/api'
 import { fetchChallenges, fetchDrinkDecks, fetchDrinkPacks } from '../utils/contentApi'
@@ -31,6 +31,8 @@ import MesaNoite from '../components/layout/MesaNoite'
 import NightShell, { NightTitle, NightCta, GlowDisc } from '../components/layout/NightShell'
 import { shareNight } from '../utils/shareNight'
 import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
+import { shouldSpinRoulette, pickRoulettePrize, rouletteCard } from '../utils/drinkRoulette'
+import { makeDrinkTvCode, drinkTvUrl, writeDrinkTvLocal } from '../utils/drinkTvSession'
 
 const MAX_DRINK_PLAYERS = 20
 const AJUSTAR_PINK = '#ff5c8d'
@@ -320,6 +322,15 @@ function CardDeck({
   players,
   departedPlayers,
   impostorPairs,
+  preferDeckId,
+  readerHoldName,
+  injectCard,
+  hasPicante,
+  hasCommunity,
+  onPreferDeckConsumed,
+  onHoldConsumed,
+  onRoulette,
+  onDisplayChange,
   onCardDrawn,
   onAgentResult,
   onAllianceChosen,
@@ -344,6 +355,8 @@ function CardDeck({
   const [recentTypes, setRecentTypes] = useState([])
   const [recentDeckIds, setRecentDeckIds] = useState([])
   const recentPublicTextsRef = useRef([])
+  const displayCbRef = useRef(onDisplayChange)
+  displayCbRef.current = onDisplayChange
   const [nextReaderName, setNextReaderName] = useState(null)
   const [lastReaderName, setLastReaderName] = useState(null)
 
@@ -381,6 +394,19 @@ function CardDeck({
     })
   }, [players])
 
+  useEffect(() => {
+    if (!injectCard) return
+    setCurrent(injectCard)
+    setBaseCard(injectCard)
+    setCardDrawId((id) => id + 1)
+    setChaosMomentActive(false)
+    setChaosResolved(true)
+    setAgentOpen(false)
+    setAgentResult(null)
+    setImpostorDone(true)
+    setAllianceDone(true)
+  }, [injectCard])
+
   const finalizeAgent = (raw) => {
     if (!agentPublicPool.length) return raw
     const composed = composeAgentCard(raw, agentPublicPool, recentPublicTextsRef.current)
@@ -391,13 +417,48 @@ function CardDeck({
   }
 
   const draw = () => {
-    if (!deck.length) return
     if (current?.type === 'impostor' && !impostorDone) return
     if (current?.type === 'alliance' && !allianceDone) return
     if (chaosMomentActive && !chaosResolved) return
+    const drawnCount = sessionDeck.length - deck.length
+    if (shouldSpinRoulette({ drawnCount, recentTypes })) {
+      const prize = pickRoulettePrize({ hasPicante, hasCommunity })
+      const card = rouletteCard(prize)
+      const reader = readerIndexByName(nextReaderName || players[0]?.name)
+      const readerPlayer = players[reader]
+      setLastReaderName(readerPlayer?.name ?? null)
+      setBaseCard(card)
+      setCurrent(card)
+      setCardDrawId((id) => id + 1)
+      setChaosMomentActive(false)
+      setChaosResolved(true)
+      setAgentOpen(false)
+      setImpostorDone(true)
+      setAllianceDone(true)
+      setRecentTypes((types) => [...types.slice(-7), 'roleta'])
+      const step = prize.id === 'passa' ? 2 : 1
+      const nextIdx = (reader + step) % Math.max(players.length, 1)
+      if (readerHoldName && players.some((p) => p.name === readerHoldName) && prize.id !== 'passa') {
+        setNextReaderName(readerHoldName)
+        onHoldConsumed?.()
+      } else {
+        setNextReaderName(players[nextIdx]?.name ?? null)
+      }
+      onRoulette?.(prize, reader)
+      onCardDrawn?.(card, reader)
+      return
+    }
+    if (!deck.length) return
     const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
     const repeatedDeck = recentDeckIds.length >= 2 && recentDeckIds.slice(-2).every((id) => id && id === recentDeckIds[recentDeckIds.length - 1])
     let pool = deck
+    if (preferDeckId) {
+      const preferred = pool.filter((card) => card.deckId === preferDeckId)
+      if (preferred.length) {
+        pool = preferred
+        onPreferDeckConsumed?.()
+      }
+    }
     if (drinkSpam) {
       const filtered = deck.filter((card) => card.type !== 'beber')
       if (filtered.length) pool = filtered
@@ -446,7 +507,12 @@ function CardDeck({
     setRecentTypes(types => [...types.slice(-7), card.type])
     setRecentDeckIds((ids) => [...ids.slice(-2), card.deckId || 'outros'])
     const nextIdx = (reader + 1) % Math.max(players.length, 1)
-    setNextReaderName(players[nextIdx]?.name ?? null)
+    if (readerHoldName && players.some((p) => p.name === readerHoldName)) {
+      setNextReaderName(readerHoldName)
+      onHoldConsumed?.()
+    } else {
+      setNextReaderName(players[nextIdx]?.name ?? null)
+    }
     onCardDrawn?.(card, reader)
   }
 
@@ -454,6 +520,14 @@ function CardDeck({
   const whoReads = current == null
     ? resolveReaderByName(nextReaderName)
     : resolveReaderByName(lastReaderName ?? nextReaderName)
+
+  useEffect(() => {
+    displayCbRef.current?.({
+      card: current,
+      readerName: whoReads?.name || '',
+      deckLeft: deck.length,
+    })
+  }, [current, whoReads, deck.length])
 
   const acceptChaosNormal = () => {
     if (!baseCard || chaosResolved) return
@@ -495,6 +569,7 @@ function CardDeck({
     preferencia: 'from-slate-800 to-slate-900',
     maldicao: 'from-cyan-700 to-teal-900',
     historia: 'from-amber-700 to-orange-800',
+    roleta: 'from-fuchsia-600 to-amber-500',
   }
   const TYPE_LABELS = {
     beber: 'Beber',
@@ -511,6 +586,7 @@ function CardDeck({
     preferencia: 'Preferias?',
     maldicao: 'Maldição',
     historia: 'História',
+    roleta: 'Roleta',
   }
 
   const impostorLocked = current?.type === 'impostor' && !impostorDone
@@ -868,6 +944,18 @@ export default function DrinkGame(){
   const [showMesaPanel, setShowMesaPanel] = useState(false)
   const [showPlayersPanel, setShowPlayersPanel] = useState(false)
   const [showAjustar, setShowAjustar] = useState(false)
+  const [showTvPanel, setShowTvPanel] = useState(false)
+  const [showHousePanel, setShowHousePanel] = useState(false)
+  const [tvCode, setTvCode] = useState(() => makeDrinkTvCode())
+  const [houseCards, setHouseCards] = useState([])
+  const [houseDraft, setHouseDraft] = useState('')
+  const [houseSending, setHouseSending] = useState({})
+  const [sipShields, setSipShields] = useState({})
+  const [preferDeckId, setPreferDeckId] = useState('')
+  const [readerHoldName, setReaderHoldName] = useState('')
+  const [readerHoldLeft, setReaderHoldLeft] = useState(0)
+  const [injectCard, setInjectCard] = useState(null)
+  const [tvCopied, setTvCopied] = useState(false)
   const [deckSessionId, setDeckSessionId] = useState(0)
   const [drinkStats,setDrinkStats]=useState([])
   const [activeRules,setActiveRules]=useState([])
@@ -1022,6 +1110,17 @@ export default function DrinkGame(){
     setShowAjustar(false)
     setShowMesaPanel(false)
     setShowPlayersPanel(false)
+    setShowTvPanel(false)
+    setShowHousePanel(false)
+    setHouseCards([])
+    setHouseDraft('')
+    setHouseSending({})
+    setSipShields({})
+    setPreferDeckId('')
+    setReaderHoldName('')
+    setReaderHoldLeft(0)
+    setInjectCard(null)
+    setTvCode(makeDrinkTvCode())
     setPhase('playing')
   }
 
@@ -1079,6 +1178,11 @@ export default function DrinkGame(){
 
   const registerDrink = (playerIndex, amount = 1, options = {}) => {
     if (playerIndex == null || playerIndex < 0) return
+    const playerName = players[playerIndex]?.name
+    if (playerName && (sipShields[playerName] || 0) > 0) {
+      setSipShields((prev) => ({ ...prev, [playerName]: Math.max(0, (prev[playerName] || 0) - 1) }))
+      return
+    }
     const linkedPlayers = activeAllianceList
       .filter((alliance) => alliance.players.includes(playerIndex))
       .flatMap((alliance) => alliance.players.filter((idx) => idx !== playerIndex))
@@ -1136,6 +1240,7 @@ export default function DrinkGame(){
   const onCardDrawn = (card, readerIndex) => {
     const nextTurn = turnCount + 1
     setTurnCount(nextTurn)
+    if (card?.type === 'roleta') return
 
     if (card?.type === 'regra' || card?.type === 'caos') {
       if (/regras canceladas/i.test(card.title || '') || /canceladas/i.test(card.text || '')) {
@@ -1206,6 +1311,95 @@ export default function DrinkGame(){
     if (upgrade.readerDistributes) registerDistributed(idx, upgrade.readerDistributes)
     if (upgrade.groupDrinks) registerGroupDrink(upgrade.groupDrinks)
     if (upgrade.othersDrink) registerOthersDrink(idx, upgrade.othersDrink)
+  }
+
+  const hasPicante = packedCategories.some((cat) => cat.id === 'picante' && (cat.cards || []).length)
+  const hasCommunity = packedCategories.some((cat) => cat.id === 'comunidade' && (cat.cards || []).length)
+
+  const applyRoulettePrize = (prize, readerIndex) => {
+    const readerName = players[readerIndex]?.name
+    if (!prize?.id) return
+    if (prize.id === 'escudo' && readerName) {
+      setSipShields((prev) => ({ ...prev, [readerName]: (prev[readerName] || 0) + 1 }))
+    }
+    if (prize.id === 'picante') setPreferDeckId('picante')
+    if (prize.id === 'comunidade') setPreferDeckId('comunidade')
+    if (prize.id === 'leitor' && readerName) {
+      setReaderHoldName(readerName)
+      setReaderHoldLeft(3)
+    }
+    if (prize.id === 'casa') {
+      setShowHousePanel(true)
+      setShowAjustar(false)
+      setShowTvPanel(false)
+    }
+    if (prize.id === 'distribui' && readerIndex >= 0) {
+      registerOthersDrink(readerIndex, 1)
+      registerDistributed(readerIndex, Math.max(0, players.length - 1))
+    }
+  }
+
+  const saveHouseCard = () => {
+    const text = houseDraft.trim()
+    if (!text) return
+    const reader = players[0]
+    const card = {
+      id: `${Date.now()}`,
+      type: 'desafio',
+      deckId: 'casa',
+      pack: 'community',
+      emoji: '🏠',
+      title: 'Carta da casa',
+      text,
+      cardType: 'desafios',
+    }
+    setHouseCards((list) => [...list, card])
+    setHouseDraft('')
+    setInjectCard({ ...card, id: `${card.id}-play` })
+    setShowHousePanel(false)
+  }
+
+  const sendHouseToCommunity = async (card) => {
+    if (houseSending[card.id]) return
+    setHouseSending((m) => ({ ...m, [card.id]: 'sending' }))
+    try {
+      await api.submitCommunity({
+        submissionType: 'card',
+        mode: 'drink',
+        cardType: card.cardType || 'desafios',
+        text: card.text,
+        author: 'Mesa',
+      })
+      setHouseSending((m) => ({ ...m, [card.id]: 'pending' }))
+    } catch {
+      setHouseSending((m) => ({ ...m, [card.id]: 'error' }))
+    }
+  }
+
+  const onDisplayChange = (partial) => {
+    const card = partial?.card
+    const payload = {
+      card: card ? {
+        type: card.type || '',
+        title: card.title || '',
+        text: card.text || card.publicText || '',
+        emoji: card.emoji || '🍺',
+      } : null,
+      readerName: partial?.readerName || '',
+      turnCount,
+      rules: visibleRules.map((rule) => rule.text).filter(Boolean),
+    }
+    writeDrinkTvLocal(tvCode, payload)
+    api.publishDrinkTv(tvCode, payload).catch(() => {})
+  }
+
+  const copyTvLink = async () => {
+    const url = drinkTvUrl(tvCode)
+    try {
+      await navigator.clipboard.writeText(url)
+      setTvCopied(true)
+      window.setTimeout(() => setTvCopied(false), 2000)
+    } catch { /* ignore */ }
   }
 
   const rosterPanelProps = {
@@ -1326,6 +1520,26 @@ export default function DrinkGame(){
               )
             })}
           </div>
+
+          {houseCards.length > 0 && (
+            <div className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-4 mb-5 space-y-3">
+              <p className="text-slate-400 text-xs font-black uppercase tracking-[0.14em]">Cartas da casa</p>
+              <p className="text-sm text-white/55">Adicionar à comunidade fica pendente até o admin dar ok. Depois entram no pack Comunidade do Beber.</p>
+              {houseCards.map((card) => (
+                <div key={card.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-white text-sm leading-snug">{card.text}</p>
+                  <button
+                    type="button"
+                    onClick={() => sendHouseToCommunity(card)}
+                    disabled={houseSending[card.id] === 'sending' || houseSending[card.id] === 'pending'}
+                    className="mt-2 w-full rounded-xl border border-white/15 bg-white/10 py-2 text-xs font-bold text-white disabled:opacity-50"
+                  >
+                    {houseSending[card.id] === 'pending' ? 'Pendente na comunidade' : houseSending[card.id] === 'sending' ? 'A enviar…' : houseSending[card.id] === 'error' ? 'Falhou — tentar de novo' : 'Adicionar à comunidade'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={()=>setPhase('playing')} className="rounded-2xl bg-white/[0.08] border border-white/10 text-white py-4 min-h-[52px] font-bold">
@@ -1452,7 +1666,45 @@ export default function DrinkGame(){
           <button
             type="button"
             onClick={() => {
+              setShowHousePanel((v) => !v)
+              setShowAjustar(false)
+              setShowTvPanel(false)
+              setShowPlayersPanel(false)
+              setShowMesaPanel(false)
+            }}
+            aria-label="Carta da casa"
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border ${
+              showHousePanel
+                ? 'border-[#ffb04f]/50 bg-[#ffb04f] text-black'
+                : 'border-white/10 bg-[#1c1c21] text-white'
+            }`}
+          >
+            <Home className="h-4 w-4" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowTvPanel((v) => !v)
+              setShowAjustar(false)
+              setShowHousePanel(false)
+              setShowPlayersPanel(false)
+              setShowMesaPanel(false)
+            }}
+            aria-label="Ecrã TV"
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border ${
+              showTvPanel
+                ? 'border-[#22d3ee]/50 bg-[#22d3ee] text-black'
+                : 'border-white/10 bg-[#1c1c21] text-white'
+            }`}
+          >
+            <Monitor className="h-4 w-4" strokeWidth={2} />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
               setShowAjustar((v) => !v)
+              setShowHousePanel(false)
+              setShowTvPanel(false)
               setShowPlayersPanel(false)
               setShowMesaPanel(false)
             }}
@@ -1593,6 +1845,45 @@ export default function DrinkGame(){
           </div>
         )}
 
+        {showHousePanel && (
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-3">
+            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em]">Carta da casa</p>
+            <p className="text-[13px] text-white/45">O telemóvel fica com quem lê. Escreve a carta e lê em voz alta.</p>
+            <textarea
+              value={houseDraft}
+              onChange={(e) => setHouseDraft(e.target.value)}
+              maxLength={300}
+              rows={3}
+              placeholder="Ex: Quem chegou por último bebe 2 goles."
+              className="w-full rounded-2xl border border-white/10 bg-[#1c1c21] px-3 py-2 text-sm text-white outline-none"
+            />
+            <button
+              type="button"
+              onClick={saveHouseCard}
+              disabled={!houseDraft.trim()}
+              className="w-full rounded-2xl bg-[#ff5c8d] py-3 min-h-[48px] text-sm font-black text-black disabled:opacity-40"
+            >
+              Mostrar à mesa
+            </button>
+          </div>
+        )}
+
+        {showTvPanel && (
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-3">
+            <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em]">Ecrã TV</p>
+            <p className="text-[13px] text-white/45">Abre este link na TV ou noutro ecrã. O telemóvel continua a comandar.</p>
+            <p className="text-center text-3xl font-black tracking-[0.2em] text-white">{tvCode}</p>
+            <p className="break-all text-center text-xs text-cyan-200">{drinkTvUrl(tvCode)}</p>
+            <button
+              type="button"
+              onClick={copyTvLink}
+              className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 min-h-[48px] text-sm font-bold text-white"
+            >
+              {tvCopied ? 'Link copiado' : 'Copiar link da TV'}
+            </button>
+          </div>
+        )}
+
         {showAjustar && (
           <div className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-3 space-y-4">
             <p className="text-slate-400 text-xs font-black uppercase tracking-[0.12em]">Ajustar baralhos</p>
@@ -1652,6 +1943,21 @@ export default function DrinkGame(){
           players={players}
           departedPlayers={departedPlayers}
           impostorPairs={impostorPairs}
+          preferDeckId={preferDeckId}
+          readerHoldName={readerHoldLeft > 0 ? readerHoldName : ''}
+          injectCard={injectCard}
+          hasPicante={hasPicante}
+          hasCommunity={hasCommunity}
+          onPreferDeckConsumed={() => setPreferDeckId('')}
+          onHoldConsumed={() => {
+            setReaderHoldLeft((n) => {
+              const next = Math.max(0, n - 1)
+              if (next === 0) setReaderHoldName('')
+              return next
+            })
+          }}
+          onRoulette={applyRoulettePrize}
+          onDisplayChange={onDisplayChange}
           onCardDrawn={onCardDrawn}
           onAgentResult={handleAgentResult}
           onAllianceChosen={onAllianceChosen}

@@ -192,6 +192,8 @@ export const api = {
   clearAgeGate:       () => del('/age'),
   getDrinkDecks:      (pack = 'base') => get(`/drink/decks?pack=${encodeURIComponent(pack)}`),
   getDrinkPacks:      () => get('/drink/packs'),
+  getDrinkTv:         (code) => get(`/drink/tv/${encodeURIComponent(String(code || '').toUpperCase())}`),
+  publishDrinkTv:     (code, d) => post(`/drink/tv/${encodeURIComponent(String(code || '').toUpperCase())}`, d),
 
   // Challenges
   getChallengePacks:  (p = {}) => get(`/challenges/packs?${new URLSearchParams(p)}`),
