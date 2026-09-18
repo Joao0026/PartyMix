@@ -69,7 +69,7 @@ function InfoDot({ id, onInfo }) {
   )
 }
 
-function ModeHub({ modes, navigate, t, onInfo }) {
+function ModeHub({ modes, navigate, t, onInfo, onMode }) {
   const total = modes.length
   const lineInner = 13
   const lineOuter = ORBIT - 9
@@ -137,7 +137,7 @@ function ModeHub({ modes, navigate, t, onInfo }) {
           >
             <motion.button
               type="button"
-              onClick={() => navigate(MODE_PATHS[id])}
+              onClick={() => (typeof onMode === 'function' ? onMode(id) : navigate(MODE_PATHS[id]))}
               className="relative h-full w-full"
               initial={{ opacity: 0, scale: 0.5, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -252,7 +252,19 @@ export default function Home() {
             </span>
           </button>
         ) : (
-          <ModeHub modes={hubModes} navigate={navigate} t={t} onInfo={setInfoId} />
+          <ModeHub
+            modes={hubModes}
+            navigate={navigate}
+            t={t}
+            onInfo={setInfoId}
+            onMode={(id) => {
+              if (id === 'drink' && !hasGroup) {
+                openRoster()
+                return
+              }
+              navigate(MODE_PATHS[id])
+            }}
+          />
         )}
       </div>
 
