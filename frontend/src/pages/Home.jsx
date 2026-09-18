@@ -47,7 +47,7 @@ const MODE_BLURB = {
 const WHEEL_MODES = ['drink', 'mememix', 'cards', 'aldeia', 'mister']
 const EXTRA_MODES = ['friends', 'family', 'couple']
 const ORBIT = 36
-const MAX_ROSTER = 15
+const MAX_ROSTER = 20
 
 function hubAngle(index, total) {
   return (index / total) * Math.PI * 2 - Math.PI / 2

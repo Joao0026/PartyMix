@@ -214,7 +214,7 @@ router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
         sub.linkedCardId = linked._id
       } else if (sub.mode === 'drink') {
         const drinkResult = await appendDrinkCommunityCard(sub, {
-          drinkPackId: sub.pack && sub.pack !== 'community' ? sub.pack : 'base',
+          drinkPackId: 'community',
         })
         linked = { type: 'drink', deck: 'comunidade', ...drinkResult }
       } else if (sub.mode === 'mister') {

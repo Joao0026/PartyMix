@@ -21,7 +21,7 @@ import {
   pickBalancedDeckCard,
   sessionAct,
 } from '../utils/drinkAgentCompose'
-import { normalizeDrinkCategories, selectableDrinkCategories, mergeDrinkCategories } from '../utils/drinkBaralhos'
+import { normalizeDrinkCategories, selectableDrinkCategories, mergeDrinkCategories, COMMUNITY_DRINK_PACK } from '../utils/drinkBaralhos'
 import { substitutePlayerTokens } from '../utils/drinkPlayerText'
 import PageShell from '../components/layout/PageShell'
 import ModeHeader from '../components/layout/ModeHeader'
@@ -32,7 +32,7 @@ import NightShell, { NightTitle, NightCta, GlowDisc } from '../components/layout
 import { shareNight } from '../utils/shareNight'
 import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
 
-const MAX_DRINK_PLAYERS = 15
+const MAX_DRINK_PLAYERS = 20
 
 function PlayerRosterPanel({
   players,
@@ -856,16 +856,18 @@ export default function DrinkGame(){
   const [leaveConfirm, setLeaveConfirm] = useState(false)
   const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
   const [deckCategories, setDeckCategories] = useState(FALLBACK_DRINK_DECKS)
-  const [contentPacks, setContentPacks] = useState(['base'])
-  const includeCommunity = false
-  const [packOptions, setPackOptions] = useState([{
-    pack: 'base',
-    name: 'Essencial',
-    description: 'O pack gratuito para começar qualquer festa.',
-    premium: false,
-    intensity: 'moderada',
-    ageRating: '18+',
-  }])
+  const [contentPacks, setContentPacks] = useState(['base', 'community'])
+  const [packOptions, setPackOptions] = useState([
+    {
+      pack: 'base',
+      name: 'Essencial',
+      description: 'O pack gratuito para começar qualquer festa.',
+      premium: false,
+      intensity: 'moderada',
+      ageRating: '18+',
+    },
+    COMMUNITY_DRINK_PACK,
+  ])
   const [decksLoading, setDecksLoading] = useState(true)
   const [midGameName, setMidGameName] = useState('')
   const [midGameGender, setMidGameGender] = useState('m')
@@ -925,8 +927,8 @@ export default function DrinkGame(){
   )
 
   const activeDeck = useMemo(
-    () => buildPlayableDrinkDeck(packedCategories, effectiveCats, includeCommunity),
-    [packedCategories, effectiveCats, includeCommunity]
+    () => buildPlayableDrinkDeck(packedCategories, effectiveCats),
+    [packedCategories, effectiveCats]
   )
 
   const freshStats = (count) => Array.from({ length: count }, () => ({
@@ -1207,14 +1209,17 @@ export default function DrinkGame(){
       .then(async (packs) => {
         if (cancelled) return
         const list = Array.isArray(packs) && packs.length ? packs : [{ pack: 'base' }]
-        if (Array.isArray(packs) && packs.length) setPackOptions(packs)
-        const ids = list.map((pack) => pack.pack).filter(Boolean)
+        const withCommunity = list.some((pack) => pack.pack === 'community')
+          ? list
+          : [...list, COMMUNITY_DRINK_PACK]
+        setPackOptions(withCommunity)
+        const ids = withCommunity.map((pack) => pack.pack).filter(Boolean)
         const [decksList, impostorRows] = await Promise.all([
           Promise.all((ids.length ? ids : ['base']).map((id) => fetchDrinkDecks(id))),
           fetchChallenges({
             category: 'impostor',
             mode_type: 'friends',
-            ...challengePackParams(ids[0] || 'base', includeCommunity),
+            ...challengePackParams(ids[0] || 'base', true),
           }),
         ])
         if (cancelled) return
@@ -1225,7 +1230,7 @@ export default function DrinkGame(){
       })
       .finally(() => { if (!cancelled) setDecksLoading(false) })
     return () => { cancelled = true }
-  }, [includeCommunity])
+  }, [])
 
   const topBy = (field) => {
     if (!players.length) return null

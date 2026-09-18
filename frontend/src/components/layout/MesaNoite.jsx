@@ -21,7 +21,7 @@ export default function MesaNoite({
   onBack,
   onForget,
   min = 2,
-  max = 15,
+  max = 20,
   confirmPrefix = 'Começar com',
 }) {
   const [draft, setDraft] = useState('')

@@ -11,8 +11,9 @@ import drinkDecks from '../../../data/drink/decks.json'
 import drinkNoiteAcademica from '../../../data/drink/noite-academica-pack.json'
 import drinkSemFiltros from '../../../data/drink/sem-filtros-pack.json'
 import drinkCasaisFesta from '../../../data/drink/casais-festa-pack.json'
+import drinkCommunity from '../../../data/drink/communitydrink.json'
 
-const DRINK_PACK_DOCS = [drinkDecks, drinkNoiteAcademica, drinkSemFiltros, drinkCasaisFesta]
+const DRINK_PACK_DOCS = [drinkDecks, drinkNoiteAcademica, drinkSemFiltros, drinkCasaisFesta, drinkCommunity]
 
 const CATEGORY_MAP = {
   telepatia: 'telepatia',
