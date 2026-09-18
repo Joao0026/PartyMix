@@ -79,6 +79,38 @@ function withCommunityPack(card) {
   return { ...card, pack: 'community' }
 }
 
+function emptyCommunityDrinkPack() {
+  return {
+    pack: 'community',
+    name: 'Comunidade',
+    description: 'Cartas aprovadas pelos jogadores.',
+    premium: false,
+    intensity: 'variada',
+    ageRating: '18+',
+    decks: {
+      comunidade: {
+        label: '🌍 Comunidade',
+        desc: 'Cartas aprovadas pela comunidade',
+        premium: false,
+        cards: [],
+      },
+    },
+  }
+}
+
+async function findOrCreateCommunityDrinkPack() {
+  let row = await DrinkPack.findOne({ pack: 'community' })
+  if (row) return row
+  try {
+    return await DrinkPack.create(emptyCommunityDrinkPack())
+  } catch (err) {
+    if (err?.code !== 11000) throw err
+    row = await DrinkPack.findOne({ pack: 'community' })
+    if (row) return row
+    throw err
+  }
+}
+
 function buildDrinkCardFromSubmission(sub) {
   const kind = resolveKind(sub)
   const emoji = String(sub.drinkEmoji || sub.emoji || kind.emoji || '🌍').slice(0, 8)
@@ -143,12 +175,8 @@ function validateDrinkCard(card) {
   return null
 }
 
-async function appendDrinkCommunityCard(sub, { drinkPackId = 'community' } = {}) {
-  let row = await DrinkPack.findOne({ pack: 'community' })
-  if (!row) row = await DrinkPack.findOne({ pack: drinkPackId })
-  if (!row) row = await DrinkPack.findOne({ pack: 'base' })
-  if (!row) row = await DrinkPack.findOne({ pack: 'base' })
-  if (!row) throw new Error('DrinkPack não encontrado. Corre npm run seed:packs.')
+async function appendDrinkCommunityCard(sub) {
+  const row = await findOrCreateCommunityDrinkPack()
 
   const card = buildDrinkCardFromSubmission(sub)
   const invalid = validateDrinkCard(card)
@@ -172,6 +200,8 @@ async function appendDrinkCommunityCard(sub, { drinkPackId = 'community' } = {})
 module.exports = {
   appendDrinkCommunityCard,
   buildDrinkCardFromSubmission,
+  emptyCommunityDrinkPack,
+  findOrCreateCommunityDrinkPack,
   normalizeText,
   cardSignature,
   DRINK_BARALHO,
