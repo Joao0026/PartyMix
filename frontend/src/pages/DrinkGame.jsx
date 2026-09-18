@@ -1446,7 +1446,7 @@ export default function DrinkGame(){
         <div className="flex items-center gap-1.5">
           <BackButton onClick={() => setLeaveConfirm(true)} />
           <div className="flex-1 min-w-0 text-center">
-            <h1 className="truncate text-lg font-black leading-tight text-white">Modo Beber</h1>
+            <h1 className="truncate text-lg font-black leading-tight text-white">Beber</h1>
             <p className="text-sm text-slate-300">Turno {turnCount}</p>
           </div>
           <button
