@@ -11,23 +11,30 @@ const aiLimiter = rateLimit({
 const aiDailyHits = new Map()
 const AI_DAILY_MAX = 80
 
+function pruneAiDailyHits(now = Date.now()) {
+  const day = new Date(now).toISOString().slice(0, 10)
+  const prefix = `${day}:`
+  for (const k of aiDailyHits.keys()) {
+    if (!k.startsWith(prefix)) aiDailyHits.delete(k)
+  }
+  return aiDailyHits.size
+}
+
 function aiDailyLimiter(req, res, next) {
   const ip = String(req.ip || req.headers['x-forwarded-for'] || 'unknown').split(',')[0].trim()
   const day = new Date().toISOString().slice(0, 10)
   const key = `${day}:${ip}`
   const n = (aiDailyHits.get(key) || 0) + 1
   aiDailyHits.set(key, n)
-  if (aiDailyHits.size > 20_000) {
-    const prefix = `${day}:`
-    for (const k of aiDailyHits.keys()) {
-      if (!k.startsWith(prefix)) aiDailyHits.delete(k)
-    }
-  }
+  if (aiDailyHits.size > 5_000) pruneAiDailyHits()
   if (n > AI_DAILY_MAX) {
     return res.status(429).json({ error: 'Limite diário de IA atingido. Tenta amanhã.' })
   }
   return next()
 }
+
+const aiDailyPrune = setInterval(() => pruneAiDailyHits(), 60 * 60 * 1000)
+if (typeof aiDailyPrune.unref === 'function') aiDailyPrune.unref()
 
 const communityWriteLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -70,4 +77,6 @@ module.exports = {
   adminLoginLimiter,
   lobbyWriteLimiter,
   AI_DAILY_MAX,
+  pruneAiDailyHits,
+  aiDailyHits,
 }

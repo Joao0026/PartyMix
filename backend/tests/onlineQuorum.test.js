@@ -144,7 +144,7 @@ test('Cards skip pending sits out missing submitters and ignores them in the quo
 })
 
 test('MemeMix expected submissions skip sitting-out players', () => {
-  const { memePlayersExpected, skipPendingMemePlayers } = require('../lib/mememixSocket')
+  const { memePlayersExpected, skipPendingMemePlayers, allExpectedHaveSubmitted } = require('../lib/mememixSocket')
   const room = {
     juizIdx: 0,
     players: [
@@ -157,10 +157,44 @@ test('MemeMix expected submissions skip sitting-out players', () => {
   }
 
   assert.equal(memePlayersExpected(room).length, 3)
+  assert.equal(allExpectedHaveSubmitted(room), false)
   assert.equal(skipPendingMemePlayers(room), 2)
   assert.equal(room.players[2].sittingOut, true)
   assert.equal(room.players[3].sittingOut, true)
   assert.equal(memePlayersExpected(room).length, 1)
+  assert.equal(allExpectedHaveSubmitted(room), true)
+})
+
+test('MemeMix reveal ignores leftover submissions from disconnected players', () => {
+  const { allExpectedHaveSubmitted } = require('../lib/mememixSocket')
+  const room = {
+    juizIdx: 0,
+    players: [
+      { id: 'j', name: 'Juiz', disconnected: false },
+      { id: null, name: 'Ana', disconnected: true },
+      { id: 'b', name: 'Bruno', disconnected: false },
+      { id: 'c', name: 'Carla', disconnected: false },
+    ],
+    submissions: { a: { text: 'old' }, b: { text: 'ok' } },
+  }
+  assert.equal(allExpectedHaveSubmitted(room), false)
+})
+
+test('AldeiaMix day votes reject out-of-range targets', () => {
+  const { _test: aldeiaHelpers } = require('../lib/aldeiaMixSocket')
+  const room = {
+    juizIdx: 0,
+    roles: [
+      { name: 'Narrador', role: 'narrador' },
+      { name: 'Ana', role: 'aldeao' },
+      { name: 'Bruno', role: 'lobo' },
+    ],
+    eliminated: [],
+  }
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 1), true)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 0), false)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, 99), false)
+  assert.equal(aldeiaHelpers.isAlivePlayingTarget(room, -1), false)
 })
 
 test('AldeiaMix night picks skip self-kill and self-investigate', () => {
@@ -172,4 +206,39 @@ test('AldeiaMix night picks skip self-kill and self-investigate', () => {
   assert.equal(isValidNightPick('medicTarget', 'narrador'), false)
   assert.equal(isValidNightPick('sheriffTarget', 'vidente'), false)
   assert.equal(isValidNightPick('sheriffTarget', 'lobo'), true)
+})
+
+test('MemeMix upload auth requires a connected named seat', () => {
+  const { isAuthorizedMemeViewer } = require('../lib/mememixSocket')
+  const room = {
+    players: [
+      { id: 'sock-1', name: 'Ana', disconnected: false },
+      { id: null, name: 'Bruno', disconnected: true },
+    ],
+  }
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1', playerName: 'Ana' }), true)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1', playerName: 'Bruno' }), false)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'old', playerName: 'Bruno' }), false)
+  assert.equal(isAuthorizedMemeViewer(room, { socketId: 'sock-1' }), false)
+})
+
+test('AldeiaMix isJuiz never treats a living playing role as narrator', () => {
+  const { _test: aldeiaHelpers } = require('../lib/aldeiaMixSocket')
+  const room = {
+    juizIdx: 1,
+    players: [
+      { id: 'n', name: 'Narrador', disconnected: false },
+      { id: 'w', name: 'Lobo', disconnected: false },
+    ],
+    roles: [
+      { name: 'Narrador', role: 'narrador' },
+      { name: 'Lobo', role: 'lobo' },
+    ],
+  }
+  assert.equal(aldeiaHelpers.isJuiz(room, 'w'), false)
+  room.juizIdx = 0
+  assert.equal(aldeiaHelpers.isJuiz(room, 'n'), true)
+  room.players[0].disconnected = true
+  room.players[0].id = null
+  assert.equal(aldeiaHelpers.isJuiz(room, 'n'), false)
 })

@@ -4,9 +4,12 @@ import { ImagePlus, Trash2, X } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { getSocketUrl, api } from '../utils/api'
 import { getGlobalSocket, setGlobalSocket, clearGlobalSocket, setMmLobbyHandoff } from '../utils/socketStore'
-import { saveMmSession, loadMmSession, clearMmSession } from '../utils/mmSession'
+import { saveMmSession, loadMmSession, clearMmSession, patchMmSession } from '../utils/mmSession'
 import { compressImageFile, fullMemeUrl } from '../utils/mememixImage'
 import { loadNightRoster } from '../utils/nightRoster'
+import { confirmHostStart } from '../utils/confirmHost'
+import { socketIoOptions } from '../utils/socketOptions'
+import { MM_ALLOWED_MEMES_PER_PLAYER, MM_DEFAULT_MEMES_PER_PLAYER, MM_MAX_BYTES } from '../utils/ugcPolicy'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, NightBox, NightChip, pessoaLabel,
 } from '../components/layout/NightShell'
@@ -55,7 +58,7 @@ export default function MemeMixLobby() {
   const [uploading, setUploading] = useState(false)
   const [uploadStatus, setUploadStatus] = useState(null)
   const [maxPoints, setMaxPoints] = useState(5)
-  const [maxMemesPerPlayer, setMaxMemesPerPlayer] = useState(30)
+  const [maxMemesPerPlayer, setMaxMemesPerPlayer] = useState(MM_DEFAULT_MEMES_PER_PLAYER)
   const [uploadsMode, setUploadsMode] = useState('all')
   const [includeOfficialMemes, setIncludeOfficialMemes] = useState(false)
   const [legendaMode, setLegendaMode] = useState('pack')
@@ -104,7 +107,7 @@ export default function MemeMixLobby() {
       uploadTokenRef.current = tok
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
-      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
+      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || MM_DEFAULT_MEMES_PER_PLAYER)
       saveMmSession({ code: c, playerName, uploadToken: tok, isHost: true, playerToken })
       setConnecting(false)
     })
@@ -114,7 +117,7 @@ export default function MemeMixLobby() {
       uploadTokenRef.current = tok
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
-      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
+      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || MM_DEFAULT_MEMES_PER_PLAYER)
       saveMmSession({ code: c, playerName, uploadToken: tok, isHost, playerToken })
       setConnecting(false)
       if (r.status === 'playing') goToGame(r, playerName, isHost, tok)
@@ -125,7 +128,7 @@ export default function MemeMixLobby() {
       uploadTokenRef.current = tok
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
-      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
+      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || MM_DEFAULT_MEMES_PER_PLAYER)
       hasNavigatedRef.current = false
       saveMmSession({ code: c, playerName: pn, uploadToken: tok, isHost: ih, playerToken })
       setConnecting(false)
@@ -153,7 +156,7 @@ export default function MemeMixLobby() {
       setRoom(r)
       setUploadsMode(r.settings?.uploads || 'all')
       setIncludeOfficialMemes(r.settings?.includeOfficialMemes !== false)
-      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || 30)
+      setMaxMemesPerPlayer(r.settings?.maxMemesPerPlayer || MM_DEFAULT_MEMES_PER_PLAYER)
     })
     s.on('mm_memes_updated', (r) => setRoom(r))
     s.on('mm_state', (state) => {
@@ -208,7 +211,7 @@ export default function MemeMixLobby() {
       fn(existing)
       return
     }
-    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
     s.once('connect', () => fn(s))
@@ -371,11 +374,22 @@ export default function MemeMixLobby() {
 
     setUploading(true)
     const results = { ok: 0, fail: 0, lastError: null }
+    let token = uploadTokenRef.current || uploadToken
     for (const file of toUpload) {
       setUploadStatus(`A enviar ${file.name}…`)
       try {
         const dataUrl = await compressImageFile(file)
-        const res = await api.uploadMemeMixPhoto(room.code, uploadToken, dataUrl)
+        const b64 = dataUrl.split(',')[1] || ''
+        if (Math.ceil(b64.length * 0.75) > MM_MAX_BYTES) {
+          throw new Error('Imagem demasiado grande (máx. 2 MB)')
+        }
+        const res = await api.uploadMemeMixPhoto(room.code, token, dataUrl)
+        if (res.uploadToken) {
+          token = res.uploadToken
+          uploadTokenRef.current = token
+          setUploadToken(token)
+          patchMmSession({ uploadToken: token })
+        }
         socket.emit('mm_register_meme', { code: room.code, meme: { id: res.id, url: res.url } })
         results.ok += 1
       } catch (err) {
@@ -448,6 +462,7 @@ export default function MemeMixLobby() {
 
   const startGame = () => {
     if (!socket || !room || starting) return
+    if (!confirmHostStart('Começar o MemeMix? As fotos ficam bloqueadas.')) return
     setStarting(true)
     setError(null)
     socket.emit('mm_start_game', { code: room.code })
@@ -587,7 +602,7 @@ export default function MemeMixLobby() {
             <NightBox title="Máx. fotos por jogador">
               <p className="mb-2 text-[12px] text-white/45">Escolhe antes de enviar — aplica a todos.</p>
               <div className="grid grid-cols-4 gap-1.5">
-                {[5, 10, 15, 20, 30, 40, 50].map((n) => (
+                {[...MM_ALLOWED_MEMES_PER_PLAYER].map((n) => (
                   <NightChip key={n} {...chip(maxMemesPerPlayer === n)} onClick={() => {
                     setMaxMemesPerPlayer(n)
                     pushSettings({ maxMemesPerPlayer: n })
@@ -647,7 +662,7 @@ export default function MemeMixLobby() {
             </p>
             <label className="mt-3 flex items-start gap-2 text-[13px] text-white/70">
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" />
-              Tenho permissão das pessoas nas fotos
+              Tenho permissão das pessoas nas fotos. Aceito a política UGC: máx. 2 MB por foto, sem conteúdo ilegal, e as denúncias escondem o meme para mim.
             </label>
             <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFiles} />
             <button

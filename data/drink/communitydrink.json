@@ -1,8 +1,8 @@
 {
-  "name": "Beber - Comunidade",
+  "name": "Comunidade",
   "mode": "drink",
-  "pack": "base",
-  "description": "Baralho comunidade — cartas aprovadas pelos jogadores. Funde com decks.json no seed.",
+  "pack": "community",
+  "description": "Cartas aprovadas pelos jogadores. Ligado por omissão no Modo Beber.",
   "decks": {
     "comunidade": {
       "label": "🌍 Comunidade",

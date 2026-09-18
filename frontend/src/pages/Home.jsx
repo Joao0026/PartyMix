@@ -47,7 +47,7 @@ const MODE_BLURB = {
 const WHEEL_MODES = ['drink', 'mememix', 'cards', 'aldeia', 'mister']
 const EXTRA_MODES = ['friends', 'family', 'couple']
 const ORBIT = 36
-const MAX_ROSTER = 15
+const MAX_ROSTER = 20
 
 function hubAngle(index, total) {
   return (index / total) * Math.PI * 2 - Math.PI / 2
@@ -69,7 +69,7 @@ function InfoDot({ id, onInfo }) {
   )
 }
 
-function ModeHub({ modes, navigate, t, onInfo }) {
+function ModeHub({ modes, navigate, t, onInfo, onMode }) {
   const total = modes.length
   const lineInner = 13
   const lineOuter = ORBIT - 9
@@ -137,7 +137,7 @@ function ModeHub({ modes, navigate, t, onInfo }) {
           >
             <motion.button
               type="button"
-              onClick={() => navigate(MODE_PATHS[id])}
+              onClick={() => (typeof onMode === 'function' ? onMode(id) : navigate(MODE_PATHS[id]))}
               className="relative h-full w-full"
               initial={{ opacity: 0, scale: 0.5, y: 12 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -252,7 +252,19 @@ export default function Home() {
             </span>
           </button>
         ) : (
-          <ModeHub modes={hubModes} navigate={navigate} t={t} onInfo={setInfoId} />
+          <ModeHub
+            modes={hubModes}
+            navigate={navigate}
+            t={t}
+            onInfo={setInfoId}
+            onMode={(id) => {
+              if (id === 'drink' && !hasGroup) {
+                openRoster()
+                return
+              }
+              navigate(MODE_PATHS[id])
+            }}
+          />
         )}
       </div>
 
@@ -294,21 +306,20 @@ export default function Home() {
         </div>
       )}
 
-      {!under18 && (
-        <button
+      <button
           type="button"
           onClick={() => navigate('/community')}
-          className="relative z-10 mb-2 mt-2 w-full max-w-lg rounded-2xl border border-white/10 bg-[#1c1c21]/80 px-4 py-3 flex items-center gap-3 text-left active:scale-95"
+          className="relative z-10 mb-2 mt-2 w-full max-w-lg rounded-2xl border border-white/10 bg-[#1c1c21]/80 px-4 py-3 flex items-center gap-3 text-left active:scale-95 min-h-[52px]"
+          aria-label={under18 ? 'Comunidade do Modo Família' : t.community}
         >
           <div className="grid h-10 w-10 place-items-center rounded-full bg-[#141419]">
             <Users2 className="h-5 w-5 text-[#8b5cf6]" strokeWidth={1.75} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold text-white">{t.community}</p>
-            <p className="truncate text-xs text-slate-400">{t.communityDesc}</p>
+            <p className="text-sm font-bold text-white">{under18 ? 'Comunidade Família' : t.community}</p>
+            <p className="truncate text-xs text-slate-300">{under18 ? 'Só cartas do Modo Família. Sem conteúdo adulto.' : t.communityDesc}</p>
           </div>
         </button>
-      )}
 
       <p className="relative z-10 mt-2 text-xs text-slate-500">
         PartyMix v5

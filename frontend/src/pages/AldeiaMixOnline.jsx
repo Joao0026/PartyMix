@@ -7,7 +7,10 @@ import ReconnectBanner from '../components/layout/ReconnectBanner'
 import { io } from 'socket.io-client'
 import { getGlobalSocket, setGlobalSocket, peekAmLobbyHandoff, clearAmLobbyHandoff } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession, patchAmSession } from '../utils/amSession'
+import { confirmHostRestart } from '../utils/confirmHost'
+import { isExpiredRoomMessage } from '../utils/reconnectUi'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import {
   roleLabel,
   ROLE_STYLES,
@@ -269,6 +272,7 @@ export default function AldeiaMixOnline() {
   const [timerLeft, setTimerLeft] = useState(0)
   const [reconnecting, setReconnecting] = useState(false)
   const [disconnected, setDisconnected] = useState(false)
+  const [expired, setExpired] = useState(false)
   const [voteTarget, setVoteTarget] = useState(null)
   const initRef = useRef(false)
   const playerNameRef = useRef('')
@@ -387,7 +391,16 @@ export default function AldeiaMixOnline() {
       clearAmSession()
       navigate('/AldeiaMix', { replace: true })
     })
-    s.on('error', (msg) => { if (msg) window.alert(String(msg)) })
+    s.on('error', (msg) => {
+      if (isExpiredRoomMessage(msg)) {
+        setExpired(true)
+        setDisconnected(true)
+        setReconnecting(false)
+        clearAmSession()
+        return
+      }
+      if (msg) window.alert(String(msg))
+    })
   }
 
   useEffect(() => {
@@ -425,7 +438,7 @@ export default function AldeiaMixOnline() {
       setup(s)
     } else {
       setReconnecting(true)
-      s = io(API_URL, { transports: ['websocket', 'polling'] })
+      s = io(API_URL, socketIoOptions())
       s.once('connect', () => setup(s))
     }
 
@@ -472,6 +485,7 @@ export default function AldeiaMixOnline() {
 
   const playAgain = () => {
     if (!socket || !room) return
+    if (!confirmHostRestart('Começar uma nova partida da Aldeia?')) return
     socket.emit('am_play_again', { code: room.code })
     setRevealedReady(false)
     setShowRole(false)
@@ -532,9 +546,11 @@ export default function AldeiaMixOnline() {
   return (
     <NightShell wide phase={phase} onBack={() => navigate('/AldeiaMix')} footer={footer}>
         <ReconnectBanner
-          reconnecting={reconnecting && !disconnected}
-          disconnected={disconnected}
+          reconnecting={reconnecting && !disconnected && !expired}
+          disconnected={disconnected && !expired}
+          expired={expired}
           onRetry={() => socket?.connect()}
+          onLeave={() => { clearAmSession(); navigate('/', { replace: true }) }}
         />
         <NightTitle>Sala {room.code}</NightTitle>
         <p className="mt-1.5 text-center text-[13px] text-white/45">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff } from 'lucide-react'
+import { Plus, Trash2, Check, X, ThumbsUp, Lock, Eye, EyeOff, Flag } from 'lucide-react'
 import BackButton from '../components/layout/BackButton'
 import PageShell from '../components/layout/PageShell'
 import { api, clearAdminToken, getAdminToken } from '../utils/api'
@@ -248,6 +248,65 @@ function CommunityTab() {
               </div>
             )}
           </motion.div>
+        ))}
+    </div>
+  )
+}
+
+function ReportsTab() {
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('pending')
+  const [working, setWorking] = useState({})
+  const [err, setErr] = useState('')
+
+  const load = useCallback(() => {
+    setLoading(true)
+    setErr('')
+    api.getReports({ status: filter })
+      .then((d) => setItems(Array.isArray(d.items) ? d.items : []))
+      .catch((e) => { setItems([]); setErr(e?.message || 'Não foi possível carregar') })
+      .finally(() => setLoading(false))
+  }, [filter])
+
+  useEffect(() => { load() }, [load])
+
+  const review = async (id, action) => {
+    setWorking((w) => ({ ...w, [id]: action }))
+    try { await api.reviewReport(id, action) }
+    catch (e) { setErr(e?.message || 'Erro ao rever') }
+    setWorking((w) => ({ ...w, [id]: null }))
+    load()
+  }
+
+  return (
+    <div className="space-y-4">
+      {err && <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-red-300 text-sm">{err}</p>}
+      <div className="flex gap-2">
+        {[['pending', 'Pendentes'], ['hidden', 'Ocultas'], ['removed', 'Removidas'], ['dismissed', 'Arquivadas']].map(([v, label]) => (
+          <button key={v} type="button" onClick={() => setFilter(v)} className={pill(filter === v)}>{label}</button>
+        ))}
+      </div>
+      {loading ? <p className="text-slate-400 text-center py-8">A carregar...</p>
+        : items.length === 0 ? <p className="text-slate-500 text-center py-8">Nenhuma denúncia</p>
+        : items.map((item) => (
+          <div key={item.id} className={card + ' space-y-2'}>
+            <div className="flex items-center gap-2 text-xs text-slate-300">
+              <Flag className="w-3.5 h-3.5 text-red-300" />
+              <span className="font-bold">{item.kind}</span>
+              <span>{item.reason}</span>
+              <span className="text-slate-500">{item.createdAt?.slice(0, 16)?.replace('T', ' ')}</span>
+            </div>
+            <p className="text-white text-sm break-all">Alvo: {item.targetId}</p>
+            {item.details ? <p className="text-slate-300 text-sm">{item.details}</p> : null}
+            {filter === 'pending' && (
+              <div className="grid grid-cols-3 gap-2">
+                <button type="button" disabled={!!working[item.id]} onClick={() => review(item.id, 'dismiss')} className="rounded-xl border border-white/15 py-2.5 min-h-[44px] text-slate-200 text-xs font-bold">Arquivar</button>
+                <button type="button" disabled={!!working[item.id]} onClick={() => review(item.id, 'hide')} className="rounded-xl border border-amber-500/40 py-2.5 min-h-[44px] text-amber-200 text-xs font-bold">Ocultar</button>
+                <button type="button" disabled={!!working[item.id]} onClick={() => review(item.id, 'remove')} className="rounded-xl border border-red-500/40 py-2.5 min-h-[44px] text-red-300 text-xs font-bold">Remover</button>
+              </div>
+            )}
+          </div>
         ))}
     </div>
   )
@@ -608,6 +667,7 @@ function QualidadeTab() {
 const TABS = [
   { id: 'beber', label: 'Beber' },
   { id: 'community', label: 'Comunidade' },
+  { id: 'reports', label: 'Denúncias' },
   { id: 'content', label: 'Conteúdo' },
   { id: 'import', label: 'Packs' },
   { id: 'qualidade', label: 'Qualidade' },
@@ -637,7 +697,7 @@ export default function Admin() {
   }
   if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />
 
-  const ActiveTab = { community: CommunityTab, qualidade: QualidadeTab, beber: DrinkAssignTab, import: ImportPackTab, content: ContentTab }[tab] || DrinkAssignTab
+  const ActiveTab = { community: CommunityTab, reports: ReportsTab, qualidade: QualidadeTab, beber: DrinkAssignTab, import: ImportPackTab, content: ContentTab }[tab] || DrinkAssignTab
 
   return (
     <PageShell mode="hub" maxWidth="xl" innerClassName="space-y-0 w-full">

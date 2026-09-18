@@ -9,6 +9,14 @@ const { expressCorsOptions, socketIoCorsOrigin, parseList } = require('./lib/cor
 const { aiLimiter, aiDailyLimiter, communityWriteLimiter, lobbyWriteLimiter } = require('./middleware/rateLimits')
 const { weakSecret } = require('./lib/gameAuth')
 const { blockMinors } = require('./lib/ageCookie')
+const { healthPayload, readyPayload } = require('./lib/health')
+const { onlineFlags } = require('./lib/featureFlags')
+const { legalPayload } = require('./lib/ugcPolicy')
+const { playPayload, assetLinksPayload } = require('./lib/playPolicy')
+const { WS_POLICY, assertSingleInstance, stickyCookieHeader } = require('./lib/wsPolicy')
+const { initSentry, installCrashReporting, log } = require('./lib/observability')
+const { ensureIndexes, purgeExpiredGameDocs } = require('./lib/mongoMaintenance')
+const { hydrateFromMongo } = require('./lib/ugcStore')
 
 const isProd = process.env.NODE_ENV === 'production'
 if (isProd) {
@@ -24,7 +32,15 @@ if (isProd) {
     console.error('CORS_ORIGINS é obrigatório em produção (origens do frontend, sem wildcard).')
     process.exit(1)
   }
+  const wsOk = assertSingleInstance()
+  if (!wsOk.ok) {
+    console.error(wsOk.error)
+    process.exit(1)
+  }
 }
+
+initSentry()
+installCrashReporting()
 
 const app    = express()
 const server = http.createServer(app)
@@ -44,6 +60,13 @@ if (helmet) {
 }
 
 app.use(cors(expressCorsOptions()))
+app.use((req, res, next) => {
+  res.append('Set-Cookie', stickyCookieHeader())
+  next()
+})
+app.get('/.well-known/assetlinks.json', (_req, res) => {
+  res.type('application/json').json(assetLinksPayload())
+})
 app.use(express.json({ limit: '1mb' }))
 
 app.use('/api/age', require('./routes/age'))
@@ -57,28 +80,53 @@ app.use('/api/cardroom', blockMinors, lobbyWriteLimiter, require('./routes/cardr
 app.use('/api/positions', blockMinors, require('./routes/positions'))
 app.use('/api/ai', blockMinors, aiDailyLimiter, aiLimiter, require('./routes/ai'))
 app.use('/api/community', communityWriteLimiter, require('./routes/community'))
+app.use('/api/reports', require('./routes/reports'))
 app.use('/api/mememix', blockMinors, require('./routes/mememix'))
 app.use('/api/mister', blockMinors, require('./routes/mister'))
 
-app.get('/api/health', (req, res) => {
-  if (isProd) return res.json({ status: 'ok' })
-  res.json({
-    status: 'ok',
-    db:   mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    groq: !!process.env.GROQ_API_KEY,
-    ws:   true,
-  })
+const { initWebSocket, memoryRoomStats } = require('./websocket')
+initWebSocket(server, { corsOrigin: socketIoCorsOrigin() })
+
+app.get('/api/health', (_req, res) => {
+  res.json(healthPayload())
 })
 
-const { initWebSocket } = require('./websocket')
-initWebSocket(server, { corsOrigin: socketIoCorsOrigin() })
+app.get('/api/ready', (_req, res) => {
+  const body = readyPayload(memoryRoomStats())
+  res.status(body.ready ? 200 : 503).json(body)
+})
+
+app.get('/api/features', (_req, res) => {
+  res.json({
+    wsPolicy: WS_POLICY,
+    roomsEphemeral: true,
+    online: onlineFlags(),
+    legal: legalPayload(),
+    play: playPayload(),
+  })
+})
 
 const PORT      = process.env.PORT || 3001
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/partymix'
 
 mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('✅ MongoDB connected')
-    server.listen(PORT, () => console.log(`🚀 Server + WebSocket on http://localhost:${PORT}`))
+  .then(async () => {
+    try { await ensureIndexes() } catch (err) { log('error', { event: 'mongo_indexes_failed', message: String(err.message || err).slice(0, 160) }) }
+    try { await hydrateFromMongo() } catch (err) { log('error', { event: 'ugc_hydrate_failed', message: String(err.message || err).slice(0, 160) }) }
+    try {
+      const purged = await purgeExpiredGameDocs()
+      log('info', { event: 'mongo_purge', ...purged })
+    } catch (err) {
+      log('error', { event: 'mongo_purge_failed', message: String(err.message || err).slice(0, 160) })
+    }
+    const purgeTimer = setInterval(() => {
+      purgeExpiredGameDocs().then((purged) => log('info', { event: 'mongo_purge', ...purged })).catch(() => {})
+    }, 60 * 60 * 1000)
+    if (typeof purgeTimer.unref === 'function') purgeTimer.unref()
+    log('info', { event: 'mongo_connected' })
+    server.listen(PORT, () => log('info', { event: 'server_listen', port: Number(PORT) }))
   })
-  .catch(err => { console.error('❌ MongoDB error:', err); process.exit(1) })
+  .catch((err) => {
+    log('error', { event: 'mongo_connect_failed', message: String(err.message || err).slice(0, 160) })
+    process.exit(1)
+  })

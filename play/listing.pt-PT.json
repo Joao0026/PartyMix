@@ -1,0 +1,19 @@
+{
+  "defaultLanguage": "pt-PT",
+  "title": "PartyMix",
+  "shortDescription": "Jogos de festa 18+ no telemóvel. Família, memes, cartas e Mister White.",
+  "fullDescription": "PartyMix é um conjunto de jogos de festa para jogar no mesmo sofá ou online.\n\n18+. Há modos com álcool, linguagem e conteúdo sexual para adultos. Confirmas a idade na app. Menores só usam o Modo Família, sem conteúdo adulto.\n\nModos: Beber, Amigos, Família, Casal, Cartas, Mister White, AldeiaMix e MemeMix (fotos do grupo viram memes).\n\nConteúdo da comunidade (UGC): podes submeter cartas e fotos. Podes denunciar e bloquear. Um admin revê. Não submetas conteúdo ilegal.\n\nSem compras na app. Sem anúncios de terceiros. As salas online vivem na memória do servidor: um reinício pode acabar o jogo.\n\nPolítica de privacidade e termos estão na app e no site HTTPS do operador.",
+  "category": "GAME_CASUAL",
+  "tags": [
+    "festa",
+    "cartas",
+    "beber",
+    "18+"
+  ],
+  "contentRating": "18+",
+  "inAppPurchases": false,
+  "ads": false,
+  "contactWebsitePath": "/",
+  "privacyPolicyPath": "/privacy",
+  "termsPath": "/terms"
+}

@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import { setGlobalSocket, setCardsLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import { saveCardsSession, loadCardsSession } from '../utils/cardsSession'
 import { loadNightRoster } from '../utils/nightRoster'
 import NightShell, {
@@ -85,7 +86,7 @@ export default function CardsLobby() {
     setCode(saved.code)
     setJoining(true)
     setError(null)
-    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
     const enterGame = (rawGameState) => {
@@ -129,7 +130,7 @@ export default function CardsLobby() {
     if (!name.trim() || !code.trim()) return
     setJoining(true); setError(null)
 
-    const s = io(API_URL, { transports:['websocket','polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
 

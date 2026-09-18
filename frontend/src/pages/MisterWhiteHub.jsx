@@ -1,11 +1,18 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Smartphone, Wifi } from 'lucide-react'
 import NightShell, { GlowDisc, NightTitle } from '../components/layout/NightShell'
+import { loadOnlineFeatures } from '../utils/features'
 
 const GOLD = '#fbbf24'
 
 export default function MisterWhiteHub() {
   const navigate = useNavigate()
+  const [onlineOk, setOnlineOk] = useState(true)
+
+  useEffect(() => {
+    loadOnlineFeatures().then((f) => setOnlineOk(f.mw !== false))
+  }, [])
 
   return (
     <NightShell onBack={() => navigate('/')}>
@@ -36,15 +43,20 @@ export default function MisterWhiteHub() {
 
         <button
           type="button"
-          onClick={() => navigate('/MisterWhiteLobby')}
-          className="flex items-center gap-3.5 rounded-[1.75rem] border border-white/10 bg-[#1c1c21] px-4 py-3.5 text-left active:scale-[0.98]"
+          disabled={!onlineOk}
+          onClick={() => onlineOk && navigate('/MisterWhiteLobby')}
+          className="flex items-center gap-3.5 rounded-[1.75rem] border border-white/10 bg-[#1c1c21] px-4 py-3.5 text-left active:scale-[0.98] disabled:opacity-40"
         >
           <GlowDisc color="#8b5cf6" size={56}>
             <Wifi className="h-[22px] w-[22px] text-[#8b5cf6]" strokeWidth={1.75} />
           </GlowDisc>
           <span>
-            <span className="block text-[17px] font-extrabold text-white">Sala online</span>
-            <span className="mt-0.5 block text-xs text-slate-400">Cada um no seu. Código da sala.</span>
+            <span className="block text-[17px] font-extrabold text-white">
+              {onlineOk ? 'Sala online' : 'Online indisponível'}
+            </span>
+            <span className="mt-0.5 block text-xs text-slate-400">
+              {onlineOk ? 'Cada um no seu. Código da sala.' : 'Este modo está desligado neste servidor.'}
+            </span>
           </span>
         </button>
       </div>

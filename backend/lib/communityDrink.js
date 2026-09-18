@@ -75,6 +75,42 @@ function ensureComunidadeDeck(decks) {
   return decks.comunidade
 }
 
+function withCommunityPack(card) {
+  return { ...card, pack: 'community' }
+}
+
+function emptyCommunityDrinkPack() {
+  return {
+    pack: 'community',
+    name: 'Comunidade',
+    description: 'Cartas aprovadas pelos jogadores.',
+    premium: false,
+    intensity: 'variada',
+    ageRating: '18+',
+    decks: {
+      comunidade: {
+        label: '🌍 Comunidade',
+        desc: 'Cartas aprovadas pela comunidade',
+        premium: false,
+        cards: [],
+      },
+    },
+  }
+}
+
+async function findOrCreateCommunityDrinkPack() {
+  let row = await DrinkPack.findOne({ pack: 'community' })
+  if (row) return row
+  try {
+    return await DrinkPack.create(emptyCommunityDrinkPack())
+  } catch (err) {
+    if (err?.code !== 11000) throw err
+    row = await DrinkPack.findOne({ pack: 'community' })
+    if (row) return row
+    throw err
+  }
+}
+
 function buildDrinkCardFromSubmission(sub) {
   const kind = resolveKind(sub)
   const emoji = String(sub.drinkEmoji || sub.emoji || kind.emoji || '🌍').slice(0, 8)
@@ -82,43 +118,43 @@ function buildDrinkCardFromSubmission(sub) {
   const engineType = kind.type
 
   if (engineType === 'impostor') {
-    return {
+    return withCommunityPack({
       type: 'impostor',
       emoji,
       title,
       correctQuestion: String(sub.correctQuestion || sub.text || '').trim(),
       wrongQuestion: String(sub.wrongQuestion || '').trim(),
-    }
+    })
   }
 
   if (engineType === 'agent') {
-    return {
+    return withCommunityPack({
       type: 'agent',
       emoji,
       title,
       secretMission: String(sub.secretMission || sub.text || '').trim(),
-    }
+    })
   }
 
   if (engineType === 'preferencia') {
     const choices = Array.isArray(sub.choices)
       ? sub.choices.map((c) => String(c || '').trim()).filter(Boolean).slice(0, 2)
       : []
-    return {
+    return withCommunityPack({
       type: 'preferencia',
       emoji,
       title,
       text: String(sub.text || '').trim(),
       choices,
-    }
+    })
   }
 
-  return {
+  return withCommunityPack({
     type: engineType,
     emoji,
     title,
     text: String(sub.text || '').trim(),
-  }
+  })
 }
 
 function validateDrinkCard(card) {
@@ -139,10 +175,8 @@ function validateDrinkCard(card) {
   return null
 }
 
-async function appendDrinkCommunityCard(sub, { drinkPackId = 'base' } = {}) {
-  let row = await DrinkPack.findOne({ pack: drinkPackId })
-  if (!row) row = await DrinkPack.findOne({ pack: 'base' })
-  if (!row) throw new Error('DrinkPack não encontrado. Corre npm run seed:packs.')
+async function appendDrinkCommunityCard(sub) {
+  const row = await findOrCreateCommunityDrinkPack()
 
   const card = buildDrinkCardFromSubmission(sub)
   const invalid = validateDrinkCard(card)
@@ -166,6 +200,8 @@ async function appendDrinkCommunityCard(sub, { drinkPackId = 'base' } = {}) {
 module.exports = {
   appendDrinkCommunityCard,
   buildDrinkCardFromSubmission,
+  emptyCommunityDrinkPack,
+  findOrCreateCommunityDrinkPack,
   normalizeText,
   cardSignature,
   DRINK_BARALHO,

@@ -3,9 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import { io } from 'socket.io-client'
 import { getSocketUrl } from '../utils/api'
+import { socketIoOptions } from '../utils/socketOptions'
 import { getGlobalSocket, setGlobalSocket, setAmLobbyHandoff, patchAmLobbyHandoff, clearGlobalSocket } from '../utils/socketStore'
 import { saveAmSession, loadAmSession, clearAmSession } from '../utils/amSession'
 import { loadNightRoster } from '../utils/nightRoster'
+import { confirmHostStart } from '../utils/confirmHost'
 import NightShell, {
   NightTitle, NightCta, GlowCode, CodeField, NameField, RosterChips, NightTabs, NightPlayerChip, pessoaLabel,
 } from '../components/layout/NightShell'
@@ -106,7 +108,7 @@ export default function AldeiaMixLobby() {
       fn(existing)
       return
     }
-    const s = io(API_URL, { transports: ['websocket', 'polling'] })
+    const s = io(API_URL, socketIoOptions())
     setSocket(s)
     setGlobalSocket(s)
     const onInitialError = () => { setError('Sem ligação'); setConnecting(false) }
@@ -182,6 +184,7 @@ export default function AldeiaMixLobby() {
 
   const startGame = () => {
     if (!socket || !room) return
+    if (!confirmHostStart('Começar o jogo da Aldeia para toda a sala?')) return
     socket.emit('am_start_game', { code: room.code })
   }
 

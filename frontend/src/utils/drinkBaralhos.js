@@ -14,6 +14,7 @@ export const DRINK_BARALHOS = [
   { id: 'maldicao', label: '🔮 Maldição' },
   { id: 'historia', label: '🎬 História' },
   { id: 'cadeia', label: '🔗 Cadeia' },
+  { id: 'comunidade', label: '🌍 Comunidade' },
 ]
 
 export const DRINK_ESPECIAL_TYPES = [
@@ -55,17 +56,31 @@ export function normalizeDrinkCategories(categories) {
   })
 }
 
+export const COMMUNITY_DRINK_PACK = {
+  pack: 'community',
+  name: 'Comunidade',
+  description: 'Cartas aprovadas pelos jogadores.',
+  premium: false,
+  intensity: 'variada',
+  ageRating: '18+',
+}
+
 /** Junta categorias de vários packs (mesmo baralho = cartas concatenadas). */
 export function mergeDrinkCategories(deckResults) {
   const byId = new Map()
   for (const result of deckResults || []) {
     if (result?.blocked || result?.unavailable) continue
+    const resultPack = result.pack || 'base'
     for (const cat of result.categories || []) {
+      const cards = (cat.cards || []).map((card) => ({
+        ...card,
+        pack: cat.id === 'comunidade' ? 'community' : (card.pack || resultPack),
+      }))
       const prev = byId.get(cat.id)
       if (!prev) {
-        byId.set(cat.id, { ...cat, premium: false, cards: [...(cat.cards || [])] })
+        byId.set(cat.id, { ...cat, premium: false, cards })
       } else {
-        prev.cards = prev.cards.concat(cat.cards || [])
+        prev.cards = prev.cards.concat(cards)
       }
     }
   }
@@ -77,7 +92,7 @@ export function mergeDrinkCategories(deckResults) {
   })
 }
 
-/** Baralhos escolhíveis no setup (Comunidade usa o toggle à parte). */
+/** Baralhos escolhíveis no setup, incluindo Comunidade. */
 export function selectableDrinkCategories(categories) {
-  return normalizeDrinkCategories(categories).filter((cat) => cat.id !== 'comunidade')
+  return normalizeDrinkCategories(categories).filter((cat) => (cat.cards || []).length > 0 || cat.id === 'comunidade')
 }

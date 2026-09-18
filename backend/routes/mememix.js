@@ -6,6 +6,7 @@ const { buildPackFilter } = require('../lib/packQuery')
 const { getLocalLegendaPacks, getLocalLegendas } = require('../lib/localMememix')
 const {
   verifyUploadToken,
+  rotateUploadToken,
   saveMemeImage,
   getMemeFilePath,
   detectImageKind,
@@ -14,11 +15,15 @@ const {
 const {
   mmRooms,
   removeMemeFromRoom,
+  isAuthorizedMemeViewer,
+  reportMemeInRoom,
 } = require('../lib/mememixSocket')
+const { MM_MAX_BYTES, MM_MAX_MEMES_PER_ROOM, assertImageSize } = require('../lib/ugcPolicy')
+const { track } = require('../lib/observability')
 
-const MAX_BYTES = 5 * 1024 * 1024
+const MAX_BYTES = MM_MAX_BYTES
 
-router.use(express.json({ limit: '6mb' }))
+router.use(express.json({ limit: '3mb' }))
 
 router.get('/packs', asyncRoute(async (req, res) => {
   const rows = await Card.aggregate([
@@ -63,12 +68,18 @@ router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
     return res.status(403).json({ error: 'Só o host pode enviar fotos nesta sala' })
   }
 
-  const player = room.players.find((p) => p.id === auth.socketId || p.name === auth.playerName)
-  if (!player || player.disconnected) return res.status(403).json({ error: 'Não estás nesta sala' })
+  if (!isAuthorizedMemeViewer(room, { socketId: auth.socketId, playerName: auth.playerName })) {
+    return res.status(403).json({ error: 'Não estás nesta sala' })
+  }
+  const player = room.players.find((p) => p.id === auth.socketId && p.name === auth.playerName)
+  if (!player) return res.status(403).json({ error: 'Não estás nesta sala' })
 
   const mine = room.memes.filter((m) => m.uploadedBy === player.name || m.playerId === auth.socketId).length
   if (mine >= room.settings.maxMemesPerPlayer) {
     return res.status(400).json({ error: `Máximo ${room.settings.maxMemesPerPlayer} fotos por jogador` })
+  }
+  if ((room.memes || []).length >= MM_MAX_MEMES_PER_ROOM) {
+    return res.status(400).json({ error: `A sala já tem o máximo de ${MM_MAX_MEMES_PER_ROOM} fotos` })
   }
 
   let buffer
@@ -86,15 +97,20 @@ router.post('/rooms/:code/upload', asyncRoute(async (req, res) => {
     return res.status(400).json({ error: 'Envia imageBase64 no body' })
   }
 
-  if (!buffer?.length || buffer.length > MAX_BYTES) {
-    return res.status(400).json({ error: 'Imagem demasiado grande (máx. 5 MB)' })
-  }
+  const size = assertImageSize(buffer.length)
+  if (!size.ok) return res.status(400).json({ error: size.error })
 
   const saved = saveMemeImage(code, buffer, ext)
+  const nextToken = rotateUploadToken(token, auth.socketId)
+  if (nextToken) {
+    room.playerTokens = room.playerTokens || {}
+    room.playerTokens[player.name] = nextToken
+  }
   res.status(201).json({
     id: saved.id,
     url: saved.url,
     filename: saved.filename,
+    uploadToken: nextToken || token,
   })
 }))
 
@@ -114,6 +130,22 @@ async function handleMemeRemove(req, res) {
 
 router.delete('/rooms/:code/memes/:memeId', asyncRoute(handleMemeRemove))
 router.post('/rooms/:code/memes/:memeId/remove', asyncRoute(handleMemeRemove))
+
+router.post('/rooms/:code/memes/:memeId/report', asyncRoute(async (req, res) => {
+  const code = String(req.params.code || '').toUpperCase()
+  const token = req.headers['x-mememix-token'] || req.body?.token
+  const auth = verifyUploadToken(token, code)
+  if (!auth) return res.status(403).json({ error: 'Sessão inválida ou expirada' })
+  const result = reportMemeInRoom(code, req.params.memeId, {
+    socketId: auth.socketId,
+    playerName: auth.playerName,
+    reason: req.body?.reason,
+    details: req.body?.details,
+  })
+  if (!result.ok) return res.status(400).json({ error: result.error })
+  track('ugc_reported', { errorCode: 'ugc_reported' })
+  res.status(201).json(result)
+}))
 
 router.get('/rooms/:code/memes/:file', asyncRoute(async (req, res) => {
   const code = String(req.params.code || '').toUpperCase()

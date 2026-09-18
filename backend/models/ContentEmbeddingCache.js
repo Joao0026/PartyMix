@@ -7,4 +7,6 @@ const s = new mongoose.Schema({
   model: { type: String, default: 'nomic-embed-text-v1.5' },
 }, { timestamps: true })
 
+s.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 })
+
 module.exports = mongoose.model('ContentEmbeddingCache', s)
