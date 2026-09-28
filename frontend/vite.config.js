@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      workbox: {
+        navigateFallback: '/index.html',
+      },
       manifest: {
         name: "PartyMix",
         short_name: "PartyMix",

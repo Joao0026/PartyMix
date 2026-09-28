@@ -1,16 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, RotateCcw, Check, Plus, Beer, Share2, Users } from 'lucide-react'
+import { RotateCcw, Check, Plus, Beer, Share2, Users, Settings2, Home as HomeIcon, Tv, Copy, ExternalLink } from 'lucide-react'
+import { io } from 'socket.io-client'
 import { shuffle } from '../utils/game'
-import { api } from '../utils/api'
+import { api, getSocketUrl } from '../utils/api'
 import { fetchChallenges, fetchDrinkDecks, fetchDrinkPacks } from '../utils/contentApi'
 import { challengePackParams } from '../utils/packParams'
 import ImpostorCard, { IMPOSTOR_PAIRS, mergeImpostorPairs } from '../components/game/ImpostorCard'
 import PreferenciaCard from '../components/game/PreferenciaCard'
 
 import { FALLBACK_DRINK_DECKS } from '../utils/drinkDecksFallback'
-import { formatGoles } from '../utils/penalties'
 import { drinkCardImageSrc } from '../utils/drinkCardImage'
 import { pickImpostorForRound, enrichImpostorCard } from '../utils/drinkImpostorGhost'
 import { getCardCaos, rollCaosMoment, applyCaosUpgrade, caosActivatorIsSubject, getCaosPrompt } from '../utils/drinkChaosUpgrade'
@@ -31,6 +31,7 @@ import MesaNoite from '../components/layout/MesaNoite'
 import NightShell, { NightTitle, NightCta, GlowDisc } from '../components/layout/NightShell'
 import { shareNight } from '../utils/shareNight'
 import { loadNightRoster, saveNightRoster } from '../utils/nightRoster'
+import { loadDrinkHouseCards, saveDrinkHouseCards } from '../utils/drinkHouseCards'
 
 const MAX_DRINK_PLAYERS = 15
 
@@ -188,22 +189,22 @@ function formatRuleTimeLeft(rule, turnCount, playerCount) {
   }
   return ` · ${remaining} ronda${remaining === 1 ? '' : 's'}`
 }
-const ROULETTE_SEGS=[
-  {label:'Bebe 2',color:'#f59e0b',action:'drink',val:2},
-  {label:'Desafio!',color:'#06b6d4',action:'challenge'},
-  {label:'Distribui 3',color:'#8b5cf6',action:'give',val:3},
-  {label:'Bebe 1',color:'#ef4444',action:'drink',val:1},
-  {label:'Sorte!',color:'#10b981',action:'lucky'},
-  {label:'Bebe 3',color:'#f43f5e',action:'drink',val:3},
-  {label:'Regra!',color:'#a855f7',action:'rule'},
-  {label:'Waterfall',color:'#3b82f6',action:'waterfall'},
+const ROULETTE_SEGS = [
+  { label: 'Escudo', color: '#10b981', action: 'shield', text: 'O teu próximo gole não conta.' },
+  { label: 'Passas', color: '#64748b', action: 'skip', text: 'A roleta ocupou a tua vez. Não tens de cumprir uma carta.' },
+  { label: 'Picante', color: '#f43f5e', action: 'spicy', text: 'A próxima carta vem do baralho Picante.', needsDeck: 'picante' },
+  { label: 'Lês 3', color: '#06b6d4', action: 'read3', text: 'Tu lês as próximas 3 cartas.' },
+  { label: 'Da casa', color: '#f59e0b', action: 'house', text: 'A mesa cria agora uma Carta da casa.' },
+  { label: 'Comunidade', color: '#8b5cf6', action: 'community', text: 'A próxima carta vem da Comunidade.', needsDeck: 'comunidade' },
+  { label: 'Distribui 3', color: '#ec4899', action: 'give3', text: 'Distribui 3 goles e tu não bebes.' },
 ]
 
-function Roulette({players,currentPlayerIdx}){
+function Roulette({ players, currentPlayerIdx, availableDeckIds, onResult }) {
   const [totalRot,setTotalRot]=useState(0)
   const [spinning,setSpinning]=useState(false)
   const [result,setResult]=useState(null)
-  const n=ROULETTE_SEGS.length
+  const segments = ROULETTE_SEGS.filter((seg) => !seg.needsDeck || availableDeckIds.includes(seg.needsDeck))
+  const n=segments.length
   const step=360/n
   const cx=130,cy=130,r=122
   const player=players[currentPlayerIdx]
@@ -221,20 +222,16 @@ function Roulette({players,currentPlayerIdx}){
       const arrowDeg=270 // top
       const offset=(arrowDeg-normalised+360)%360
       const idx=Math.floor(offset/step)%n
-      setResult(ROULETTE_SEGS[idx])
+      const picked = segments[idx]
+      setResult(picked)
       setSpinning(false)
+      onResult?.(picked, currentPlayerIdx)
     },3500)
   }
 
   const getResultText=(seg)=>{
     if(!seg)return''
-    if(seg.action==='drink') return `${player?.name} bebe ${formatGoles(seg.val)}!`
-    if(seg.action==='give') return `${player?.name} distribui ${formatGoles(seg.val)}!`
-    if(seg.action==='challenge') return `${player?.name} tem um desafio!`
-    if(seg.action==='lucky') return `${player?.name} tem sorte — imune à próxima!`
-    if(seg.action==='rule') return `${player?.name} cria uma regra!`
-    if(seg.action==='waterfall') return `WATERFALL! ${player?.name} começa!`
-    return seg.label
+    return `${player?.name}: ${seg.text}`
   }
 
   return(
@@ -250,7 +247,7 @@ function Roulette({players,currentPlayerIdx}){
           className="drop-shadow-[0_0_28px_rgba(245,158,11,0.35)]"
           style={{width:260,height:260}}>
           <svg width="260" height="260">
-            {ROULETTE_SEGS.map((seg,i)=>{
+            {segments.map((seg,i)=>{
               const sa=(i*step-90)*Math.PI/180
               const ea=((i+1)*step-90)*Math.PI/180
               const x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa)
@@ -314,11 +311,16 @@ function CardDeck({
   players,
   departedPlayers,
   impostorPairs,
+  forcedCard,
+  onForcedCardShown,
   onCardDrawn,
   onAgentResult,
   onAllianceChosen,
   onImpostorResult,
   onChaosResolved,
+  onRouletteResult,
+  onRequestHouse,
+  onDisplayChange,
 }) {
   const sessionDeck = useMemo(() => [...activeDeck], [activeDeck])
   const [deck, setDeck] = useState(() => shuffle([...sessionDeck]))
@@ -339,6 +341,12 @@ function CardDeck({
   const recentPublicTextsRef = useRef([])
   const [nextReaderName, setNextReaderName] = useState(null)
   const [lastReaderName, setLastReaderName] = useState(null)
+  const [rouletteResolved, setRouletteResolved] = useState(true)
+  const [forcedDeckId, setForcedDeckId] = useState('')
+  const [lockedReaderName, setLockedReaderName] = useState('')
+  const [lockedReaderRemaining, setLockedReaderRemaining] = useState(0)
+  const cardsSinceRouletteRef = useRef(0)
+  const shownForcedCardRef = useRef('')
 
   const resolveReaderByName = (name) => {
     if (!players.length) return null
@@ -361,6 +369,38 @@ function CardDeck({
     })
   }, [players])
 
+  useEffect(() => {
+    // Ajustar afeta apenas as próximas tiragens; a carta visível não muda.
+    setDeck(shuffle([...activeDeck]))
+  }, [activeDeck])
+
+  useEffect(() => {
+    if (!forcedCard?.id || shownForcedCardRef.current === forcedCard.id || !players.length) return
+    shownForcedCardRef.current = forcedCard.id
+    const reader = readerIndexByName(nextReaderName || players[0]?.name)
+    const card = {
+      type: 'house',
+      emoji: '🏠',
+      title: 'Carta da casa',
+      text: forcedCard.text,
+      _houseId: forcedCard.id,
+    }
+    setLastReaderName(players[reader]?.name ?? null)
+    setBaseCard(card)
+    setCurrent(card)
+    setCardDrawId((id) => id + 1)
+    setChaosMomentActive(false)
+    setChaosResolved(true)
+    setRouletteResolved(true)
+    setImpostorDone(true)
+    setAllianceDone(true)
+    const nextIdx = (reader + 1) % Math.max(players.length, 1)
+    setNextReaderName(players[nextIdx]?.name ?? null)
+    cardsSinceRouletteRef.current += 1
+    onCardDrawn?.(card, reader)
+    onForcedCardShown?.(forcedCard.id)
+  }, [forcedCard, nextReaderName, players, onCardDrawn, onForcedCardShown])
+
   const finalizeAgent = (raw) => {
     if (!agentPublicPool.length) return raw
     const composed = composeAgentCard(raw, agentPublicPool, recentPublicTextsRef.current)
@@ -375,11 +415,33 @@ function CardDeck({
     if (current?.type === 'impostor' && !impostorDone) return
     if (current?.type === 'alliance' && !allianceDone) return
     if (chaosMomentActive && !chaosResolved) return
+    if (current?.type === 'roulette' && !rouletteResolved) return
+
+    if (cardsSinceRouletteRef.current >= 2 && Math.random() < (1 / 14)) {
+      const reader = readerIndexByName(nextReaderName || players[0]?.name)
+      const card = { type: 'roulette', emoji: '🎰', title: 'Roleta da noite', text: '' }
+      setLastReaderName(players[reader]?.name ?? null)
+      setBaseCard(card)
+      setCurrent(card)
+      setCardDrawId((id) => id + 1)
+      setRouletteResolved(false)
+      setChaosMomentActive(false)
+      setChaosResolved(true)
+      setImpostorDone(true)
+      setAllianceDone(true)
+      const nextIdx = (reader + 1) % Math.max(players.length, 1)
+      setNextReaderName(players[nextIdx]?.name ?? null)
+      cardsSinceRouletteRef.current = 0
+      onCardDrawn?.(card, reader)
+      return
+    }
+
     const drinkSpam = recentTypes.slice(-2).every(type => type === 'beber')
     const repeatedDeck = recentDeckIds.length >= 2 && recentDeckIds.slice(-2).every((id) => id && id === recentDeckIds[recentDeckIds.length - 1])
-    let pool = deck
+    let pool = forcedDeckId ? deck.filter((card) => card.deckId === forcedDeckId) : deck
+    if (!pool.length) pool = deck
     if (drinkSpam) {
-      const filtered = deck.filter((card) => card.type !== 'beber')
+      const filtered = pool.filter((card) => card.type !== 'beber')
       if (filtered.length) pool = filtered
     }
     const canAvoidImpostor = pool.some((card) => card.type !== 'impostor')
@@ -389,7 +451,7 @@ function CardDeck({
     const avoidDeckIds = repeatedDeck ? [recentDeckIds[recentDeckIds.length - 1]] : []
     const preferAct = sessionAct(sessionDeck.length - deck.length, sessionDeck.length)
     const skipRare = recentTypes.slice(-8).some((type) => ['impostor', 'miniboss', 'alliance'].includes(type))
-    const { card: picked, rest } = pickBalancedDeckCard(pool, { avoidDeckIds, preferAct, skipRare })
+    const { card: picked } = pickBalancedDeckCard(pool, { avoidDeckIds, preferAct, skipRare })
     if (!picked) return
     let card = picked
     if (card?.type === 'agent') card = finalizeAgent(card)
@@ -407,7 +469,8 @@ function CardDeck({
     } else {
       setImpostorName(null)
     }
-    const reader = readerIndexByName(nextReaderName || players[0]?.name)
+    const hasLockedReader = lockedReaderRemaining > 0 && players.some((p) => p.name === lockedReaderName)
+    const reader = readerIndexByName(hasLockedReader ? lockedReaderName : (nextReaderName || players[0]?.name))
     const readerPlayer = players[reader]
     setLastReaderName(readerPlayer?.name ?? null)
     setBaseCard(card)
@@ -422,12 +485,32 @@ function CardDeck({
     setImpostorDone(false)
     setAllianceDone(card?.type !== 'alliance')
     setAllianceTarget('')
-    setDeck(rest)
+    const pickedIndex = deck.indexOf(picked)
+    setDeck(pickedIndex >= 0 ? deck.filter((_, index) => index !== pickedIndex) : deck)
     setRecentTypes(types => [...types.slice(-7), card.type])
     setRecentDeckIds((ids) => [...ids.slice(-2), card.deckId || 'outros'])
-    const nextIdx = (reader + 1) % Math.max(players.length, 1)
-    setNextReaderName(players[nextIdx]?.name ?? null)
+    if (hasLockedReader) {
+      setLockedReaderRemaining((remaining) => Math.max(0, remaining - 1))
+    } else {
+      const nextIdx = (reader + 1) % Math.max(players.length, 1)
+      setNextReaderName(players[nextIdx]?.name ?? null)
+    }
+    if (forcedDeckId) setForcedDeckId('')
+    cardsSinceRouletteRef.current += 1
     onCardDrawn?.(card, reader)
+  }
+
+  const resolveRoulette = (result, readerIndex) => {
+    if (!result || rouletteResolved) return
+    setRouletteResolved(true)
+    if (result.action === 'spicy') setForcedDeckId('picante')
+    if (result.action === 'community') setForcedDeckId('comunidade')
+    if (result.action === 'read3') {
+      setLockedReaderName(players[readerIndex]?.name || '')
+      setLockedReaderRemaining(3)
+    }
+    if (result.action === 'house') onRequestHouse?.()
+    onRouletteResult?.(result, readerIndex)
   }
 
   const lastReaderIdx = lastReaderName ? readerIndexByName(lastReaderName) : null
@@ -475,6 +558,8 @@ function CardDeck({
     preferencia: 'from-slate-800 to-slate-900',
     maldicao: 'from-cyan-700 to-teal-900',
     historia: 'from-amber-700 to-orange-800',
+    roulette: 'from-fuchsia-700 to-pink-800',
+    house: 'from-amber-600 to-rose-700',
   }
   const TYPE_LABELS = {
     beber: 'Beber',
@@ -491,12 +576,15 @@ function CardDeck({
     preferencia: 'Preferias?',
     maldicao: 'Maldição',
     historia: 'História',
+    roulette: 'Roleta',
+    house: 'Carta da casa',
   }
 
   const impostorLocked = current?.type === 'impostor' && !impostorDone
   const allianceLocked = current?.type === 'alliance' && !allianceDone
   const chaosLocked = chaosMomentActive && !chaosResolved
-  const actionLocked = impostorLocked || allianceLocked || chaosLocked
+  const rouletteLocked = current?.type === 'roulette' && !rouletteResolved
+  const actionLocked = impostorLocked || allianceLocked || chaosLocked || rouletteLocked
   const cardImageSrc = current ? drinkCardImageSrc(current.image) : ''
   const readerName = whoReads?.name || ''
   const px = (s) => substitutePlayerTokens(s, players, {
@@ -507,6 +595,19 @@ function CardDeck({
   const cardText = current ? px(current.text) : ''
   const cardPublicText = current ? px(current.publicText) : ''
   const cardSecretMission = current ? px(current.secretMission) : ''
+
+  useEffect(() => {
+    onDisplayChange?.({
+      reader: readerName,
+      card: current ? {
+        type: current.type,
+        emoji: current.emoji || '',
+        title: cardTitle,
+        text: cardText,
+        choices: Array.isArray(current.choices) ? current.choices.slice(0, 4).map((choice) => px(choice)) : [],
+      } : null,
+    })
+  }, [readerName, current, cardTitle, cardText, onDisplayChange])
 
   const resolveAgent = (outcome) => {
     setAgentResult(outcome)
@@ -542,6 +643,11 @@ function CardDeck({
     setAllianceTarget('')
     setRecentTypes([])
     setRecentDeckIds([])
+    setRouletteResolved(true)
+    setForcedDeckId('')
+    setLockedReaderName('')
+    setLockedReaderRemaining(0)
+    cardsSinceRouletteRef.current = 0
     recentPublicTextsRef.current = []
     setNextReaderName(players[0]?.name ?? null)
     setLastReaderName(null)
@@ -606,7 +712,14 @@ function CardDeck({
             {current.type !== 'preferencia' && (
               <h3 className="text-white font-black text-3xl mb-4 drop-shadow-sm">{cardTitle}</h3>
             )}
-            {current.type === 'agent' ? (
+            {current.type === 'roulette' ? (
+              <Roulette
+                players={players}
+                currentPlayerIdx={lastReaderIdx ?? 0}
+                availableDeckIds={[...new Set(sessionDeck.map((card) => card.deckId).filter(Boolean))]}
+                onResult={resolveRoulette}
+              />
+            ) : current.type === 'agent' ? (
               <div className="space-y-3">
                 {current.publicText ? (
                   <div className="rounded-2xl border border-white/15 bg-white/10 p-4">
@@ -811,7 +924,7 @@ function CardDeck({
               boxShadow: actionLocked ? 'none' : '0 8px 24px -8px #ff5c8d88',
             }}
           >
-            {impostorLocked ? 'Termina Impostor' : allianceLocked ? 'Escolhe a aliança' : chaosLocked ? 'Normal ou Caos' : current ? 'Próxima carta' : 'Ver carta'}
+            {impostorLocked ? 'Termina Impostor' : allianceLocked ? 'Escolhe a aliança' : chaosLocked ? 'Normal ou Caos' : rouletteLocked ? 'Gira a roleta' : current ? 'Próxima carta' : 'Ver carta'}
           </button>
         </div>
       ) : (
@@ -834,7 +947,7 @@ function CardDeck({
 export default function DrinkGame(){
   const navigate=useNavigate()
   const [phase,setPhase]=useState('setup')
-  const [setupStep, setSetupStep] = useState(0)
+  const [setupStep, setSetupStep] = useState(() => loadNightRoster().names.length >= 2 ? 1 : 0)
   const [playerNames,setPlayerNames]=useState(() => {
     const { names } = loadNightRoster()
     return names.length >= 2 ? names.slice(0, MAX_DRINK_PLAYERS) : ['', '', '']
@@ -845,6 +958,7 @@ export default function DrinkGame(){
   })
   const [selectedCats,setSelectedCats]=useState(['waterfall','eununca','desafios','cadeia','especiais'])
   const [packOff, setPackOff] = useState({})
+  const [showAdjustPanel, setShowAdjustPanel] = useState(false)
   const [showMesaPanel, setShowMesaPanel] = useState(false)
   const [showPlayersPanel, setShowPlayersPanel] = useState(false)
   const [deckSessionId, setDeckSessionId] = useState(0)
@@ -857,7 +971,7 @@ export default function DrinkGame(){
   const [impostorPairs, setImpostorPairs] = useState(IMPOSTOR_PAIRS)
   const [deckCategories, setDeckCategories] = useState(FALLBACK_DRINK_DECKS)
   const [contentPacks, setContentPacks] = useState(['base'])
-  const includeCommunity = false
+  const includeCommunity = contentPacks.includes('community')
   const [packOptions, setPackOptions] = useState([{
     pack: 'base',
     name: 'Essencial',
@@ -870,6 +984,17 @@ export default function DrinkGame(){
   const [midGameName, setMidGameName] = useState('')
   const [midGameGender, setMidGameGender] = useState('m')
   const [departedPlayers, setDepartedPlayers] = useState([])
+  const [houseCards, setHouseCards] = useState(() => loadDrinkHouseCards())
+  const [houseDraft, setHouseDraft] = useState('')
+  const [houseOpen, setHouseOpen] = useState(false)
+  const [forcedHouseCard, setForcedHouseCard] = useState(null)
+  const [playerShields, setPlayerShields] = useState({})
+  const [cardDisplay, setCardDisplay] = useState({ reader: '', card: null })
+  const [tvSession, setTvSession] = useState(null)
+  const [tvOpen, setTvOpen] = useState(false)
+  const [tvError, setTvError] = useState('')
+  const tvSocketRef = useRef(null)
+  const tvSessionRef = useRef(null)
 
   const players=playerNames
     .map((name,i)=>({
@@ -880,6 +1005,19 @@ export default function DrinkGame(){
     .filter(p=>p.name)
 
   const playersSetupReady = players.length >= 2
+
+  useEffect(() => {
+    saveDrinkHouseCards(houseCards)
+  }, [houseCards])
+
+  useEffect(() => {
+    tvSessionRef.current = tvSession
+  }, [tvSession])
+
+  useEffect(() => () => {
+    tvSocketRef.current?.disconnect()
+    tvSocketRef.current = null
+  }, [])
 
   useEffect(() => {
     const names = playerNames.map((n) => n.trim()).filter(Boolean)
@@ -924,9 +1062,11 @@ export default function DrinkGame(){
     [packedCategories, effectiveCats]
   )
 
+  const communityEnabled = includeCommunity && !(packOff.community || []).includes('comunidade')
+
   const activeDeck = useMemo(
-    () => buildPlayableDrinkDeck(packedCategories, effectiveCats, includeCommunity),
-    [packedCategories, effectiveCats, includeCommunity]
+    () => buildPlayableDrinkDeck(packedCategories, effectiveCats, communityEnabled),
+    [packedCategories, effectiveCats, communityEnabled]
   )
 
   const freshStats = (count) => Array.from({ length: count }, () => ({
@@ -947,32 +1087,31 @@ export default function DrinkGame(){
     })
   }
 
-  const decksForPack = (packId) => selectableDrinkCategories(deckCategories)
+  const countPackCards = (packId) => deckCategories.reduce(
+    (n, cat) => n + (cat.cards || []).filter((card) => packHasCard(card, packId)).length,
+    0
+  )
+
+  const categoriesForPack = (packId) => deckCategories
+    .filter((cat) => cat.id !== 'comunidade' || packId === 'community')
     .map((cat) => ({
       id: cat.id,
       label: cat.label,
       count: (cat.cards || []).filter((card) => packHasCard(card, packId)).length,
     }))
-    .filter((cat) => cat.count > 0)
+    .filter((cat) => cat.count > 0 || (packId === 'community' && cat.id === 'comunidade'))
 
-  const togglePackDeck = (packId, catId) => {
-    setPackOff((prev) => {
-      const current = prev[packId] || []
-      if (current.includes(catId)) {
-        return { ...prev, [packId]: current.filter((id) => id !== catId) }
+  const togglePackCategory = (packId, catId) => {
+    setPackOff((currentOff) => {
+      const off = currentOff[packId] || []
+      if (off.includes(catId)) {
+        return { ...currentOff, [packId]: off.filter((id) => id !== catId) }
       }
-      const onCount = decksForPack(packId).filter((cat) => !current.includes(cat.id)).length
-      if (onCount <= 1 && contentPacks.length === 1) return prev
-      return { ...prev, [packId]: [...current, catId] }
-    })
-  }
 
-  const countPackCards = (packId) => {
-    const off = new Set(packOff[packId] || [])
-    return deckCategories.reduce(
-      (n, cat) => n + (off.has(cat.id) ? 0 : (cat.cards || []).filter((card) => packHasCard(card, packId)).length),
-      0
-    )
+      const groupCount = categoriesForPack(packId).find((cat) => cat.id === catId)?.count || 0
+      if (groupCount > 0 && activeDeck.length <= groupCount) return currentOff
+      return { ...currentOff, [packId]: [...off, catId] }
+    })
   }
 
   const startGame = () => {
@@ -983,8 +1122,69 @@ export default function DrinkGame(){
     setActiveAlliances([])
     setTurnCount(0)
     setDepartedPlayers([])
+    setPlayerShields({})
+    setCardDisplay({ reader: players[0]?.name || '', card: null })
     setDeckSessionId((k) => k + 1)
     setPhase('playing')
+  }
+
+  const showHouseCard = () => {
+    const text = houseDraft.trim()
+    if (!text) return
+    const card = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      text: text.slice(0, 300),
+      author: cardDisplay.reader || '',
+      status: 'pending',
+    }
+    setHouseCards((cards) => [...cards, card])
+    setForcedHouseCard(card)
+    setHouseDraft('')
+    setHouseOpen(false)
+  }
+
+  const submitHouseCard = async (card) => {
+    try {
+      await api.submitCommunity({
+        submissionType: 'card',
+        mode: 'drink',
+        cardType: 'desafios',
+        text: card.text,
+        author: card.author || 'Mesa',
+        pack: 'community',
+        audience: 'adult',
+      })
+      setHouseCards((cards) => cards.map((item) => (
+        item.id === card.id ? { ...item, status: 'sent' } : item
+      )))
+    } catch {
+      setHouseCards((cards) => cards.map((item) => (
+        item.id === card.id ? { ...item, status: 'error' } : item
+      )))
+    }
+  }
+
+  const ensureTvSocket = () => {
+    if (tvSocketRef.current) return tvSocketRef.current
+    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] })
+    socket.on('connect', () => {
+      const saved = tvSessionRef.current
+      if (saved) socket.emit('drink_tv_resume', saved)
+    })
+    socket.on('drink_tv_created', (session) => {
+      tvSessionRef.current = session
+      setTvSession(session)
+      setTvError('')
+    })
+    socket.on('drink_tv_error', (message) => setTvError(String(message || 'Não foi possível ligar a TV')))
+    tvSocketRef.current = socket
+    return socket
+  }
+
+  const openTv = () => {
+    setTvOpen(true)
+    const socket = ensureTvSocket()
+    if (!tvSessionRef.current) socket.emit('drink_tv_create')
   }
 
   const removeActivePlayer = (playerIndex) => {
@@ -1041,6 +1241,15 @@ export default function DrinkGame(){
 
   const registerDrink = (playerIndex, amount = 1, options = {}) => {
     if (playerIndex == null || playerIndex < 0) return
+    const playerName = players[playerIndex]?.name
+    const hasShield = playerName && (playerShields[playerName] || 0) > 0
+    const countedAmount = Math.max(0, amount - (hasShield ? 1 : 0))
+    if (hasShield) {
+      setPlayerShields((shields) => ({
+        ...shields,
+        [playerName]: Math.max(0, (shields[playerName] || 0) - 1),
+      }))
+    }
     const linkedPlayers = activeAllianceList
       .filter((alliance) => alliance.players.includes(playerIndex))
       .flatMap((alliance) => alliance.players.filter((idx) => idx !== playerIndex))
@@ -1051,8 +1260,8 @@ export default function DrinkGame(){
         if (idx === playerIndex) {
           return {
             ...stat,
-            drinks: stat.drinks + amount,
-            unlucky: stat.unlucky + (options.unlucky ?? 1),
+            drinks: stat.drinks + countedAmount,
+            unlucky: stat.unlucky + (countedAmount > 0 ? (options.unlucky ?? 1) : 0),
           }
         }
         if (linkedPlayers.includes(idx)) {
@@ -1170,6 +1379,35 @@ export default function DrinkGame(){
     if (upgrade.othersDrink) registerOthersDrink(idx, upgrade.othersDrink)
   }
 
+  const handleRouletteResult = (result, readerIndex) => {
+    const name = players[readerIndex]?.name
+    if (result?.action === 'shield' && name) {
+      setPlayerShields((shields) => ({ ...shields, [name]: (shields[name] || 0) + 1 }))
+    }
+    if (result?.action === 'give3') registerDistributed(readerIndex, 3)
+  }
+
+  useEffect(() => {
+    if (!tvSession || !tvSocketRef.current) return
+    const activeDeckNames = packOptions
+      .filter((pack) => contentPacks.includes(pack.pack))
+      .flatMap((pack) => categoriesForPack(pack.pack)
+        .filter((cat) => !(packOff[pack.pack] || []).includes(cat.id))
+        .map((cat) => `${pack.name || pack.pack} · ${cat.label}`))
+    tvSocketRef.current.emit('drink_tv_update', {
+      code: tvSession.code,
+      hostToken: tvSession.hostToken,
+      state: {
+        phase: phase === 'results' ? 'results' : phase === 'playing' ? 'playing' : 'waiting',
+        turn: turnCount,
+        reader: cardDisplay.reader,
+        card: cardDisplay.card,
+        activeDecks: activeDeckNames,
+        rules: visibleRules.map((rule) => rule.text),
+      },
+    })
+  }, [tvSession, phase, turnCount, cardDisplay, packOptions, contentPacks, packOff, deckCategories, visibleRules])
+
   const rosterPanelProps = {
     players,
     playerNames,
@@ -1234,6 +1472,10 @@ export default function DrinkGame(){
       .sort((a, b) => b.value - a.value)[0]
   }
 
+  const tvLink = tvSession
+    ? `${window.location.origin}/DrinkTV/${encodeURIComponent(tvSession.code)}`
+    : ''
+
   if(phase==='results'){
     const mostDrinks = topBy('drinks')
     const bestAgent = topBy('agentSuccess')
@@ -1286,6 +1528,34 @@ export default function DrinkGame(){
             })}
           </div>
 
+          {houseCards.length > 0 && (
+            <div className="mb-5 rounded-3xl border border-amber-400/20 bg-amber-400/[0.06] p-4">
+              <p className="font-black text-white">🏠 Cartas da casa</p>
+              <p className="mt-1 text-xs text-white/45">Adicionar envia como pendente. Só entra no pack Comunidade depois da aprovação.</p>
+              <div className="mt-3 space-y-2">
+                {houseCards.map((card) => (
+                  <div key={card.id} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-sm text-white/85">{card.text}</p>
+                    <button
+                      type="button"
+                      onClick={() => submitHouseCard(card)}
+                      disabled={card.status === 'sent'}
+                      className={`mt-2 w-full rounded-xl py-2 text-xs font-black ${
+                        card.status === 'sent'
+                          ? 'bg-emerald-400/15 text-emerald-200'
+                          : card.status === 'error'
+                            ? 'bg-red-400/15 text-red-200'
+                            : 'bg-amber-400 text-black'
+                      }`}
+                    >
+                      {card.status === 'sent' ? 'Enviada para aprovação' : card.status === 'error' ? 'Tentar novamente' : 'Adicionar à comunidade'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={()=>setPhase('playing')} className="rounded-2xl bg-white/[0.08] border border-white/10 text-white py-4 min-h-[52px] font-bold">
               Voltar ao jogo
@@ -1326,7 +1596,7 @@ export default function DrinkGame(){
         names={names}
         genders={genders}
         max={MAX_DRINK_PLAYERS}
-        confirmPrefix="Continuar com"
+        confirmPrefix="Começar com"
         onBack={() => navigate('/')}
         onChange={(nextNames, nextGenders) => {
           setPlayerNames(nextNames)
@@ -1344,106 +1614,52 @@ export default function DrinkGame(){
 
   if(phase==='setup') {
     const PINK = '#ff5c8d'
-    const selectedPacks = packOptions.filter((pack) => contentPacks.includes(pack.pack))
-
-    if (setupStep === 1) {
-      return (
-        <NightShell
-          onBack={() => setSetupStep(0)}
-          footer={(
-            <NightCta
-              accent={PINK}
-              onClick={() => setSetupStep(2)}
-              disabled={contentPacks.length === 0 || decksLoading}
-            >
-              Continuar
-            </NightCta>
-          )}
-        >
-          <NightTitle>Modo Beber</NightTitle>
-          <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Que packs queres?</p>
-          <p className="mt-1.5 text-center text-[13px] text-white/45">Os baralhos escolhes no passo a seguir.</p>
-
-          <div className="mt-6 space-y-1.5">
-            {packOptions.map((pack) => {
-              const selected = contentPacks.includes(pack.pack)
-              const packCount = countPackCards(pack.pack)
-              return (
-                <button
-                  key={pack.pack}
-                  type="button"
-                  onClick={() => togglePack(pack.pack)}
-                  className="flex w-full items-center gap-2.5 rounded-full border bg-[#1c1c21] px-2.5 py-1.5 text-left active:scale-[0.98]"
-                  style={selected
-                    ? { borderColor: `${PINK}66`, boxShadow: `0 8px 20px -10px ${PINK}88` }
-                    : { borderColor: 'rgba(255,255,255,.1)' }}
-                >
-                  <GlowDisc color={selected ? PINK : '#64748b'} size={36}>
-                    <Beer className="h-4 w-4" style={{ color: selected ? PINK : '#94a3b8' }} strokeWidth={1.75} />
-                  </GlowDisc>
-                  <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-white">
-                    {pack.name || pack.pack}
-                    {packCount > 0 && <span className="ml-1.5 font-semibold text-slate-400">{packCount}</span>}
-                  </span>
-                  <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-[#ff5c8d] bg-[#ff5c8d]' : 'border-white/20'}`}>
-                    {selected && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          {decksLoading && <p className="mt-3 text-center text-xs text-[#ff5c8d]">A preparar os packs…</p>}
-        </NightShell>
-      )
-    }
-
     return (
       <NightShell
-        onBack={() => setSetupStep(1)}
+        onBack={() => setSetupStep(0)}
         footer={(
           <NightCta
             accent={PINK}
             onClick={startGame}
-            disabled={contentPacks.length === 0 || effectiveCats.length === 0 || activeDeck.length === 0 || !playersSetupReady}
+            disabled={contentPacks.length === 0 || decksLoading || activeDeck.length === 0 || !playersSetupReady}
           >
             Começar · {activeDeck.length} cartas
           </NightCta>
         )}
       >
         <NightTitle>Modo Beber</NightTitle>
-        <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Baralhos</p>
-        <p className="mt-1.5 text-center text-[13px] text-white/45">Toca para tirar o que não queres nesta noite.</p>
+        <p className="mt-3 text-center text-[1.05rem] font-medium text-white">Que packs queres?</p>
+        <p className="mt-1.5 text-center text-[13px] text-white/45">Começas logo a jogar. Podes ajustar os baralhos durante a partida.</p>
 
-        <div className="mt-6 space-y-5">
-          {selectedPacks.map((pack) => {
-            const packDecks = decksForPack(pack.pack)
-            const off = packOff[pack.pack] || []
+        <div className="mt-6 space-y-1.5">
+          {packOptions.map((pack) => {
+            const selected = contentPacks.includes(pack.pack)
+            const packCount = countPackCards(pack.pack)
             return (
-              <div key={pack.pack}>
-                <p className="mb-2 text-[13px] font-bold text-white/70">{pack.name || pack.pack}</p>
-                <div className="flex flex-wrap gap-2">
-                  {packDecks.map((cat) => {
-                    const on = !off.includes(cat.id)
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => togglePackDeck(pack.pack, cat.id)}
-                        className="inline-flex items-center rounded-full border px-3 py-1 text-left"
-                        style={on
-                          ? { borderColor: `${PINK}66`, boxShadow: `0 8px 20px -10px ${PINK}88`, background: '#1c1c21', color: '#fff' }
-                          : { borderColor: 'rgba(255,255,255,.1)', background: '#141419', color: '#64748b', textDecoration: 'line-through' }}
-                      >
-                        <span className="text-[13px] font-bold leading-none">{cat.label}</span>
-                        <span className="ml-1.5 text-[10px] font-semibold leading-none opacity-70">{cat.count}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+              <button
+                key={pack.pack}
+                type="button"
+                onClick={() => togglePack(pack.pack)}
+                className="flex w-full items-center gap-2.5 rounded-full border bg-[#1c1c21] px-2.5 py-1.5 text-left active:scale-[0.98]"
+                style={selected
+                  ? { borderColor: `${PINK}66`, boxShadow: `0 8px 20px -10px ${PINK}88` }
+                  : { borderColor: 'rgba(255,255,255,.1)' }}
+              >
+                <GlowDisc color={selected ? PINK : '#64748b'} size={36}>
+                  <Beer className="h-4 w-4" style={{ color: selected ? PINK : '#94a3b8' }} strokeWidth={1.75} />
+                </GlowDisc>
+                <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-white">
+                  {pack.name || pack.pack}
+                  {packCount > 0 && <span className="ml-1.5 font-semibold text-slate-400">{packCount}</span>}
+                </span>
+                <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-[#ff5c8d] bg-[#ff5c8d]' : 'border-white/20'}`}>
+                  {selected && <Check className="h-3 w-3 text-black" strokeWidth={3} />}
+                </span>
+              </button>
             )
           })}
         </div>
+        {decksLoading && <p className="mt-3 text-center text-xs text-[#ff5c8d]">A preparar os packs…</p>}
       </NightShell>
     )
   }
@@ -1493,6 +1709,84 @@ export default function DrinkGame(){
       }
     >
       <div className="px-4 py-4 max-w-lg mx-auto w-full space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAdjustPanel((open) => !open)}
+            className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border text-xs font-black ${
+              showAdjustPanel ? 'border-[#ff5c8d]/60 bg-[#ff5c8d] text-black' : 'border-white/10 bg-[#1c1c21] text-white'
+            }`}
+          >
+            <Settings2 className="h-4 w-4" /> Ajustar
+          </button>
+          <button
+            type="button"
+            onClick={() => setHouseOpen(true)}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#1c1c21] text-xs font-black text-white"
+          >
+            <HomeIcon className="h-4 w-4" /> Casa
+          </button>
+          <button
+            type="button"
+            onClick={openTv}
+            className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full border border-white/10 bg-[#1c1c21] text-xs font-black text-white"
+          >
+            <Tv className="h-4 w-4" /> TV
+          </button>
+        </div>
+
+        {showAdjustPanel && (
+          <div className="rounded-2xl border border-[#ff5c8d]/25 bg-[#1c1c21] p-3">
+            <p className="text-xs font-black uppercase tracking-[0.14em] text-[#ff9cba]">Packs e baralhos ativos</p>
+            <p className="mt-1 text-xs text-white/45">Cada pack mostra os seus baralhos. A carta atual não muda e o jogo nunca fica vazio.</p>
+            <div className="mt-3 space-y-4">
+              {packOptions.filter((pack) => contentPacks.includes(pack.pack)).map((pack) => {
+                const categories = categoriesForPack(pack.pack)
+                const off = packOff[pack.pack] || []
+                return (
+                  <section key={pack.pack}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-black text-white">{pack.name || pack.pack}</p>
+                      <span className="text-[10px] font-bold uppercase tracking-wide text-white/35">
+                        {categories.filter((cat) => !off.includes(cat.id)).length}/{categories.length} ativos
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {categories.map((cat) => {
+                        const on = !off.includes(cat.id)
+                        return (
+                          <button
+                            key={`${pack.pack}-${cat.id}`}
+                            type="button"
+                            onClick={() => togglePackCategory(pack.pack, cat.id)}
+                            className={`rounded-full border px-3 py-1.5 text-xs font-bold ${
+                              on
+                                ? 'border-[#ff5c8d]/60 bg-[#ff5c8d]/15 text-white'
+                                : 'border-white/10 bg-black/20 text-white/35 line-through'
+                            }`}
+                          >
+                            {cat.label}
+                            <span className="ml-1 text-[10px] opacity-50">{cat.count}</span>
+                          </button>
+                        )
+                      })}
+                      {!categories.length && <p className="text-xs text-white/35">Este pack ainda não tem cartas.</p>}
+                    </div>
+                  </section>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {Object.entries(playerShields).some(([, count]) => count > 0) && (
+          <div className="flex flex-wrap gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3">
+            {Object.entries(playerShields).filter(([, count]) => count > 0).map(([name, count]) => (
+              <span key={name} className="text-xs font-bold text-emerald-200">🛡️ {name}{count > 1 ? ` ×${count}` : ''}</span>
+            ))}
+          </div>
+        )}
+
         {(visibleRules.length > 0 || activeCurses.length > 0 || activeAllianceList.length > 0) && (
           <div className="surface p-3 space-y-2">
             {visibleRules.length > 0 && (
@@ -1602,13 +1896,79 @@ export default function DrinkGame(){
           players={players}
           departedPlayers={departedPlayers}
           impostorPairs={impostorPairs}
+          forcedCard={forcedHouseCard}
+          onForcedCardShown={() => setForcedHouseCard(null)}
           onCardDrawn={onCardDrawn}
           onAgentResult={handleAgentResult}
           onAllianceChosen={onAllianceChosen}
           onImpostorResult={handleImpostorResult}
           onChaosResolved={handleChaosResolved}
+          onRouletteResult={handleRouletteResult}
+          onRequestHouse={() => setHouseOpen(true)}
+          onDisplayChange={setCardDisplay}
         />
       </div>
+
+      {houseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-amber-400/20 bg-[#1a1520] p-5">
+            <p className="text-center text-3xl">🏠</p>
+            <p className="mt-2 text-center text-xl font-black text-white">Carta da casa</p>
+            <p className="mt-1 text-center text-sm text-white/50">Escreve ou dita. A carta aparece já para o leitor dizer em voz alta.</p>
+            <textarea
+              autoFocus
+              value={houseDraft}
+              onChange={(event) => setHouseDraft(event.target.value.slice(0, 300))}
+              rows={4}
+              placeholder="Ex.: Quem chegou por último distribui 3 goles."
+              className="mt-4 w-full resize-none rounded-2xl border border-white/10 bg-black/25 p-3 text-white outline-none focus:border-amber-400/50"
+            />
+            <p className="mt-1 text-right text-xs text-white/30">{houseDraft.length}/300</p>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setHouseOpen(false)} className="min-h-[48px] rounded-2xl border border-white/10 bg-white/[0.06] font-bold text-white">Cancelar</button>
+              <button type="button" onClick={showHouseCard} disabled={!houseDraft.trim()} className="min-h-[48px] rounded-2xl bg-amber-400 font-black text-black disabled:opacity-40">Mostrar carta</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tvOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-[#ff5c8d]/25 bg-[#1a1520] p-5">
+            <p className="text-center text-3xl">📺</p>
+            <p className="mt-2 text-center text-xl font-black text-white">Abrir noutro ecrã</p>
+            {tvError && <p className="mt-3 rounded-xl bg-red-400/10 p-3 text-sm text-red-200">{tvError}</p>}
+            {tvSession ? (
+              <>
+                <p className="mt-4 text-center text-xs font-black uppercase tracking-[0.18em] text-white/40">Código curto</p>
+                <p className="mt-1 text-center text-4xl font-black tracking-[0.2em] text-[#ffb04f]">{tvSession.code}</p>
+                <p className="mt-3 break-all rounded-xl bg-black/25 p-3 text-center text-xs text-white/55">{tvLink}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard?.writeText(tvLink)}
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] text-sm font-black text-white"
+                  >
+                    <Copy className="h-4 w-4" /> Copiar
+                  </button>
+                  <a
+                    href={tvLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-2xl bg-[#ff5c8d] text-sm font-black text-black"
+                  >
+                    <ExternalLink className="h-4 w-4" /> Abrir
+                  </a>
+                </div>
+                <p className="mt-3 text-center text-xs text-white/40">A TV é só de leitura. Todos os controlos ficam neste telemóvel.</p>
+              </>
+            ) : (
+              <p className="mt-5 text-center text-sm text-white/55">A criar um código seguro…</p>
+            )}
+            <button type="button" onClick={() => setTvOpen(false)} className="mt-4 w-full min-h-[46px] rounded-2xl border border-white/10 text-sm font-bold text-white">Fechar</button>
+          </div>
+        </div>
+      )}
 
       {leaveConfirm && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">

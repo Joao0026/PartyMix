@@ -100,9 +100,8 @@ function assignRolesForRoom(playerNames, narratorIdx, settings) {
 function checkEndCondition(roles, eliminated) {
   const alive = roles.filter((r, i) => !eliminated.includes(i) && r.role !== 'narrador' && !r.isNarrator)
   const wolves = alive.filter((r) => r.role === 'lobo').length
-  const villagers = alive.filter((r) => r.role !== 'lobo').length
   if (wolves === 0) return 'aldeoes_win'
-  if (wolves >= villagers) return 'lobos_win'
+  if (alive.length <= 2 && wolves >= 1) return 'lobos_win'
   return null
 }
 

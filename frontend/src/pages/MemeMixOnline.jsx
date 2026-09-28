@@ -75,10 +75,37 @@ export default function MemeMixOnline() {
       setGame(state)
       if (state?.code) setRoom(state)
     })
-    s.on('mm_round_update', (r) => { setRoom(r); setGame((g) => ({ ...g, ...r, pendingSubmissions: r.submissions })) })
-    s.on('mm_reveal_submissions', (r) => setRoom(r))
+    s.on('mm_round_update', (r) => {
+      setRoom(r)
+      setGame((g) => ({
+        ...(g || {}),
+        ...r,
+        pendingSubmissions: r.submissions,
+        submissionsPublic: r.revealed ? (r.submissionsPublic || g?.submissionsPublic || []) : [],
+        mySubmission: r.currentMeme ? g?.mySubmission : null,
+      }))
+    })
+    s.on('mm_reveal_submissions', (r) => {
+      setRoom(r)
+      setGame((g) => ({
+        ...(g || {}),
+        ...r,
+        revealed: true,
+        submissionsPublic: r.submissionsPublic || g?.submissionsPublic || [],
+        pendingSubmissions: r.submissions,
+      }))
+    })
     s.on('mm_next_round', (r) => {
       setRoom(r)
+      setGame((g) => ({
+        ...(g || {}),
+        ...r,
+        revealed: false,
+        currentMeme: null,
+        submissionsPublic: [],
+        mySubmission: null,
+        pendingSubmissions: 0,
+      }))
       setPickedLegendas([])
       setTypedLegenda('')
     })
@@ -248,7 +275,7 @@ export default function MemeMixOnline() {
   const hand = g.hand || []
   const memeHand = g.memeHand || []
   const currentMeme = room.currentMeme
-  const submissions = g.submissionsPublic || []
+  const submissions = g.submissionsPublic || room.submissionsPublic || []
   const scores = room.players || []
   const myScore = scores.find((p) => p.name === playerName)?.score || 0
   const pending = g.pendingSubmissions ?? room.submissions ?? 0
@@ -258,6 +285,7 @@ export default function MemeMixOnline() {
   const legendaMode = rawLegendaMode === 'misto' ? 'pack' : rawLegendaMode
   const canPickFromHand = legendaMode === 'pack' && hand.length > 0
   const canSwapLegendas = canPickFromHand && !isJuiz && !g.mySubmission && !room.revealed && myScore > 0
+    && (g.legendasDeckRemaining ?? room.legendasDeckRemaining ?? 0) >= Math.max(1, pickedLegendas.length)
   const canType = legendaMode === 'escritas'
   const pickedLegenda = pickedLegendas.length === 1 ? pickedLegendas[0] : null
   const swapLabel = pickedLegendas.length <= 1 ? 'Trocar esta −1 pt' : `Trocar ${pickedLegendas.length} −1 pt`

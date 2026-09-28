@@ -388,14 +388,28 @@ export default function MisterWhiteGame() {
                   <span className="text-xs text-slate-500">Mantém o ecrã virado só para ti</span>
                 </motion.button>
               ) : (
-                <motion.div initial={{scale:0.85,opacity:0}} animate={{scale:1,opacity:1}}
-                  className={`relative w-full min-h-44 overflow-hidden rounded-[2rem] flex flex-col items-center justify-center gap-2 border p-6 shadow-2xl ${roles[revealCursor].role==='civil'?'bg-green-900/25 border-green-500/30':roles[revealCursor].role==='undercover'?'bg-blue-900/25 border-blue-500/30':'bg-red-900/25 border-red-500/30'}`}>
+                <motion.button
+                  type="button"
+                  onClick={() => setShowRole(false)}
+                  initial={{scale:0.85,opacity:0}}
+                  animate={{scale:1,opacity:1}}
+                  className={`relative w-full min-h-44 overflow-hidden rounded-[2rem] flex flex-col items-center justify-center gap-2 border p-6 shadow-2xl ${roles[revealCursor].role==='mister_white'?'bg-red-900/25 border-red-500/30':'border-white/10 bg-[#1c1c21]'}`}
+                >
                   <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
-                  <span className="text-slate-300 text-sm">{roles[revealCursor].role==='civil'?'✅ Civil':roles[revealCursor].role==='undercover'?'🕵️ Undercover':'👁️ Mister White'}</span>
-                  <span className="text-white font-black text-3xl">{roles[revealCursor].word||'Sem palavra'}</span>
-                  {roles[revealCursor].role==='undercover'&&<span className="text-blue-300 text-xs">A tua palavra é parecida mas diferente!</span>}
-                  {roles[revealCursor].role==='mister_white'&&<span className="text-red-300 text-xs">Tenta descobrir a palavra civil!</span>}
-                </motion.div>
+                  {roles[revealCursor].role==='mister_white' ? (
+                    <>
+                      <span className="text-red-200 text-sm">👁️ Mister White</span>
+                      <span className="text-white font-black text-3xl">Sem palavra</span>
+                      <span className="text-red-300 text-xs">Tenta descobrir a palavra civil!</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-slate-400 text-sm">A tua palavra</span>
+                      <span className="text-white font-black text-3xl">{roles[revealCursor].word}</span>
+                    </>
+                  )}
+                  <span className="text-xs text-white/45">Toca para virar para baixo</span>
+                </motion.button>
               )}
               <p className="text-xs text-slate-500">{revealCount + 1} de {roles.length}</p>
             </motion.div>
@@ -405,7 +419,7 @@ export default function MisterWhiteGame() {
           {step==='playing'&&(
             <motion.div key={`playing-${roundNum}`} initial={{opacity:0,y:16}} animate={{opacity:1,y:0}} exit={{opacity:0}} className="space-y-4">
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
-                <p className="text-slate-300 text-sm leading-relaxed">Cada jogador diz <b className="text-white">uma pista</b> sobre a sua palavra — nem demasiado óbvia nem demasiado vaga.</p>
+                <p className="text-slate-300 text-sm leading-relaxed">Cada jogador diz <b className="text-white">uma pista</b> sobre a sua palavra, por esta ordem — nem demasiado óbvia nem demasiado vaga.</p>
                 <div className={`mt-3 rounded-2xl border px-4 py-3 ${timeLeft===0?'border-red-500/40 bg-red-500/10':'border-violet-500/30 bg-violet-500/10'}`}>
                   <p className={`font-black text-3xl ${timeLeft===0?'text-red-300':'text-white'}`}>
                     {Math.floor(timeLeft/60)}:{String(timeLeft%60).padStart(2,'0')}
@@ -414,8 +428,9 @@ export default function MisterWhiteGame() {
                 </div>
               </div>
               <div className="space-y-2">
-                {orderedActiveIndices.map(i => (
+                {orderedActiveIndices.map((i, turn) => (
                   <div key={i} className="bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="w-6 text-center text-xs font-black text-[#fbbf24]">{turn + 1}º</span>
                     <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-sm font-black flex-shrink-0`}>{roles[i].name[0]}</div>
                     <span className="text-white font-medium">{roles[i].name}</span>
                     <Eye className="text-slate-700 w-4 h-4 ml-auto"/>
@@ -428,7 +443,7 @@ export default function MisterWhiteGame() {
                   {eliminated.map(i=>(
                     <div key={i} className="bg-white/[0.02] rounded-xl px-4 py-2 flex items-center gap-3 opacity-35">
                       <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${roles[i].color} flex items-center justify-center text-white text-xs font-black`}>{roles[i].name[0]}</div>
-                      <span className="text-slate-500 text-sm">{roles[i].name} ({roles[i].role === 'civil' ? 'Civil' : roles[i].role === 'undercover' ? 'Undercover' : 'Mister White'})</span>
+                      <span className="text-slate-500 text-sm">{roles[i].name} · {roles[i].role === 'civil' ? 'Civil' : roles[i].role === 'undercover' ? 'Infiltrado' : 'Mister White'}</span>
                     </div>
                   ))}
                 </div>
@@ -490,8 +505,8 @@ export default function MisterWhiteGame() {
               </h2>
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-left space-y-1">
                 <div className="flex gap-4 mb-3 text-sm">
-                  <span className="text-slate-400">Civil: <span className="text-green-400 font-bold">{civilWord}</span></span>
-                  <span className="text-slate-400">Undercover: <span className="text-blue-400 font-bold">{undercoverWord}</span></span>
+                  <span className="text-slate-400">Palavra civil: <span className="text-green-400 font-bold">{civilWord}</span></span>
+                  <span className="text-slate-400">Palavra infiltrada: <span className="text-blue-400 font-bold">{undercoverWord}</span></span>
                 </div>
                 {roles.map((r,i)=>(
                   <div key={i} className="flex items-center gap-2 py-1 border-b border-white/[0.05] last:border-0">

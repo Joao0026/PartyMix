@@ -16,6 +16,9 @@ const {
   roomsAtCapacity,
   tokensEqual,
   touchRoom,
+  beginDisconnectGrace,
+  canTakeOverSeat,
+  clearDisconnectGrace,
 } = require('./gameAuth')
 
 const mmRooms = {}
@@ -95,6 +98,20 @@ function removeMemeFromRoom(code, memeId, { socketId } = {}) {
 }
 const MAX_PLAYERS = 15
 
+function isOfficialMemeUrl(url) {
+  const raw = String(url || '')
+  return raw.startsWith('/memes/') && !raw.includes('/api/mememix/')
+}
+
+function publicMemeUrl(room, url) {
+  const raw = String(url || '')
+  if (!raw) return raw
+  if (/^https?:\/\//i.test(raw)) return raw
+  if (isOfficialMemeUrl(raw)) return raw
+  const file = raw.split('/').pop()
+  return file ? memeViewUrl(room.code, file) : raw
+}
+
 function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -117,6 +134,51 @@ function memeUploadSummary(room) {
   return Object.entries(counts).map(([name, count]) => ({ name, count }))
 }
 
+function liveCaptionEntries(room) {
+  const allowed = new Set(memePlayersExpected(room).map((p) => p.id))
+  return Object.entries(room.submissions || {}).filter(([id]) => allowed.has(id))
+}
+
+function liveCaptionCount(room) {
+  return liveCaptionEntries(room).length
+}
+
+function lockRevealOrder(room) {
+  const ids = liveCaptionEntries(room).map(([id]) => id)
+  const prev = Array.isArray(room.revealOrder) ? room.revealOrder.filter((id) => ids.includes(id)) : []
+  const missing = ids.filter((id) => !prev.includes(id))
+  room.revealOrder = [...prev, ...shuffle(missing)]
+  return room.revealOrder
+}
+
+function clearRevealOrder(room) {
+  room.revealOrder = []
+}
+
+function publicCaptionSubmissions(room) {
+  if (!room.revealed) return []
+  const order = Array.isArray(room.revealOrder) && room.revealOrder.length
+    ? room.revealOrder
+    : lockRevealOrder(room)
+  const rank = new Map(order.map((id, i) => [id, i]))
+  return liveCaptionEntries(room)
+    .sort(([a], [b]) => (rank.get(a) ?? 999) - (rank.get(b) ?? 999))
+    .map(([id, submission]) => {
+      const p = room.players.find((pl) => pl.id === id)
+      return {
+        playerId: id,
+        playerName: room.roundWinner ? p?.name : null,
+        text: submissionText(submission),
+      }
+    })
+    .filter((row) => row.text)
+}
+
+function shouldRevealMemeRound(room) {
+  const expected = memePlayersExpected(room).length
+  return expected > 0 && liveCaptionCount(room) >= expected
+}
+
 function sanitizeMm(room) {
   const juiz = room.players[room.juizIdx]
   return {
@@ -128,26 +190,20 @@ function sanitizeMm(room) {
     settings: room.settings,
     status: room.status,
     round: room.round,
-    memes: (room.memes || []).map((m) => {
-      const file = String(m.url || '').split('/').pop()
-      return {
-        id: m.id,
-        url: file ? memeViewUrl(room.code, file) : m.url,
-        uploadedBy: m.uploadedBy,
-      }
-    }),
+    memes: (room.memes || []).map((m) => ({
+      id: m.id,
+      url: publicMemeUrl(room, m.url),
+      uploadedBy: m.uploadedBy,
+    })),
     memeCount: (room.memes || []).length,
     memeUploadSummary: memeUploadSummary(room),
     currentMeme: room.currentMeme
-      ? {
-        ...room.currentMeme,
-        url: room.currentMeme.url?.includes('/memes/')
-          ? memeViewUrl(room.code, String(room.currentMeme.url).split('/').pop())
-          : room.currentMeme.url,
-      }
+      ? { ...room.currentMeme, url: publicMemeUrl(room, room.currentMeme.url) }
       : null,
-    submissions: Object.keys(room.submissions || {}).length,
+    legendasDeckRemaining: (room.legendasDeck || []).length + (room.legendasDiscard || []).length,
+    submissions: liveCaptionCount(room),
     submissionsExpected: memePlayersExpected(room).length,
+    submissionsPublic: publicCaptionSubmissions(room),
     revealed: room.revealed,
     roundWinner: room.roundWinner,
     lastRoundWinner: room.lastRoundWinner || null,
@@ -168,18 +224,14 @@ function buildGameView(room, socketId) {
     ...base,
     isJuiz,
     hand,
-    memeHand: isJuiz ? memeHand : [],
+    memeHand: isJuiz
+      ? memeHand.map((m) => ({ ...m, url: publicMemeUrl(room, m.url) }))
+      : [],
     stashLegendas: isJuiz ? stash : [],
     stashCount: stash.length,
     mySubmission: room.submissions?.[socketId] || null,
-    submissionsPublic: room.revealed
-      ? Object.entries(room.submissions || {}).map(([id, submission]) => {
-        const p = room.players.find((pl) => pl.id === id)
-        return { playerId: id, playerName: room.roundWinner ? p?.name : null, text: submissionText(submission) }
-      })
-      : [],
     pendingSubmissions: !room.revealed && room.currentMeme
-      ? Object.keys(room.submissions || {}).length
+      ? liveCaptionCount(room)
       : 0,
   }
 }
@@ -213,6 +265,9 @@ function migratePlayerSocket(room, oldId, newId) {
   if (room.submissions?.[oldId] !== undefined) {
     room.submissions[newId] = room.submissions[oldId]
     delete room.submissions[oldId]
+  }
+  if (Array.isArray(room.revealOrder)) {
+    room.revealOrder = room.revealOrder.map((id) => (id === oldId ? newId : id))
   }
   for (const m of room.memes || []) {
     if (m.playerId === oldId) m.playerId = newId
@@ -271,9 +326,9 @@ function broadcastMm(io, room, code) {
 
 function maybeRevealMemeRound(io, room, code) {
   ensureConnectedJuiz(room, io, code)
-  const expected = memePlayersExpected(room).length
-  if (expected <= 0 || Object.keys(room.submissions || {}).length < expected) return false
+  if (!shouldRevealMemeRound(room)) return false
   room.revealed = true
+  lockRevealOrder(room)
   io.to(code).emit('mm_reveal_submissions', sanitizeMm(room))
   room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
     io.to(p.id).emit('mm_state', buildGameView(room, p.id))
@@ -290,6 +345,10 @@ function ensureConnectedJuiz(room, io, code) {
   if (nextIdx < 0) return false
 
   room.juizIdx = nextIdx
+  const nextJuiz = room.players[nextIdx]
+  if (nextJuiz?.id && room.submissions?.[nextJuiz.id]) {
+    delete room.submissions[nextJuiz.id]
+  }
 
   if (!room.currentMeme) {
     rotateJuizHands(room, prevJuizIdx)
@@ -318,11 +377,55 @@ function restoreLegendasFromStash(room, playerId) {
 
 // Garante que um jogador (não-juiz) tem mão de legendas.
 // Necessário para o 1.º juiz, que arranca sem mão nem stash.
+function recycleLegendas(room) {
+  if (!room.legendasDiscard) room.legendasDiscard = []
+  if (room.legendasDeck.length || !room.legendasDiscard.length) return
+  room.legendasDeck = shuffle(room.legendasDiscard)
+  room.legendasDiscard = []
+}
+
+function drawLegendas(room, n) {
+  const out = []
+  while (out.length < n) {
+    recycleLegendas(room)
+    if (!room.legendasDeck.length) break
+    out.push(room.legendasDeck.shift())
+  }
+  return out
+}
+
+function discardLegenda(room, text) {
+  if (!text) return
+  if (!room.legendasDiscard) room.legendasDiscard = []
+  room.legendasDiscard.push(text)
+}
+
+function rebalanceLegendas(room) {
+  if (normalizeLegendaMode(room.settings.legendaMode) === 'escritas') return
+  const juiz = room.players[room.juizIdx]
+  const players = room.players.filter((p) => isInPlay(p) && p.id !== juiz?.id)
+  if (!players.length) return
+  const pool = [...(room.legendasDeck || []), ...(room.legendasDiscard || [])]
+  room.legendasDiscard = []
+  for (const p of players) {
+    pool.push(...(room.hands[p.id] || []))
+    room.hands[p.id] = []
+  }
+  const shuffled = shuffle(pool)
+  const per = Math.min(5, Math.floor(shuffled.length / players.length))
+  players.forEach((p, i) => {
+    room.hands[p.id] = per > 0 ? shuffled.slice(i * per, (i + 1) * per) : []
+  })
+  room.legendasDeck = shuffled.slice(players.length * per)
+}
+
 function ensureLegendaHand(room, playerId) {
   if (normalizeLegendaMode(room.settings.legendaMode) === 'escritas') return
   room.hands[playerId] = room.hands[playerId] || []
-  while (room.hands[playerId].length < 5 && room.legendasDeck.length) {
-    room.hands[playerId].push(room.legendasDeck.shift())
+  while (room.hands[playerId].length < 5) {
+    const [card] = drawLegendas(room, 1)
+    if (!card) break
+    room.hands[playerId].push(card)
   }
 }
 
@@ -493,21 +596,27 @@ function registerMemeMixHandlers(io, socket) {
       socket.emit('error', 'Sessão inválida')
       return
     }
-    if (!existing.disconnected && existing.id && existing.id !== socket.id) {
+    if (!canTakeOverSeat(existing, socket.id)) {
       socket.emit('error', 'Este jogador ainda está ligado')
       return
     }
     touchRoom(room)
 
     const oldId = existing.id || existing.previousSocketId
+    clearDisconnectGrace(existing)
     migratePlayerSocket(room, oldId, socket.id)
     existing.id = socket.id
     existing.disconnected = false
     existing.previousSocketId = null
     if (room.host === name) room.hostId = socket.id
 
-    const stored = room.playerTokens[name]
-    if (!stored || !tokensEqual(stored, oldToken) || !updateTokenSocketId(stored, socket.id)) {
+    let stored = room.playerTokens[name]
+    if (stored) {
+      updateTokenSocketId(stored, socket.id)
+    } else if (tokensEqual(existing.token, playerToken)) {
+      stored = createUploadToken(c, socket.id, name)
+      room.playerTokens[name] = stored
+    } else {
       socket.emit('error', 'Sessão inválida')
       return
     }
@@ -610,6 +719,7 @@ function registerMemeMixHandlers(io, socket) {
     memePool = shuffle(memePool)
 
     room.legendasDeck = shuffle([...legendas])
+    room.legendasDiscard = []
     room.memeDeck = memePool
     room.usedMemeIds = new Set()
     room.uploadsLocked = true
@@ -618,6 +728,7 @@ function registerMemeMixHandlers(io, socket) {
     room.juizIdx = 0
     room.submissions = {}
     room.revealed = false
+    clearRevealOrder(room)
     room.lastRoundWinner = null
     room.stash = {}
     room.hands = {}
@@ -646,6 +757,7 @@ function registerMemeMixHandlers(io, socket) {
     discardMemeFromPool(room, memeId)
     room.submissions = {}
     room.revealed = false
+    clearRevealOrder(room)
     io.to(code).emit('mm_round_update', sanitizeMm(room))
     room.players.filter((p) => !p.disconnected && p.id).forEach((p) => {
       io.to(p.id).emit('mm_state', buildGameView(room, p.id))
@@ -671,7 +783,8 @@ function registerMemeMixHandlers(io, socket) {
 
     if (fromHand) {
       room.hands[socket.id] = hand.filter((c) => c !== legenda)
-      const newCard = room.legendasDeck.shift()
+      discardLegenda(room, legenda)
+      const [newCard] = drawLegendas(room, 1)
       if (newCard) room.hands[socket.id].push(newCard)
     }
     room.submissions[socket.id] = { text: legenda, playerName: room.players.find((p) => p.id === socket.id)?.name || null }
@@ -703,13 +816,24 @@ function registerMemeMixHandlers(io, socket) {
     const hand = room.hands[socket.id] || []
     if (!wanted.every((legenda) => hand.includes(legenda))) return
 
+    recycleLegendas(room)
+    if (room.legendasDeck.length < wanted.length) {
+      socket.emit('error', 'Não há mais legendas no baralho para trocar')
+      return
+    }
+    const replacements = drawLegendas(room, wanted.length)
+    if (replacements.length < wanted.length) {
+      room.legendasDeck.unshift(...replacements)
+      socket.emit('error', 'Não há mais legendas no baralho para trocar')
+      return
+    }
     wanted.forEach((legenda) => {
       const idx = hand.indexOf(legenda)
       if (idx < 0) return
       hand.splice(idx, 1)
-      const replacement = room.legendasDeck.shift()
-      if (replacement) hand.push(replacement)
+      discardLegenda(room, legenda)
     })
+    hand.push(...replacements)
     player.score = Math.max(0, (player.score || 0) - 1)
 
     io.to(code).emit('mm_round_update', sanitizeMm(room))
@@ -751,6 +875,7 @@ function registerMemeMixHandlers(io, socket) {
     room.currentMeme = null
     room.submissions = {}
     room.revealed = false
+    clearRevealOrder(room)
     room.roundWinner = null
 
     rotateJuizHands(room, prevJuizIdx)
@@ -772,6 +897,7 @@ function registerMemeMixHandlers(io, socket) {
     room.currentMeme = null
     room.submissions = {}
     room.revealed = false
+    clearRevealOrder(room)
     room.hands = {}
     room.memeHands = {}
     room.stash = {}
@@ -848,6 +974,7 @@ function rotateJuizHands(room, prevJuizIdx) {
     stashLegendasForJuiz(room, next.id)
     dealMemesToJuiz(room, next.id)
   }
+  rebalanceLegendas(room)
 }
 
 function dealMemeMixHands(room) {
@@ -861,11 +988,12 @@ function dealMemeMixHands(room) {
       room.stash[p.id] = []
       room.hands[p.id] = []
     } else {
-      room.hands[p.id] = dealLegendas ? room.legendasDeck.splice(0, 5) : []
+      room.hands[p.id] = []
       room.memeHands[p.id] = []
       room.stash[p.id] = []
     }
   })
+  if (dealLegendas) rebalanceLegendas(room)
 }
 
 function handleMemeMixDisconnect(io, socket) {
@@ -876,26 +1004,40 @@ function handleMemeMixDisconnect(io, socket) {
   if (idx === -1) return
 
   const player = room.players[idx]
-  player.disconnected = true
   player.previousSocketId = socket.id
-  player.id = null
+  beginDisconnectGrace(player, socket.id, () => {
+    if (!mmRooms[code]) return
+    player.disconnected = true
+    player.id = null
 
-  if (room.hostId === socket.id) {
-    promoteHostIfNeeded(room)
-  }
+    if (room.hostId === socket.id) {
+      promoteHostIfNeeded(room)
+    }
 
-  const connected = room.players.filter((p) => !p.disconnected)
-  if (connected.length === 0) {
-    destroyMemeMixSession(code)
-    delete mmRooms[code]
+    const connected = room.players.filter((p) => !p.disconnected)
+    if (connected.length === 0) {
+      destroyMemeMixSession(code)
+      delete mmRooms[code]
+      return
+    }
+
+    afterMmPlayerAway(io, room, code)
+  })
+  afterMmPlayerAway(io, room, code)
+}
+
+function afterMmPlayerAway(io, room, code) {
+  if (room.status === 'playing') {
+    ensureConnectedJuiz(room, io, code)
+    if (!maybeRevealMemeRound(io, room, code)) {
+      io.to(code).emit('mm_room_updated', sanitizeMm(room))
+      room.players.filter((p) => p.id && !p.disconnected).forEach((p) => {
+        io.to(p.id).emit('mm_state', buildGameView(room, p.id))
+      })
+    }
     return
   }
-
-  if (room.status === 'playing' && room.players[room.juizIdx]?.disconnected) {
-    ensureConnectedJuiz(room, io, code)
-  } else {
-    io.to(code).emit('mm_room_updated', sanitizeMm(room))
-  }
+  io.to(code).emit('mm_room_updated', sanitizeMm(room))
 }
 
 module.exports = {
@@ -910,4 +1052,8 @@ module.exports = {
   isAuthorizedMemeViewer,
   memePlayersExpected,
   skipPendingMemePlayers,
+  liveCaptionCount,
+  shouldRevealMemeRound,
+  publicCaptionSubmissions,
+  lockRevealOrder,
 }

@@ -169,9 +169,9 @@ router.post('/:id/approve', requireAdmin, asyncRoute(async (req, res) => {
         }).save()
         sub.linkedCardId = linked._id
       } else if (sub.mode === 'drink') {
-        const drinkResult = await appendDrinkCommunityCard(sub, {
-          drinkPackId: sub.pack && sub.pack !== 'community' ? sub.pack : 'base',
-        })
+        // Conteúdo criado por jogadores nunca entra em packs oficiais.
+        // A aprovação publica-o exclusivamente no pack Comunidade.
+        const drinkResult = await appendDrinkCommunityCard(sub)
         linked = { type: 'drink', deck: 'comunidade', ...drinkResult }
       } else if (sub.mode === 'mister') {
         const misterResult = await appendMisterCommunityPair(sub)

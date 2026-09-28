@@ -2,6 +2,7 @@ const AGE_KEY = 'partymix_age_gate_v1'
 
 const ADULT_PATHS = [
   '/DrinkGame',
+  '/DrinkTV',
   '/CoupleGame',
   '/daily',
   '/CardsLobby',
@@ -48,6 +49,12 @@ export function isAdultPath(pathname, search = '') {
   if (pathname.startsWith('/join/')) {
     const mode = pathname.split('/')[2]
     return mode !== 'family'
+  }
+  if (pathname === '/' || pathname === '') {
+    const q = new URLSearchParams(search)
+    const mode = q.get('entrar')
+    if (mode) return mode !== 'family'
+    if (q.get('bebertv')) return true
   }
   if (pathname === '/GameSetup') {
     const mode = new URLSearchParams(search).get('mode')

@@ -3,6 +3,28 @@ const DrinkPack = require('../models/DrinkPack')
 const { asyncRoute, cleanString } = require('../lib/validate')
 
 router.get('/packs', asyncRoute(async (req, res) => {
+  await DrinkPack.updateOne(
+    { pack: 'community' },
+    {
+      $setOnInsert: {
+        pack: 'community',
+        name: 'Comunidade',
+        description: 'Cartas criadas pela comunidade e aprovadas pela equipa PartyMix.',
+        premium: false,
+        intensity: 'variada',
+        ageRating: '18+',
+        decks: {
+          comunidade: {
+            label: '🌍 Comunidade',
+            desc: 'Cartas aprovadas pela comunidade',
+            premium: false,
+            cards: [],
+          },
+        },
+      },
+    },
+    { upsert: true }
+  )
   const rows = await DrinkPack.find({}, {
     pack: 1,
     name: 1,

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { JOIN_MODES } from './utils/joinUrl'
 import { LangProvider } from './contexts/LangContext'
 import ConnectionStatus from './components/ConnectionStatus'
 import InstallPrompt from './components/InstallPrompt'
@@ -10,6 +11,7 @@ const MapGame = lazy(() => import('./pages/MapGame'))
 const ChallengesOnly = lazy(() => import('./pages/ChallengesOnly'))
 const CoupleGame = lazy(() => import('./pages/CoupleGame'))
 const DrinkGame = lazy(() => import('./pages/DrinkGame'))
+const DrinkTv = lazy(() => import('./pages/DrinkTv'))
 const CardsLobby = lazy(() => import('./pages/CardsLobby'))
 const CardsGame = lazy(() => import('./pages/CardsGame'))
 const MisterWhiteHub = lazy(() => import('./pages/MisterWhiteHub'))
@@ -91,11 +93,32 @@ function ScrollReset() {
   return null
 }
 
+function JoinSearchRedirect() {
+  const [params] = useSearchParams()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const mode = String(params.get('entrar') || '').toLowerCase()
+    const code = String(params.get('sala') || '').trim().toUpperCase()
+    if (JOIN_MODES[mode] && /^[A-Z0-9]{4,12}$/.test(code)) {
+      navigate(`/join/${mode}/${code}`, { replace: true })
+      return
+    }
+    const drinkTv = String(params.get('bebertv') || '').trim().toUpperCase()
+    if (/^[A-Z0-9]{4,12}$/.test(drinkTv)) {
+      navigate(`/DrinkTV/${drinkTv}`, { replace: true })
+    }
+  }, [params, navigate])
+
+  return null
+}
+
 export default function App() {
   return (
     <LangProvider>
       <IOSViewportFix />
       <ScrollReset />
+      <JoinSearchRedirect />
       <ConnectionStatus />
       <InstallPrompt />
       <Suspense fallback={<PageLoader />}>
@@ -110,6 +133,7 @@ export default function App() {
           <Route path="/ChallengesOnly"  element={<ChallengesOnly />} />
           <Route path="/CoupleGame"      element={<CoupleGame />} />
           <Route path="/DrinkGame"       element={<DrinkGame />} />
+          <Route path="/DrinkTV/:code"   element={<DrinkTv />} />
           <Route path="/CardsLobby"      element={<CardsLobby />} />
           <Route path="/CardsGame"       element={<CardsGame />} />
           <Route path="/MisterWhite"       element={<MisterWhiteHub />} />

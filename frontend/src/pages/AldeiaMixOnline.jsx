@@ -381,6 +381,8 @@ export default function AldeiaMixOnline() {
       patchAmSession({ isHost: ih, playerToken })
       setReconnecting(false)
       setDisconnected(false)
+      setShowRole(false)
+      setRevealedReady(r.status !== 'reveal')
       s.emit('am_request_state', { code: r.code })
     })
     s.on('am_session_ended', () => {
@@ -565,10 +567,17 @@ export default function AldeiaMixOnline() {
                     <span className="font-black text-white">Toca para ver o teu papel</span>
                   </button>
                 ) : myRole && (
-                  <div className={`rounded-[2rem] border p-8 text-center ${ROLE_STYLES[myRole.role] || 'border-white/10 bg-[#1c1c21]'}`}>
+                  <button
+                    type="button"
+                    onClick={() => { if (!revealedReady) setShowRole(false) }}
+                    className={`w-full rounded-[2rem] border p-8 text-center ${ROLE_STYLES[myRole.role] || 'border-white/10 bg-[#1c1c21]'}`}
+                  >
                     <p className="text-sm uppercase tracking-wider text-white/60">O teu papel</p>
                     <p className="mt-2 text-3xl font-black text-white">{roleLabel(myRole.role)}</p>
-                  </div>
+                    {!revealedReady && (
+                      <p className="mt-3 text-xs text-white/45">Toca para virar para baixo</p>
+                    )}
+                  </button>
                 )}
                 {revealedReady && (
                   <p className="animate-pulse text-center text-sm text-slate-500">

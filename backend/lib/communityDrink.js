@@ -139,12 +139,24 @@ function validateDrinkCard(card) {
   return null
 }
 
-async function appendDrinkCommunityCard(sub, { drinkPackId = 'base' } = {}) {
-  let row = await DrinkPack.findOne({ pack: drinkPackId })
-  if (!row) row = await DrinkPack.findOne({ pack: 'base' })
-  if (!row) throw new Error('DrinkPack não encontrado. Corre npm run seed:packs.')
+async function appendDrinkCommunityCard(sub, { drinkPackId = 'community' } = {}) {
+  const targetPack = drinkPackId || 'community'
+  let row = await DrinkPack.findOne({ pack: targetPack })
+  if (!row && targetPack === 'community') {
+    row = new DrinkPack({
+      pack: 'community',
+      name: 'Comunidade',
+      description: 'Cartas criadas pela comunidade e aprovadas pela equipa PartyMix.',
+      premium: false,
+      intensity: 'variada',
+      ageRating: '18+',
+      decks: {},
+    })
+  }
+  if (!row) throw new Error(`DrinkPack "${targetPack}" não encontrado.`)
 
   const card = buildDrinkCardFromSubmission(sub)
+  card.pack = row.pack
   const invalid = validateDrinkCard(card)
   if (invalid) throw new Error(invalid)
 

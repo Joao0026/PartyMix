@@ -5,6 +5,7 @@ const ROOM_CODE_LEN = 6
 const MAX_ROOMS = 400
 const ROOM_TTL_MS = 4 * 60 * 60 * 1000
 const EMPTY_ROOM_TTL_MS = 30 * 60 * 1000
+const DISCONNECT_GRACE_MS = 10 * 60 * 1000
 const MAX_DECK_CARDS = 400
 const MAX_CARD_TEXT = 300
 
@@ -54,14 +55,18 @@ function touchRoom(room) {
   return room
 }
 
+function isLive(p) {
+  return Boolean(p?.id && !p.disconnected && !p.pendingDisconnect)
+}
+
 function isInPlay(p) {
-  return Boolean(p?.id && !p.disconnected && !p.sittingOut)
+  return isLive(p) && !p.sittingOut
 }
 
 function publicPlayers(players, extra = {}) {
   return (players || []).map((p) => ({
     name: p.name,
-    disconnected: Boolean(p.disconnected),
+    disconnected: Boolean(p.disconnected || p.pendingDisconnect),
     sittingOut: Boolean(p.sittingOut),
     ...(p.score != null ? { score: p.score } : {}),
     ...extra,
@@ -78,10 +83,39 @@ function authorizeRejoin(room, { playerName, playerToken, socketId }) {
   const existing = room.players.find((p) => p.name === name)
   if (!existing) return { ok: false, error: 'Não estavas nesta sala' }
   if (!tokensEqual(existing.token, playerToken)) return { ok: false, error: 'Sessão inválida' }
-  if (!existing.disconnected && existing.id && existing.id !== socketId) {
+  if (!canTakeOverSeat(existing, socketId)) {
     return { ok: false, error: 'Este jogador ainda está ligado' }
   }
   return { ok: true, player: existing }
+}
+
+function canTakeOverSeat(player, socketId) {
+  if (!player) return false
+  if (player.pendingDisconnect || player.disconnected) return true
+  if (!player.id || player.id === socketId) return true
+  return false
+}
+
+function clearDisconnectGrace(player) {
+  if (player?.disconnectTimer) {
+    clearTimeout(player.disconnectTimer)
+    player.disconnectTimer = null
+  }
+  if (player) player.pendingDisconnect = false
+}
+
+function beginDisconnectGrace(player, socketId, onExpire) {
+  if (!player) return
+  player.previousSocketId = socketId
+  player.pendingDisconnect = true
+  if (player.disconnectTimer) clearTimeout(player.disconnectTimer)
+  player.disconnectTimer = setTimeout(() => {
+    player.disconnectTimer = null
+    if (!player.pendingDisconnect) return
+    player.pendingDisconnect = false
+    if (player.id && player.id !== socketId) return
+    onExpire()
+  }, DISCONNECT_GRACE_MS)
 }
 
 function isHostSocket(room, socketId) {
@@ -172,12 +206,17 @@ module.exports = {
   MAX_ROOMS,
   ROOM_CODE_LEN,
   allocRoomCode,
+  DISCONNECT_GRACE_MS,
   authorizeRejoin,
+  beginDisconnectGrace,
+  canTakeOverSeat,
   cardsInHand,
+  clearDisconnectGrace,
   createSocketRateLimiter,
   findConnectedPlayer,
   generateHostSecret,
   isInPlay,
+  isLive,
   generatePlayerToken,
   generateRoomCode,
   guessMatchesWord,

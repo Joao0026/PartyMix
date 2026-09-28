@@ -8,6 +8,9 @@ const {
   normalizePlayerName,
   sanitizeDeck,
   tokensEqual,
+  isInPlay,
+  isLive,
+  publicPlayers,
   ROOM_CODE_LEN,
 } = require('../lib/gameAuth')
 
@@ -44,4 +47,12 @@ test('guessMatchesWord requires an exact match', () => {
   assert.equal(guessMatchesWord('Casa', 'casa'), true)
   assert.equal(guessMatchesWord('c', 'casa'), false)
   assert.equal(guessMatchesWord('casamento', 'casa'), false)
+})
+
+test('grace-period players stay seated but are not in play', () => {
+  const away = { id: 'old', disconnected: false, pendingDisconnect: true }
+  assert.equal(isLive(away), false)
+  assert.equal(isInPlay(away), false)
+  assert.equal(isLive({ id: 'a', disconnected: false }), true)
+  assert.equal(publicPlayers([away])[0].disconnected, true)
 })

@@ -23,12 +23,15 @@ const {
   guessMatchesWord,
   isHostSocket,
   isInPlay,
+  isLive,
   normalizePlayerName,
   publicPlayers,
   roomsAtCapacity,
   sanitizeDeck,
   startRoomGc,
   touchRoom,
+  beginDisconnectGrace,
+  clearDisconnectGrace,
 } = require('./lib/gameAuth')
 
 const MAX_CARDS_PLAYERS = 12
@@ -37,6 +40,7 @@ const allowSocketEvent = createSocketRateLimiter()
 // In-memory game rooms (resets on server restart — acceptable for party game)
 const rooms = {}
 const mwRooms = {}
+const drinkTvRooms = {}
 
 function getMwRoom(code) {
   return mwRooms[String(code || '').toUpperCase()] || null
@@ -52,6 +56,8 @@ function initWebSocket(httpServer, options = {}) {
   const io = new Server(httpServer, {
     cors: { origin: corsOrigin, methods: ['GET', 'POST'] },
     maxHttpBufferSize: 2e5,
+    pingInterval: 25_000,
+    pingTimeout: 90_000,
   })
 
   io.on('connection', (socket) => {
@@ -65,6 +71,62 @@ function initWebSocket(httpServer, options = {}) {
         return next(new Error('rate_limited'))
       }
       next()
+    })
+
+    // ── MODO BEBER — COMANDO + TV READ-ONLY ─────────────────
+    socket.on('drink_tv_create', () => {
+      if (roomsAtCapacity(drinkTvRooms)) {
+        socket.emit('drink_tv_error', 'Servidor cheio')
+        return
+      }
+      const code = allocRoomCode(drinkTvRooms)
+      if (!code) {
+        socket.emit('drink_tv_error', 'Não foi possível criar o ecrã')
+        return
+      }
+      const hostToken = generatePlayerToken()
+      drinkTvRooms[code] = touchRoom({
+        code,
+        hostId: socket.id,
+        hostToken,
+        players: [{ id: socket.id, disconnected: false }],
+        state: null,
+      })
+      socket.join(`drink-tv:${code}`)
+      socket.emit('drink_tv_created', { code, hostToken })
+    })
+
+    socket.on('drink_tv_resume', ({ code, hostToken }) => {
+      const room = drinkTvRooms[String(code || '').toUpperCase()]
+      if (!room || !hostToken || room.hostToken !== String(hostToken)) {
+        socket.emit('drink_tv_error', 'Ligação TV expirada')
+        return
+      }
+      room.hostId = socket.id
+      room.players = [{ id: socket.id, disconnected: false }]
+      touchRoom(room)
+      socket.join(`drink-tv:${room.code}`)
+      socket.emit('drink_tv_created', { code: room.code, hostToken: room.hostToken })
+    })
+
+    socket.on('drink_tv_update', ({ code, hostToken, state }) => {
+      const room = drinkTvRooms[String(code || '').toUpperCase()]
+      if (!room || room.hostId !== socket.id || room.hostToken !== String(hostToken || '')) return
+      room.state = sanitizeDrinkTvState(state)
+      touchRoom(room)
+      io.to(`drink-tv:${room.code}`).emit('drink_tv_state', room.state)
+    })
+
+    socket.on('drink_tv_join', ({ code }) => {
+      const room = drinkTvRooms[String(code || '').toUpperCase()]
+      if (!room) {
+        socket.emit('drink_tv_error', 'Ecrã não encontrado')
+        return
+      }
+      touchRoom(room)
+      socket.join(`drink-tv:${room.code}`)
+      socket.emit('drink_tv_joined', { code: room.code })
+      socket.emit('drink_tv_state', room.state)
     })
 
     // ── CREATE ROOM ──────────────────────────────────────────
@@ -121,6 +183,7 @@ function initWebSocket(httpServer, options = {}) {
       const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
       if (!auth.ok) { socket.emit('error', auth.error); return }
       touchRoom(room)
+      clearDisconnectGrace(auth.player)
       auth.player.id = socket.id
       auth.player.disconnected = false
       auth.player.previousSocketId = null
@@ -384,6 +447,7 @@ function initWebSocket(httpServer, options = {}) {
       const auth = authorizeRejoin(room, { playerName, playerToken, socketId: socket.id })
       if (!auth.ok) { socket.emit('error', auth.error); return }
       touchRoom(room)
+      clearDisconnectGrace(auth.player)
       migrateMwSockets(room, auth.player.id || auth.player.previousSocketId, socket.id)
       auth.player.id = socket.id
       auth.player.disconnected = false
@@ -458,8 +522,10 @@ function initWebSocket(httpServer, options = {}) {
         room.timeLeft = room.settings.discussionSeconds
         room.gameResult = null
         room.mwGuessIdx = null
+        room.roundStartCursor = Math.floor(Math.random() * Math.max(1, roles.length))
 
-        room.players.filter((p) => p.id && !p.disconnected).forEach((p, i) => {
+        room.players.forEach((p, i) => {
+          if (!p.id || p.disconnected) return
           const role = roles[i]
           if (!role) return
           io.to(p.id).emit('mw_your_role', {
@@ -484,7 +550,7 @@ function initWebSocket(httpServer, options = {}) {
       const player = room.players.find((p) => p.id === socket.id && !p.disconnected)
       if (!player) return
       if (!room.revealReady.includes(socket.id)) room.revealReady.push(socket.id)
-      const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
+      const connectedIds = new Set(room.players.filter((p) => isLive(p)).map((p) => p.id))
       room.revealReady = room.revealReady.filter((id) => connectedIds.has(id))
       const total = connectedIds.size
       io.to(room.code).emit('mw_reveal_progress', {
@@ -528,13 +594,8 @@ function initWebSocket(httpServer, options = {}) {
       room.votes[socket.id] = target
       io.to(room.code).emit('mw_vote_update', sanitizeMw(room))
 
-      const activeCount = room.players.filter((p, i) => !p.disconnected && p.id && !room.eliminated.includes(i)).length
-      const votesCast = Object.keys(room.votes).filter((id) => {
-        const vi = room.players.findIndex((p) => p.id === id)
-        return vi >= 0 && !room.players[vi].disconnected && !room.eliminated.includes(vi)
-      }).length
-
-      if (votesCast >= activeCount) {
+      const votesNeeded = connectedMwActiveCount(room)
+      if (connectedMwVotesCast(room) >= votesNeeded && votesNeeded > 0) {
         mwResolveVotes(room, room.code, io)
       }
     })
@@ -608,47 +669,38 @@ function initWebSocket(httpServer, options = {}) {
       Object.values(rooms).forEach((room) => {
         const player = room.players.find((p) => p.id === socket.id)
         if (!player) return
-        player.disconnected = true
         player.previousSocketId = socket.id
-        player.id = null
-        promoteCardsHostIfNeeded(room)
-        const czarChanged = ensureConnectedCardsCzar(room)
-        io.to(room.code).emit('room_updated', sanitize(room))
-        io.to(room.code).emit('player_disconnected', { name: player.name })
-        if (room.status === 'playing') {
-          emitCardsRoundState(io, room, czarChanged)
-        }
+        beginDisconnectGrace(player, socket.id, () => {
+          if (!rooms[room.code]) return
+          player.disconnected = true
+          player.id = null
+          promoteCardsHostIfNeeded(room)
+          afterCardsPlayerAway(io, room)
+          io.to(room.code).emit('player_disconnected', { name: player.name })
+        })
+        afterCardsPlayerAway(io, room)
       })
       Object.values(mwRooms).forEach((room) => {
         const player = room.players.find((p) => p.id === socket.id)
         if (!player) return
-        player.disconnected = true
         player.previousSocketId = socket.id
-        player.id = null
-        const hostChanged = promoteMwHostIfNeeded(room)
-        const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
-        room.revealReady = (room.revealReady || []).filter((id) => connectedIds.has(id))
-        if (room.status === 'reveal') {
-          io.to(room.code).emit('mw_reveal_progress', {
-            ready: room.revealReady.length,
-            total: connectedIds.size,
-          })
-          if (room.revealReady.length >= connectedIds.size && connectedIds.size > 0) {
-            room.status = 'playing'
-            room.timeLeft = room.settings.discussionSeconds
-            io.to(room.code).emit('mw_phase', sanitizeMw(room))
+        beginDisconnectGrace(player, socket.id, () => {
+          if (!mwRooms[room.code]) return
+          player.disconnected = true
+          player.id = null
+          const hostChanged = promoteMwHostIfNeeded(room)
+          afterMwPlayerAway(io, room)
+          if (hostChanged && room.status !== 'waiting' && room.status !== 'vote') {
+            io.to(room.code).emit('mw_phase', sanitizeMw(room, room.status === 'result'))
           }
-        } else if (room.status === 'vote') {
-          const votesNeeded = connectedMwActiveCount(room)
-          if (connectedMwVotesCast(room) >= votesNeeded && votesNeeded > 0) {
-            mwResolveVotes(room, room.code, io)
-          }
-        }
-        const state = sanitizeMw(room, room.status === 'result')
-        io.to(room.code).emit('mw_room_updated', state)
-        if (hostChanged && room.status !== 'waiting') {
-          io.to(room.code).emit('mw_phase', state)
-        }
+        })
+        afterMwPlayerAway(io, room)
+      })
+      Object.values(drinkTvRooms).forEach((room) => {
+        if (room.hostId !== socket.id) return
+        room.hostId = null
+        room.players = []
+        touchRoom(room)
       })
       handleAldeiaDisconnect(io, socket)
       handleMemeMixDisconnect(io, socket)
@@ -657,6 +709,7 @@ function initWebSocket(httpServer, options = {}) {
 
   startRoomGc(rooms)
   startRoomGc(mwRooms)
+  startRoomGc(drinkTvRooms)
   startRoomGc(amRooms)
   startRoomGc(mmRooms, { onDestroy: (room) => { try { destroyMemeMixSession(room.code) } catch { /* ignore */ } } })
   cleanupOrphanUploads(Object.keys(mmRooms))
@@ -690,6 +743,35 @@ function finishCardsRejoin(io, room, socket, player) {
   }
 }
 
+function shortTvText(value, max = 500) {
+  return String(value || '').trim().slice(0, max)
+}
+
+function sanitizeDrinkTvState(value) {
+  const state = value && typeof value === 'object' ? value : {}
+  const card = state.card && typeof state.card === 'object' ? state.card : null
+  return {
+    turn: toNonNegativeInt(state.turn, 0),
+    reader: shortTvText(state.reader, 40),
+    phase: ['waiting', 'playing', 'results'].includes(state.phase) ? state.phase : 'playing',
+    card: card ? {
+      type: shortTvText(card.type, 30),
+      emoji: shortTvText(card.emoji, 8),
+      title: shortTvText(card.title, 100),
+      text: shortTvText(card.text, 700),
+      choices: Array.isArray(card.choices)
+        ? card.choices.map((choice) => shortTvText(choice, 180)).filter(Boolean).slice(0, 4)
+        : [],
+    } : null,
+    activeDecks: Array.isArray(state.activeDecks)
+      ? state.activeDecks.map((item) => shortTvText(item, 60)).filter(Boolean).slice(0, 30)
+      : [],
+    rules: Array.isArray(state.rules)
+      ? state.rules.map((item) => shortTvText(item, 300)).filter(Boolean).slice(0, 20)
+      : [],
+  }
+}
+
 function migrateMwSockets(room, oldId, newId) {
   if (!oldId || !newId || oldId === newId) return
   if (room.votes && room.votes[oldId] != null) {
@@ -705,12 +787,14 @@ function migrateMwSockets(room, oldId, newId) {
 function finishMwRejoin(io, room, socket, player) {
   const c = room.code
   const idx = room.players.findIndex((p) => p.name === player.name)
+  const myVote = room.votes?.[socket.id] ?? null
   socket.emit('mw_rejoined', {
     code: c,
     room: sanitizeMw(room),
     playerName: player.name,
     playerToken: player.token,
     isHost: room.host === player.name,
+    myVote,
   })
   if (room.roles && idx >= 0 && room.roles[idx]) {
     const role = room.roles[idx]
@@ -723,6 +807,9 @@ function finishMwRejoin(io, room, socket, player) {
   }
   if (room.status !== 'waiting') {
     socket.emit('mw_phase', sanitizeMw(room, room.status === 'result'))
+  }
+  if (room.status === 'mw_guess' && room.mwGuessIdx === idx) {
+    socket.emit('mw_guess_prompt', { civilWordHint: false })
   }
 }
 
@@ -772,7 +859,7 @@ function buildGameState(room, viewerName = null) {
     czarIdx:   room.czarIdx,
     czarName:  room.players[room.czarIdx]?.name,
     blackCard: room.blackCard,
-    players:   room.players.map(p=>({ name:p.name, score:p.score, disconnected: !!p.disconnected, sittingOut: !!p.sittingOut })),
+    players:   room.players.map(p=>({ name:p.name, score:p.score, disconnected: !isLive(p), sittingOut: !!p.sittingOut })),
     revealed:  !!room.revealed,
     submissions: revealedSubmissions,
     roundWinner: room.roundWinner || null,
@@ -823,6 +910,38 @@ function promoteMwHostIfNeeded(room) {
   room.host = next.name
   room.hostId = next.id
   return true
+}
+
+function afterCardsPlayerAway(io, room) {
+  const czarChanged = ensureConnectedCardsCzar(room)
+  io.to(room.code).emit('room_updated', sanitize(room))
+  if (room.status === 'playing') {
+    emitCardsRoundState(io, room, czarChanged)
+  }
+}
+
+function afterMwPlayerAway(io, room) {
+  const connectedIds = new Set(room.players.filter((p) => isLive(p)).map((p) => p.id))
+  room.revealReady = (room.revealReady || []).filter((id) => connectedIds.has(id))
+  if (room.status === 'reveal') {
+    io.to(room.code).emit('mw_reveal_progress', {
+      ready: room.revealReady.length,
+      total: connectedIds.size,
+    })
+    if (room.revealReady.length >= connectedIds.size && connectedIds.size > 0) {
+      room.status = 'playing'
+      room.timeLeft = room.settings.discussionSeconds
+      io.to(room.code).emit('mw_phase', sanitizeMw(room))
+      return
+    }
+  } else if (room.status === 'vote') {
+    const votesNeeded = connectedMwActiveCount(room)
+    if (connectedMwVotesCast(room) >= votesNeeded && votesNeeded > 0) {
+      mwResolveVotes(room, room.code, io)
+      return
+    }
+  }
+  io.to(room.code).emit('mw_room_updated', sanitizeMw(room, room.status === 'result'))
 }
 
 function emitCardsRoundState(io, room, czarChanged = false) {
@@ -912,6 +1031,15 @@ function mwEliminatePlayer(room, code, io, idx) {
   room.roundNum += 1
   room.status = 'playing'
   room.timeLeft = room.settings.discussionSeconds
+  let nextStarter = room.roundStartCursor || 0
+  for (let offset = 1; offset <= room.roles.length; offset += 1) {
+    const candidate = ((room.roundStartCursor || 0) + offset) % room.roles.length
+    if (!room.eliminated.includes(candidate)) {
+      nextStarter = candidate
+      break
+    }
+  }
+  room.roundStartCursor = nextStarter
   io.to(code).emit('mw_phase', sanitizeMw(room))
 }
 
@@ -936,14 +1064,21 @@ function sanitizeMw(room, revealAll = false) {
         eliminated: room.eliminated.includes(i),
         ...(revealAll || room.status === 'result'
           ? { role: r.role, word: r.word }
-          : {}),
+          : room.eliminated.includes(i)
+            ? { role: r.role }
+            : {}),
       }))
     : []
   const voteCounts = computeVoteCounts(room)
   const votesNeeded = connectedMwActiveCount(room)
   const votesCast = connectedMwVotesCast(room)
-  const connectedIds = new Set(room.players.filter((p) => p.id && !p.disconnected).map((p) => p.id))
+  const connectedIds = new Set(room.players.filter((p) => isLive(p)).map((p) => p.id))
   const revealReady = (room.revealReady || []).filter((id) => connectedIds.has(id)).length
+  const start = room.roundStartCursor || 0
+  const speakOrder = room.roles
+    ? Array.from({ length: room.roles.length }, (_, offset) => (start + offset) % room.roles.length)
+      .filter((i) => !room.eliminated.includes(i) && isLive(room.players[i]))
+    : []
 
   return {
     code: room.code,
@@ -965,24 +1100,26 @@ function sanitizeMw(room, revealAll = false) {
     votesCast,
     votesNeeded,
     lastEliminatedIdx: room.lastEliminatedIdx,
+    speakOrder,
   }
 }
 
 function connectedMwActiveCount(room) {
-  return room.players.filter((p, i) => p.id && !p.disconnected && !room.eliminated.includes(i)).length
+  return room.players.filter((p, i) => isLive(p) && !room.eliminated.includes(i)).length
 }
 
 function connectedMwVotesCast(room) {
   if (!room.votes) return 0
   return Object.keys(room.votes).filter((id) => {
     const idx = room.players.findIndex((p) => p.id === id)
-    return idx >= 0 && !room.players[idx].disconnected && !room.eliminated.includes(idx)
+    return idx >= 0 && isLive(room.players[idx]) && !room.eliminated.includes(idx)
   }).length
 }
 
 module.exports = {
   initWebSocket,
   _test: {
+    sanitizeDrinkTvState,
     connectedMwActiveCount,
     connectedMwVotesCast,
     cardsNonCzarInPlay,

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <title>PartyMix</title>
+  <script>
+    (function () {
+      var join = location.pathname.match(/^\/join\/([^/]+)\/([^/]+)\/?$/)
+      if (join) {
+        location.replace('/?entrar=' + encodeURIComponent(join[1]) + '&sala=' + encodeURIComponent(join[2]))
+        return
+      }
+      var drinkTv = location.pathname.match(/^\/DrinkTV\/([^/]+)\/?$/i)
+      if (drinkTv) {
+        location.replace('/?bebertv=' + encodeURIComponent(drinkTv[1].toUpperCase()))
+        return
+      }
+      location.replace('/' + location.search + location.hash)
+    })()
+  </script>
+</head>
+<body></body>
+</html>

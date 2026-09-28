@@ -9,8 +9,9 @@ export function buildJoinUrl(mode, code) {
   const key = String(mode || '').toLowerCase()
   const c = String(code || '').trim().toUpperCase()
   if (!JOIN_MODES[key] || !c) return ''
-  if (typeof window === 'undefined') return `/join/${key}/${c}`
-  return `${window.location.origin}/join/${key}/${c}`
+  const q = new URLSearchParams({ entrar: key, sala: c })
+  if (typeof window === 'undefined') return `/?${q}`
+  return `${window.location.origin}/?${q}`
 }
 
 export async function copyJoinLink(mode, code) {

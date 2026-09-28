@@ -55,7 +55,7 @@ export default function MisterWhiteOnline() {
       }
     })
 
-    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken }) => {
+    s.on('mw_rejoined', ({ room: r, playerName: pn, isHost: ih, playerToken, myVote: savedVote }) => {
       setRoom(r)
       setPlayerName(pn)
       setIsHost(ih)
@@ -63,6 +63,7 @@ export default function MisterWhiteOnline() {
       setReconnecting(false)
       setDisconnected(false)
       setRevealedReady(r.status !== 'reveal')
+      setMyVote(savedVote ?? null)
     })
     s.on('mw_your_role', (data) => setMyRole(data))
     s.on('mw_reveal_progress', ({ ready, total }) => {
@@ -76,7 +77,7 @@ export default function MisterWhiteOnline() {
       if (saved) saveMwSession({ ...saved, isHost: nowHost })
       setTimeLeft(r.timeLeft ?? r.settings?.discussionSeconds ?? 90)
       setVoteTarget(null)
-      if (r.status === 'vote') setMyVote(null)
+      if (r.status !== 'vote' || (r.votesCast ?? 0) === 0) setMyVote(null)
       if (r.status === 'playing') setRevealedReady(true)
     })
     s.on('mw_vote_update', (r) => {
@@ -178,6 +179,7 @@ export default function MisterWhiteOnline() {
     && !room.eliminated?.includes(r.origIdx)
     && !disconnectedNames.has(r.name)
   ))
+  const eliminatedRoles = (room?.rolesPublic || []).filter((r) => r.eliminated || room.eliminated?.includes(r.origIdx))
   const myOrigIdx = room?.rolesPublic?.find((r) => r.name === playerName)?.origIdx
   const amEliminated = myOrigIdx != null && room.eliminated?.includes(myOrigIdx)
   const voteCounts = room?.voteCounts || {}
@@ -284,14 +286,30 @@ export default function MisterWhiteOnline() {
                   <span className="text-xs text-slate-500">Mantém o ecrã virado só para ti</span>
                 </motion.button>
               ) : myRole && (
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                  className={`relative w-full overflow-hidden rounded-[2rem] p-7 border shadow-2xl ${myRole.role === 'civil' ? 'bg-green-900/25 border-green-500/30' : myRole.role === 'undercover' ? 'bg-blue-900/25 border-blue-500/30' : 'bg-red-900/25 border-red-500/30'}`}>
+                <motion.button
+                  type="button"
+                  onClick={() => { if (!revealedReady) setShowRole(false) }}
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className={`relative w-full overflow-hidden rounded-[2rem] p-7 border shadow-2xl ${myRole.role === 'mister_white' ? 'bg-red-900/25 border-red-500/30' : 'border-white/10 bg-[#1c1c21]'}`}
+                >
                   <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
-                  <p className="text-slate-300 text-sm">{roleLabel(myRole.role)}</p>
-                  <p className="text-white font-black text-3xl mt-2">{myRole.word || 'Sem palavra'}</p>
-                  {myRole.role === 'undercover' && <p className="text-blue-300 text-xs mt-2">Palavra parecida, mas diferente!</p>}
-                  {myRole.role === 'mister_white' && <p className="text-red-300 text-xs mt-2">Descobre a palavra civil!</p>}
-                </motion.div>
+                  {myRole.role === 'mister_white' ? (
+                    <>
+                      <p className="text-red-200 text-sm">Mister White</p>
+                      <p className="text-white font-black text-3xl mt-2">Sem palavra</p>
+                      <p className="text-red-300 text-xs mt-2">Descobre a palavra civil!</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-slate-400 text-sm">A tua palavra</p>
+                      <p className="text-white font-black text-3xl mt-2">{myRole.word}</p>
+                    </>
+                  )}
+                  {!revealedReady && (
+                    <p className="mt-3 text-xs text-white/45">Toca para virar para baixo</p>
+                  )}
+                </motion.button>
               )}
               {revealedReady && (
                 <p className="text-slate-500 text-sm animate-pulse">
@@ -304,14 +322,18 @@ export default function MisterWhiteOnline() {
           {status === 'playing' && (
             <motion.div key="playing" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="space-y-4">
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-center">
-                <p className="text-slate-300 text-sm">Cada um dá uma pista sobre a sua palavra</p>
+                <p className="text-slate-300 text-sm">Cada um dá uma pista sobre a sua palavra, por esta ordem</p>
                 <p className={`font-black text-3xl mt-2 ${timeLeft === 0 ? 'text-red-300' : 'text-white'}`}>
                   {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
                 </p>
               </div>
               <div className="space-y-2">
-                {activeRoles.map((r) => (
+                {(room.speakOrder?.length
+                  ? room.speakOrder.map((idx) => activeRoles.find((r) => r.origIdx === idx)).filter(Boolean)
+                  : activeRoles
+                ).map((r, turn) => (
                   <div key={r.origIdx} className={`bg-white/[0.04] border border-white/[0.06] rounded-xl px-4 py-3 flex items-center gap-3 ${disconnectedNames.has(r.name) ? 'opacity-40' : ''}`}>
+                    <span className="w-6 text-center text-xs font-black text-[#fbbf24]">{turn + 1}º</span>
                     <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${MW_COLORS[r.colorIdx % MW_COLORS.length]} flex items-center justify-center text-white text-sm font-black`}>
                       {r.name[0]}
                     </div>
@@ -320,6 +342,17 @@ export default function MisterWhiteOnline() {
                   </div>
                 ))}
               </div>
+              {eliminatedRoles.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-slate-600 text-xs uppercase tracking-wider">Eliminados</p>
+                  {eliminatedRoles.map((r) => (
+                    <div key={r.origIdx} className="bg-white/[0.02] rounded-xl px-4 py-2 flex items-center gap-3 opacity-70">
+                      <span className="text-slate-400 text-sm flex-1">{r.name}</span>
+                      <span className="text-xs text-slate-300">{r.role ? roleLabel(r.role) : ''}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!isHost && <p className="text-center text-sm text-white/45">O host inicia a votação quando estiverem prontos</p>}
             </motion.div>
           )}
@@ -422,9 +455,9 @@ export default function MisterWhiteOnline() {
               </h2>
               <div className="bg-white/[0.04] border border-white/[0.07] rounded-2xl p-4 text-left text-sm space-y-1">
                 <p className="text-slate-400 mb-2">
-                  Civil: <span className="text-green-400 font-bold">{room.civilWord}</span>
+                  Palavra civil: <span className="text-green-400 font-bold">{room.civilWord}</span>
                   {' · '}
-                  Undercover: <span className="text-blue-400 font-bold">{room.undercoverWord}</span>
+                  Palavra infiltrada: <span className="text-blue-400 font-bold">{room.undercoverWord}</span>
                 </p>
                 {(room.rolesPublic || []).map((r) => (
                   <div key={r.origIdx} className="flex items-center gap-2 py-1 border-b border-white/[0.05] last:border-0">
