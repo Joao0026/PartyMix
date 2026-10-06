@@ -87,3 +87,6 @@ uploads/
 # Python / rascunhos locais
 scripts/__pycache__/
 data/_pdf_extract.txt
+
+# Mockups / rascunhos de layout (não fazem parte da app)
+layout-ideas/
