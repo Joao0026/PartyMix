@@ -34,7 +34,7 @@ export default function GameShell({
       <main className={mainClassName}>{children}</main>
 
       {footer && (
-        <footer className={`relative z-10 shrink-0 px-4 pt-2 pb-safe ${night ? '' : 'border-t border-white/[0.08] bg-black/40 backdrop-blur-md'}`}>
+        <footer className={`relative z-10 shrink-0 px-4 pt-2 pb-4 ${night ? '' : 'border-t border-white/[0.08] bg-black/40 backdrop-blur-md'}`}>
           <div className="mx-auto max-w-lg">{footer}</div>
         </footer>
       )}

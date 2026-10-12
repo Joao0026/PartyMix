@@ -53,7 +53,7 @@ export default function ConnectionStatus() {
   if (socketStatus === 'reconnecting') {
     return (
       <StatusBanner tone="amber" icon={<Wifi className="w-4 h-4" />}>
-        A ligar ao servidor...
+        A ligar ao servidor. Se estiver a acordar, pode demorar meio minuto.
       </StatusBanner>
     )
   }
@@ -61,7 +61,7 @@ export default function ConnectionStatus() {
   if (socketStatus === 'disconnected') {
     return (
       <StatusBanner tone="red" icon={<WifiOff className="w-4 h-4" />}>
-        Ligação ao jogo perdida. Se o servidor reiniciou, a sala acabou — volta ao lobby e cria outra.
+        Ligação ao jogo perdida. A sala tenta voltar se o servidor reiniciar. Se não voltar, cria outra.
       </StatusBanner>
     )
   }

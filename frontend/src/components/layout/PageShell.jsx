@@ -19,7 +19,7 @@ export default function PageShell({
 }) {
   const night = mode === 'mememix'
   return (
-    <div className={`min-h-screen flex flex-col items-center px-4 py-8 relative ${night ? 'bg-black overflow-x-hidden' : 'bg-[#080b14]'} ${className}`} style={style}>
+    <div className={`min-h-screen flex flex-col items-center overflow-y-auto px-4 py-8 relative ${night ? 'bg-black overflow-x-hidden' : 'bg-[#080b14]'} ${className}`} style={style}>
       {night ? (
         <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
           <NightBlobs />

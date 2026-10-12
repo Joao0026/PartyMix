@@ -322,7 +322,7 @@ export default function Home() {
       <LegalLinks />
 
       {editOpen && (
-        <div className="fixed inset-0 z-50 h-[var(--app-vh,100dvh)] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex h-[var(--app-vh,100dvh)] flex-col overflow-hidden bg-black">
           <MesaNoite
             names={draftNames}
             genders={draftGenders}

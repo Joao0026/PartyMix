@@ -12,7 +12,8 @@ export default function Privacy() {
       <h2 className="text-white font-bold pt-2">O que recolhemos</h2>
       <ul className="list-disc pl-5 space-y-1">
         <li>Nomes de jogadores que tu escreves, só para a sessão de jogo.</li>
-        <li>Fotos no MemeMix: ficam no servidor da sala e são apagadas quando a sala acaba ou após no máximo 6 horas.</li>
+        <li>Fotos no MemeMix: ficam no disco do servidor da sala. São apagadas quando a sala acaba ou após 6 horas, e podem perder-se mais cedo se o servidor reiniciar.</li>
+        <li>Um registo anónimo de que uma sessão de Beber acabou (número de turnos e de jogadores, sem nomes) e mensagens curtas de erro técnico, durante 30 dias.</li>
         <li>Cookie HttpOnly <code>pm_vid</code>: identificador anónimo de voto na comunidade.</li>
         <li>Cookie HttpOnly <code>pm_age</code>: a tua declaração de idade (18+ ou menor), para isolar conteúdo adulto.</li>
         <li>Logs técnicos do alojamento (IP, data) para segurança e limites de utilização.</li>
@@ -23,10 +24,10 @@ export default function Privacy() {
       <h2 className="text-white font-bold pt-2">O que não fazemos</h2>
       <p>Não vendemos dados. Não criamos contas obrigatórias. Não usamos a app para publicidade comportamental de terceiros.</p>
       <h2 className="text-white font-bold pt-2">Conservação</h2>
-      <p>Salas online existem só na memória do servidor: um reinício apaga o jogo. Submissões da comunidade ficam na base MongoDB até um admin as apagar. Imagens MemeMix: até 6 horas.</p>
+      <p>Salas online são gravadas durante a partida e recuperadas se o servidor reiniciar, até 4 horas. Fotos do MemeMix ficam no disco do servidor e podem desaparecer nesse reinício. Submissões da comunidade ficam na base MongoDB até um admin as apagar.</p>
       <h2 className="text-white font-bold pt-2">Os teus direitos (UE)</h2>
       <p>Podes pedir acesso ou apagamento dos dados que controlamos (submissões com o teu nome de autor, fotos da sala). Conteúdo gerado em grupo pode ter de ser anonimizado em vez de apagado se outros jogadores ainda dependerem dele.</p>
-      <p className="text-slate-500 text-xs">Última actualização: Setembro 2026.</p>
+      <p className="text-slate-500 text-xs">Última actualização: Outubro 2026.</p>
     </PageShell>
   )
 }

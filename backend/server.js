@@ -8,6 +8,8 @@ require('dotenv').config()
 const { expressCorsOptions, socketIoCorsOrigin, parseList } = require('./lib/corsOrigins')
 const { aiLimiter, aiDailyLimiter, communityWriteLimiter, lobbyWriteLimiter } = require('./middleware/rateLimits')
 const { weakSecret } = require('./lib/gameAuth')
+const { currentEpoch } = require('./lib/runtime')
+const { restoreSnapshots, saveSnapshots, startRoomAutosave } = require('./lib/roomPersistence')
 const { blockMinors } = require('./lib/ageCookie')
 
 const isProd = process.env.NODE_ENV === 'production'
@@ -44,7 +46,11 @@ if (helmet) {
 }
 
 app.use(cors(expressCorsOptions()))
-app.use(express.json({ limit: '1mb' }))
+const json1mb = express.json({ limit: '1mb' })
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/mememix')) return next()
+  return json1mb(req, res, next)
+})
 
 app.use('/api/age', require('./routes/age'))
 app.use('/api/admin', require('./routes/admin'))
@@ -59,26 +65,61 @@ app.use('/api/ai', blockMinors, aiDailyLimiter, aiLimiter, require('./routes/ai'
 app.use('/api/community', communityWriteLimiter, require('./routes/community'))
 app.use('/api/mememix', blockMinors, require('./routes/mememix'))
 app.use('/api/mister', blockMinors, require('./routes/mister'))
+app.use('/api/observe', require('./routes/observe'))
 
-app.get('/api/health', (req, res) => {
-  if (isProd) return res.json({ status: 'ok' })
-  res.json({
+app.get('/api/health', async (req, res) => {
+  const maps = getRoomMaps()
+  const body = {
     status: 'ok',
-    db:   mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    groq: !!process.env.GROQ_API_KEY,
-    ws:   true,
-  })
+    uptimeSec: Math.round(process.uptime()),
+    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    rooms: Object.values(maps).reduce((n, bucket) => n + Object.keys(bucket || {}).length, 0),
+  }
+  if (!isProd) {
+    body.groq = !!process.env.GROQ_API_KEY
+    body.ws = true
+    body.epoch = currentEpoch()
+  }
+  try {
+    const ObserveEvent = require('./models/ObserveEvent')
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    body.drinkEnds7d = await ObserveEvent.countDocuments({ type: 'drink_end', at: { $gte: since } })
+  } catch {
+    body.drinkEnds7d = null
+  }
+  res.json(body)
 })
 
-const { initWebSocket } = require('./websocket')
-initWebSocket(server, { corsOrigin: socketIoCorsOrigin() })
+const { initWebSocket, getRoomMaps, markRoomsDurable } = require('./websocket')
+
+let shuttingDown = false
+function shutdown() {
+  if (shuttingDown) return
+  shuttingDown = true
+  saveSnapshots(getRoomMaps())
+    .catch(() => {})
+    .finally(() => {
+      server.close(() => process.exit(0))
+      setTimeout(() => process.exit(0), 4000).unref()
+    })
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)
 
 const PORT      = process.env.PORT || 3001
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/partymix'
 
 mongoose.connect(MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB connected')
+    const restored = await restoreSnapshots(getRoomMaps()).catch((err) => {
+      console.error('Falha ao restaurar salas:', err?.message || err)
+      return { restored: 0 }
+    })
+    if (restored.restored) console.log(`Salas restauradas: ${restored.restored}`)
+    markRoomsDurable(true)
+    initWebSocket(server, { corsOrigin: socketIoCorsOrigin() })
+    startRoomAutosave(getRoomMaps)
     server.listen(PORT, () => console.log(`🚀 Server + WebSocket on http://localhost:${PORT}`))
   })
   .catch(err => { console.error('❌ MongoDB error:', err); process.exit(1) })

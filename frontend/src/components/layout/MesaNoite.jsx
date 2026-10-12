@@ -62,12 +62,12 @@ export default function MesaNoite({
   }
 
   return (
-    <div className="relative flex h-[var(--app-vh,100dvh)] min-h-0 flex-col overflow-hidden bg-black">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-black">
       <div className="pointer-events-none absolute -left-24 top-[28%] h-[22rem] w-[22rem] rounded-full bg-[#ff9a3c]/55 blur-[90px] [transform:translateZ(0)]" />
       <div className="pointer-events-none absolute -right-20 top-[30%] h-[24rem] w-[24rem] rounded-full bg-[#ff2d9b]/50 blur-[90px] [transform:translateZ(0)]" />
 
       {onBack && (
-        <div className="absolute left-2 top-2 z-20">
+        <div className="absolute left-3 top-3 z-20">
           <BackButton onClick={onBack} />
         </div>
       )}
@@ -165,7 +165,7 @@ export default function MesaNoite({
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-[22rem] shrink-0 px-6 pt-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+        <div className="mx-auto w-full max-w-[22rem] shrink-0 px-6 pt-3 pb-4">
           <button
             type="button"
             onClick={confirm}

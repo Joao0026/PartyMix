@@ -2,29 +2,40 @@ const router = require('express').Router()
 const DrinkPack = require('../models/DrinkPack')
 const { asyncRoute, cleanString } = require('../lib/validate')
 
-router.get('/packs', asyncRoute(async (req, res) => {
-  await DrinkPack.updateOne(
-    { pack: 'community' },
-    {
-      $setOnInsert: {
-        pack: 'community',
-        name: 'Comunidade',
-        description: 'Cartas criadas pela comunidade e aprovadas pela equipa PartyMix.',
-        premium: false,
-        intensity: 'variada',
-        ageRating: '18+',
-        decks: {
-          comunidade: {
-            label: '🌍 Comunidade',
-            desc: 'Cartas aprovadas pela comunidade',
-            premium: false,
-            cards: [],
-          },
-        },
-      },
+const COMMUNITY_PACK = {
+  pack: 'community',
+  name: 'Comunidade',
+  description: 'Cartas criadas pela comunidade e aprovadas pela equipa PartyMix.',
+  premium: false,
+  intensity: 'variada',
+  ageRating: '18+',
+  decks: {
+    comunidade: {
+      label: '🌍 Comunidade',
+      desc: 'Cartas aprovadas pela comunidade',
+      premium: false,
+      cards: [],
     },
-    { upsert: true }
-  )
+  },
+}
+
+let communityPackReady = false
+
+async function ensureCommunityPack() {
+  if (communityPackReady) return
+  const exists = await DrinkPack.exists({ pack: 'community' })
+  if (!exists) {
+    try {
+      await DrinkPack.create(COMMUNITY_PACK)
+    } catch (err) {
+      if (err?.code !== 11000) throw err
+    }
+  }
+  communityPackReady = true
+}
+
+router.get('/packs', asyncRoute(async (req, res) => {
+  await ensureCommunityPack()
   const rows = await DrinkPack.find({}, {
     pack: 1,
     name: 1,

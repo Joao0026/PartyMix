@@ -73,7 +73,7 @@ function bindSocketStatus(socket) {
     socket.emit('client_ready')
   }
   const onDisconnect = () => setSocketStatus('disconnected')
-  const onConnectError = () => setSocketStatus('disconnected')
+  const onConnectError = () => setSocketStatus(socket.active ? 'reconnecting' : 'disconnected')
   const onReconnectAttempt = () => setSocketStatus('reconnecting')
   const onReconnect = () => setSocketStatus('connected')
 

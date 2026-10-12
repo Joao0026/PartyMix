@@ -49,6 +49,22 @@ export function getCommunityVoterId() {
   return id
 }
 
+function fetchWithTimeout(url, options = {}, timeout = 45000) {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), timeout)
+  return fetch(url, { ...options, signal: ctrl.signal }).finally(() => clearTimeout(timer))
+}
+
+function networkError(error) {
+  if (error?.name === 'AbortError') {
+    return new Error('O servidor está a acordar. A primeira ligação pode demorar meio minuto.')
+  }
+  const m = error?.message || 'Erro de rede'
+  if (m === 'Failed to fetch' || m.includes('NetworkError')) {
+    return new Error('Sem ligação ao servidor. Confirma que o backend está online.')
+  }
+  return error instanceof Error ? error : new Error(m)
+}
 function ageHeaders() {
   return loadAgeGate() === 'under' ? { 'X-PartyMix-Age': 'under' } : {}
 }
@@ -59,19 +75,11 @@ const authHeaders = () => {
 }
 
 const get = (url, opts = {}) =>
-  fetch(`${BASE}${url}`, {
+  fetchWithTimeout(`${BASE}${url}`, {
     credentials: 'include',
     headers: { ...ageHeaders(), ...(opts.auth ? authHeaders() : {}) },
-  })
-    .catch((e) => {
-      const m = e?.message || 'Erro de rede'
-      if (m === 'Failed to fetch' || m.includes('NetworkError')) {
-        throw new Error(
-          'Sem ligação ao servidor. Confirma VITE_API_BASE_URL e que o backend está online.'
-        )
-      }
-      throw e
-    })
+  }, opts.timeout)
+    .catch((e) => { throw networkError(e) })
     .then(async (r) => {
       const text = await r.text()
       let data
@@ -102,23 +110,17 @@ const get = (url, opts = {}) =>
       return data
     })
 
-const post = async (url, body) => {
+const post = async (url, body, opts = {}) => {
   let r
   try {
-    r = await fetch(`${BASE}${url}`, {
+    r = await fetchWithTimeout(`${BASE}${url}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...ageHeaders(), ...authHeaders() },
       credentials: 'include',
       body: JSON.stringify(body),
-    })
+    }, opts.timeout)
   } catch (e) {
-    const m = e?.message || 'Erro de rede'
-    if (m === 'Failed to fetch' || m.includes('NetworkError')) {
-      throw new Error(
-        'Sem ligação ao servidor (rede/CORS/URL). Confirma VITE_API_BASE_URL no Netlify e que o backend Render está acordado.'
-      )
-    }
-    throw new Error(m)
+    throw networkError(e)
   }
   const text = await r.text()
   let data = {}
@@ -134,22 +136,16 @@ const post = async (url, body) => {
   return data
 }
 
-const del = async (url) => {
+const del = async (url, opts = {}) => {
   let r
   try {
-    r = await fetch(`${BASE}${url}`, {
+    r = await fetchWithTimeout(`${BASE}${url}`, {
       method: 'DELETE',
       headers: { ...ageHeaders(), ...authHeaders() },
       credentials: 'include',
-    })
+    }, opts.timeout)
   } catch (e) {
-    const m = e?.message || 'Erro de rede'
-    if (m === 'Failed to fetch' || m.includes('NetworkError')) {
-      throw new Error(
-        'Sem ligação ao servidor (rede/CORS/URL). Confirma VITE_API_BASE_URL no Netlify e que o backend Render está acordado.'
-      )
-    }
-    throw new Error(m)
+    throw networkError(e)
   }
   const text = await r.text()
   let data = {}
@@ -188,7 +184,8 @@ export const api = {
 
   adminLogout:        () => post('/admin/logout', {}),
   getHealth:          () => get('/health'),
-  setAgeGate:         (age) => post('/age', { age }),
+  observe:            (payload) => post('/observe', payload, { timeout: 8000 }).catch(() => null),
+  setAgeGate:         (age) => post('/age', { age }, { timeout: 8000 }),
   clearAgeGate:       () => del('/age'),
   getDrinkDecks:      (pack = 'base') => get(`/drink/decks?pack=${encodeURIComponent(pack)}`),
   getDrinkPacks:      () => get('/drink/packs'),

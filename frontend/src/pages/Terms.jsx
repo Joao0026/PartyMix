@@ -16,10 +16,10 @@ export default function Terms() {
       <h2 className="text-white font-bold pt-2">Conteúdo da comunidade e IA</h2>
       <p>Cartas submetidas só entram no jogo depois de um admin aprovar. A IA pode gerar texto inadequado; usa o modo família se houver crianças. Não submetas dados de terceiros sem consentimento, nem conteúdo ilegal.</p>
       <h2 className="text-white font-bold pt-2">Salas online</h2>
-      <p>O servidor pode reiniciar. Jogos em curso podem desaparecer sem aviso. Isto não é um serviço com SLA.</p>
+      <p>O servidor pode reiniciar. A sala tenta voltar durante 4 horas. Fotos do MemeMix podem perder-se. Isto não é um serviço com SLA.</p>
       <h2 className="text-white font-bold pt-2">Packs «em breve»</h2>
       <p>Alguns packs aparecem bloqueados. Não há compras dentro da app nesta versão. Não são um produto pago activo.</p>
-      <p className="text-slate-500 text-xs">Última actualização: Setembro 2026. Lei aplicável: Portugal / UE.</p>
+      <p className="text-slate-500 text-xs">Última actualização: Outubro 2026. Lei aplicável: Portugal / UE.</p>
     </PageShell>
   )
 }

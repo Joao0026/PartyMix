@@ -54,6 +54,14 @@ const adminLoginLimiter = rateLimit({
   message: { error: 'Demasiadas tentativas de login. Espera 15 minutos.' },
 })
 
+const observeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados registos. Tenta daqui a um minuto.' },
+})
+
 const lobbyWriteLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 15,
@@ -69,5 +77,6 @@ module.exports = {
   communityVoteLimiter,
   adminLoginLimiter,
   lobbyWriteLimiter,
+  observeLimiter,
   AI_DAILY_MAX,
 }

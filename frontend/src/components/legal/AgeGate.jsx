@@ -7,18 +7,32 @@ export default function AgeGate({ children }) {
   const location = useLocation()
   const [choice, setChoice] = useState(() => loadAgeGate())
   const [busy, setBusy] = useState(false)
+  const [slow, setSlow] = useState(false)
 
   const legal = location.pathname === '/privacy' || location.pathname === '/terms'
   if (legal) return children
 
   const confirm = async (value) => {
     setBusy(true)
+    setSlow(false)
     saveAgeGate(value)
+    let settled = false
+    const finish = () => {
+      if (settled) return
+      settled = true
+      setChoice(value)
+      setBusy(false)
+      setSlow(false)
+    }
+    const slowTimer = setTimeout(() => {
+      setSlow(true)
+      finish()
+    }, 1200)
     try {
       await api.setAgeGate(value)
-    } catch { /* cookie opcional se o backend estiver em baixo; o header X-PartyMix-Age ainda restringe */ }
-    setChoice(value)
-    setBusy(false)
+    } catch { /* a idade fica no aparelho */ }
+    clearTimeout(slowTimer)
+    finish()
   }
 
   if (!choice) {
@@ -28,8 +42,7 @@ export default function AgeGate({ children }) {
           <p className="text-3xl text-center">🎉</p>
           <h1 className="text-white text-2xl font-black text-center">Tens 18 anos ou mais?</h1>
           <p className="text-slate-400 text-sm leading-relaxed text-center">
-            O PartyMix inclui jogos com álcool e conteúdo sexual para adultos.
-            A Play Store e a lei portuguesa exigem confirmação de idade.
+            O PartyMix inclui jogos com álcool e conteúdo para adultos.
             Se tiveres menos de 18 anos, só o Modo Família fica disponível.
           </p>
           <button
@@ -48,6 +61,11 @@ export default function AgeGate({ children }) {
           >
             Não, sou menor de 18
           </button>
+          {slow && (
+            <p className="text-amber-200 text-sm text-center">
+            A acordar o servidor. A entrar na festa.
+            </p>
+          )}
           <p className="text-slate-400 text-xs text-center">
             Declaração própria. Não verificamos documentos. Mentir sobre a idade viola os termos.
           </p>

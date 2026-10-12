@@ -42,6 +42,12 @@ function tokensEqual(a, b) {
   return crypto.timingSafeEqual(x, y)
 }
 
+function secretEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(String(a), 'utf8').digest()
+  const hb = crypto.createHash('sha256').update(String(b), 'utf8').digest()
+  return crypto.timingSafeEqual(ha, hb)
+}
+
 function normalizePlayerName(name) {
   return String(name || '')
     .replace(/<[^>]*>/g, '')
@@ -226,6 +232,7 @@ module.exports = {
   roomsAtCapacity,
   sanitizeDeck,
   startRoomGc,
+  secretEqual,
   tokensEqual,
   touchRoom,
   weakSecret,

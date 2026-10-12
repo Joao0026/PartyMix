@@ -11,7 +11,7 @@ const { sanitizeWordPacks, sanitizeDifficulties, DIFFICULTY_IDS } = require('./l
 const { registerAldeiaMixHandlers, handleAldeiaDisconnect, amRooms } = require('./lib/aldeiaMixSocket')
 const { registerMemeMixHandlers, handleMemeMixDisconnect } = require('./lib/mememixSocket')
 const { cleanupOrphanUploads, destroyMemeMixSession, cleanupStaleUploads } = require('./lib/mememixSessions')
-const { startedAt } = require('./lib/runtime')
+const { currentEpoch } = require('./lib/runtime')
 const { mmRooms } = require('./lib/mememixSocket')
 const {
   allocRoomCode,
@@ -29,6 +29,7 @@ const {
   roomsAtCapacity,
   sanitizeDeck,
   startRoomGc,
+  tokensEqual,
   touchRoom,
   beginDisconnectGrace,
   clearDisconnectGrace,
@@ -37,10 +38,29 @@ const {
 const MAX_CARDS_PLAYERS = 12
 const allowSocketEvent = createSocketRateLimiter()
 
-// In-memory game rooms (resets on server restart — acceptable for party game)
+// Salas em memória, gravadas no Mongo a cada 20s para sobreviverem a um restart.
 const rooms = {}
 const mwRooms = {}
 const drinkTvRooms = {}
+let roomsDurable = false
+
+function markRoomsDurable(value) {
+  roomsDurable = Boolean(value)
+}
+
+function helloPayload() {
+  return { startedAt: currentEpoch(), roomsEphemeral: !roomsDurable }
+}
+
+function getRoomMaps() {
+  return {
+    cards: rooms,
+    mister: mwRooms,
+    drinkTv: drinkTvRooms,
+    aldeia: amRooms,
+    mememix: mmRooms,
+  }
+}
 
 function getMwRoom(code) {
   return mwRooms[String(code || '').toUpperCase()] || null
@@ -61,9 +81,9 @@ function initWebSocket(httpServer, options = {}) {
   })
 
   io.on('connection', (socket) => {
-    socket.emit('server_hello', { startedAt, roomsEphemeral: true })
+    socket.emit('server_hello', helloPayload())
     socket.on('client_ready', () => {
-      socket.emit('server_hello', { startedAt, roomsEphemeral: true })
+      socket.emit('server_hello', helloPayload())
     })
     socket.use((_packet, next) => {
       if (!allowSocketEvent(socket.id)) {
@@ -98,7 +118,7 @@ function initWebSocket(httpServer, options = {}) {
 
     socket.on('drink_tv_resume', ({ code, hostToken }) => {
       const room = drinkTvRooms[String(code || '').toUpperCase()]
-      if (!room || !hostToken || room.hostToken !== String(hostToken)) {
+      if (!room || !tokensEqual(room.hostToken, hostToken)) {
         socket.emit('drink_tv_error', 'Ligação TV expirada')
         return
       }
@@ -111,7 +131,7 @@ function initWebSocket(httpServer, options = {}) {
 
     socket.on('drink_tv_update', ({ code, hostToken, state }) => {
       const room = drinkTvRooms[String(code || '').toUpperCase()]
-      if (!room || room.hostId !== socket.id || room.hostToken !== String(hostToken || '')) return
+      if (!room || room.hostId !== socket.id || !tokensEqual(room.hostToken, hostToken)) return
       room.state = sanitizeDrinkTvState(state)
       touchRoom(room)
       io.to(`drink-tv:${room.code}`).emit('drink_tv_state', room.state)
@@ -1118,6 +1138,8 @@ function connectedMwVotesCast(room) {
 
 module.exports = {
   initWebSocket,
+  getRoomMaps,
+  markRoomsDurable,
   _test: {
     sanitizeDrinkTvState,
     connectedMwActiveCount,

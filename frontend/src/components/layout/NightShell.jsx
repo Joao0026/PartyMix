@@ -263,11 +263,11 @@ export function NightChoice({ selected, accent, onClick, title, desc, icon }) {
 
 export default function NightShell({ onBack, children, footer, wide = false, phase }) {
   return (
-    <div className={`relative flex h-[var(--app-vh,100dvh)] min-h-0 flex-col overflow-hidden ${phase === 'day' ? 'bg-[#1a140c]' : 'bg-black'}`}>
+    <div className={`relative flex h-full min-h-0 flex-1 flex-col overflow-hidden ${phase === 'day' ? 'bg-[#1a140c]' : 'bg-black'}`}>
       <NightBlobs phase={phase} />
 
       {onBack && (
-        <div className="absolute left-2 top-2 z-20">
+        <div className="absolute left-3 top-3 z-20">
           <BackButton onClick={onBack} />
         </div>
       )}
@@ -277,7 +277,7 @@ export default function NightShell({ onBack, children, footer, wide = false, pha
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 pt-3 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+          <div className="shrink-0 px-1 pt-3 pb-4">
             {footer}
           </div>
         )}

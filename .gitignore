@@ -35,8 +35,11 @@ pids
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
+# Test output
 coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
 
 # nyc test coverage
 .nyc_output

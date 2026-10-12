@@ -10,6 +10,7 @@ const { importPackObject, listPackNames, exportPackObject } = require('../lib/pa
 const { listDrinkAssignState, assignDrinkCard } = require('../lib/drinkPackAssign')
 const { auditContent, auditSubmissionWarnings } = require('../lib/contentAudit')
 const { asyncRoute, cleanString, mongoId, oneOf } = require('../lib/validate')
+const { secretEqual } = require('../lib/gameAuth')
 
 router.post('/login', adminLoginLimiter, (req, res) => {
   const adminPassword = process.env.ADMIN_PASSWORD
@@ -22,7 +23,7 @@ router.post('/login', adminLoginLimiter, (req, res) => {
   }
 
   const password = typeof req.body?.password === 'string' ? req.body.password : ''
-  if (password !== adminPassword) {
+  if (!secretEqual(password, adminPassword)) {
     return res.status(401).json({ error: 'Invalid password' })
   }
 

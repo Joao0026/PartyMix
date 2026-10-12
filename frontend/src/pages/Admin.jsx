@@ -647,11 +647,9 @@ export default function Admin() {
           <h1 className="text-white font-bold text-xl">Admin</h1>
           {health && (
             <p className={`text-[11px] ${health.status === 'ok' ? 'text-emerald-400' : 'text-red-400'}`}>
-              {health.db === 'connected'
-                ? 'Base de dados ligada'
-                : health.status === 'ok'
-                  ? 'Servidor ok'
-                  : 'Servidor offline'}
+              {health.db === 'connected' ? 'Base de dados ligada' : health.status === 'ok' ? 'Servidor ok' : 'Servidor offline'}
+              {health.rooms != null ? ` · ${health.rooms} salas` : ''}
+              {health.drinkEnds7d != null ? ` · ${health.drinkEnds7d} fins de Beber (7 dias)` : ''}
             </p>
           )}
         </div>

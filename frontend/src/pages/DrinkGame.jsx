@@ -321,6 +321,7 @@ function CardDeck({
   onRouletteResult,
   onRequestHouse,
   onDisplayChange,
+  onFinished,
 }) {
   const sessionDeck = useMemo(() => [...activeDeck], [activeDeck])
   const [deck, setDeck] = useState(() => shuffle([...sessionDeck]))
@@ -937,6 +938,13 @@ function CardDeck({
           >
             <RotateCcw className="w-4 h-4" /> Baralhar de novo
           </button>
+          <button
+            type="button"
+            onClick={() => onFinished?.()}
+            className="w-full rounded-2xl bg-amber-400 py-3 font-black text-black"
+          >
+            Ver o fim da noite
+          </button>
         </div>
       )}
     </div>
@@ -981,6 +989,7 @@ export default function DrinkGame(){
     ageRating: '18+',
   }])
   const [decksLoading, setDecksLoading] = useState(true)
+  const [packsSlow, setPacksSlow] = useState(false)
   const [midGameName, setMidGameName] = useState('')
   const [midGameGender, setMidGameGender] = useState('m')
   const [departedPlayers, setDepartedPlayers] = useState([])
@@ -1013,6 +1022,21 @@ export default function DrinkGame(){
   useEffect(() => {
     tvSessionRef.current = tvSession
   }, [tvSession])
+
+  useEffect(() => {
+    if (phase !== 'results') return undefined
+    api.observe({ type: 'drink_end', turns: turnCount, players: players.length })
+    return undefined
+  }, [phase])
+
+  useEffect(() => {
+    if (!decksLoading) {
+      setPacksSlow(false)
+      return undefined
+    }
+    const timer = setTimeout(() => setPacksSlow(true), 1500)
+    return () => clearTimeout(timer)
+  }, [decksLoading])
 
   useEffect(() => () => {
     tvSocketRef.current?.disconnect()
@@ -1659,7 +1683,11 @@ export default function DrinkGame(){
             )
           })}
         </div>
-        {decksLoading && <p className="mt-3 text-center text-xs text-[#ff5c8d]">A preparar os packs…</p>}
+        {decksLoading && (
+          <p className="mt-3 text-center text-xs text-[#ff5c8d]">
+            {packsSlow ? 'A acordar o servidor. A primeira vez pode demorar meio minuto.' : 'A preparar os packs…'}
+          </p>
+        )}
       </NightShell>
     )
   }
@@ -1708,8 +1736,8 @@ export default function DrinkGame(){
         </div>
       }
     >
-      <div className="px-4 py-4 max-w-lg mx-auto w-full space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+      <div className="px-4 py-4 max-w-lg mx-auto flex w-full flex-col gap-3">
+        <div className="order-3 grid grid-cols-3 gap-2">
           <button
             type="button"
             onClick={() => setShowAdjustPanel((open) => !open)}
@@ -1736,7 +1764,7 @@ export default function DrinkGame(){
         </div>
 
         {showAdjustPanel && (
-          <div className="rounded-2xl border border-[#ff5c8d]/25 bg-[#1c1c21] p-3">
+          <div className="order-4 rounded-2xl border border-[#ff5c8d]/25 bg-[#1c1c21] p-3">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-[#ff9cba]">Packs e baralhos ativos</p>
             <p className="mt-1 text-xs text-white/45">Cada pack mostra os seus baralhos. A carta atual não muda e o jogo nunca fica vazio.</p>
             <div className="mt-3 space-y-4">
@@ -1780,7 +1808,7 @@ export default function DrinkGame(){
         )}
 
         {Object.entries(playerShields).some(([, count]) => count > 0) && (
-          <div className="flex flex-wrap gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3">
+          <div className="order-4 flex flex-wrap gap-2 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3">
             {Object.entries(playerShields).filter(([, count]) => count > 0).map(([name, count]) => (
               <span key={name} className="text-xs font-bold text-emerald-200">🛡️ {name}{count > 1 ? ` ×${count}` : ''}</span>
             ))}
@@ -1788,7 +1816,7 @@ export default function DrinkGame(){
         )}
 
         {(visibleRules.length > 0 || activeCurses.length > 0 || activeAllianceList.length > 0) && (
-          <div className="surface p-3 space-y-2">
+          <div className="surface order-2 p-3 space-y-2">
             {visibleRules.length > 0 && (
               <div className="space-y-2">
                 <p className="text-violet-300 text-xs font-black uppercase tracking-[0.12em]">Regras ativas</p>
@@ -1874,21 +1902,26 @@ export default function DrinkGame(){
         )}
 
         {showPlayersPanel && (
+          <div className="order-5">
           <PlayerRosterPanel
             {...rosterPanelProps}
             showDrinkStats={false}
             title="Jogadores na mesa"
           />
+          </div>
         )}
 
         {showMesaPanel && (
+          <div className="order-5">
           <PlayerRosterPanel
             {...rosterPanelProps}
             showDrinkStats
             title="Contador (goles)"
           />
+          </div>
         )}
 
+        <div className="order-1">
         <CardDeck
           key={deckSessionId}
           activeDeck={activeDeck}
@@ -1906,7 +1939,9 @@ export default function DrinkGame(){
           onRouletteResult={handleRouletteResult}
           onRequestHouse={() => setHouseOpen(true)}
           onDisplayChange={setCardDisplay}
+          onFinished={() => setPhase('results')}
         />
+        </div>
       </div>
 
       {houseOpen && (
