@@ -1,51 +1,47 @@
 # PartyMix — Technical hardening roadmap
 
 **Review date:** 2026-11-06  
-**Scope:** static review of repository source. This document is a prioritised engineering plan, not a penetration test or a production certification.
+**Scope:** selective static source review plus the repository's existing GitHub Actions CI run. This is not a penetration test or production certification.
 
 ## What was reviewed
 
 The review inspected the Express server setup, REST route registration, age-state handling, rate-limit middleware, Socket.IO initialisation, frontend API configuration, PWA configuration, package scripts and the existing test layout.
 
-The deployed site could not be loaded by the available browser inspection, and the repository was not checked out in an executable environment. Therefore no claim is made that the live app, automated tests or production build were successfully run.
+The deployed site could not be reliably inspected with the available browser tooling. Production behaviour, deployment environment variables and real-device behaviour therefore remain unverified.
+
+## Existing automated checks
+
+The repository already has a GitHub Actions workflow at `.github/workflows/ci.yml`. It installs the root, backend and frontend dependencies with lockfiles, runs backend syntax checks and tests, builds the frontend, installs Chromium and runs Playwright browser tests.
+
+**Observed result for this pull request:** workflow run **42246657275** completed successfully. All listed steps passed, including backend checks/tests, frontend build and Playwright browser tests. This validates the current CI run; it does not prove production configuration or live hosting is correct.
 
 ## Prioritised work
 
-### P0 — Establish a reliable release baseline
+### P0 — Production verification
 
-- Run the backend syntax check and unit-test suite in CI.
-- Run the frontend production build in CI.
-- Make CI required for pull requests to the default branch.
-- Record Node.js versions and use lockfile-based installs for reproducible builds.
-- Add a short release checklist covering environment variables, API reachability, database connectivity and PWA installation.
+- Confirm the deployed frontend has the correct `VITE_API_BASE_URL` pointing to the HTTPS backend.
+- Confirm backend production variables are configured: `MONGODB_URI`, strong `JWT_SECRET`, strong `ADMIN_PASSWORD` and explicit `CORS_ORIGINS`.
+- Verify frontend, REST API and Socket.IO use the intended HTTPS origins.
+- Exercise health checks, room creation/joining, reconnects and direct navigation on a staging deployment before release.
 
-**Acceptance criteria:** a clean pull request receives a passing CI result for backend checks/tests and frontend build; deployment is not considered verified solely because CI passes.
+**Acceptance criteria:** staging checks pass over HTTPS, the database is connected, and the app can reach its API and real-time service without mixed-content or CORS errors.
 
-### P1 — Review trust boundaries and session controls
+### P1 — Trust boundaries and session controls
 
-- Document the threat model for age-state declarations and decide what assurance level the product actually requires. A self-declared value must not be described as verified identity or proof of age.
-- Review REST and Socket.IO middleware so that equivalent product restrictions and session rules are consistently enforced at both entry points.
-- Review room actions for server-side ownership, turn/state validation, replay protection and safe handling of concurrent requests.
-- Confirm that public room payloads never include credentials, private tokens or internal persistence fields.
-- Keep secrets in deployment environment variables; ensure logs never include tokens, passwords or uploaded private content.
+- Document the threat model for age-state declarations. A self-declared value must not be described as verified identity or proof of age.
+- Review REST and Socket.IO entry points for consistent enforcement of applicable product restrictions and session rules.
+- Review server-side ownership, state-transition validation, replay protection and safe handling of concurrent requests for age-appropriate neutral functionality.
+- Confirm public room payloads never include credentials, private tokens or internal persistence fields.
+- Ensure logs never include tokens, passwords or private user content.
 
-**Acceptance criteria:** tests cover unauthorised actions, invalid state transitions, reconnects, duplicate submissions and private-field redaction. Any policy restrictions are enforced server-side, not only by frontend navigation.
-
-### P1 — Production configuration
-
-- Require an explicit production API URL; do not silently fall back to a development-style host/port when deployed.
-- Verify HTTPS end-to-end and confirm that the frontend, REST API and Socket.IO endpoint use the intended origins.
-- Keep the production CORS allowlist explicit and test both allowed and rejected origins.
-- Verify reverse-proxy settings, health checks, graceful shutdown and database-unavailable behaviour.
-
-**Acceptance criteria:** a deployment with missing or malformed production configuration fails clearly; a configured deployment can complete a health check and a basic API connection over HTTPS.
+**Acceptance criteria:** automated tests cover unauthorised actions, invalid state transitions, reconnects, duplicate submissions and private-field redaction. Restrictions are enforced server-side, not only by frontend navigation.
 
 ### P1 — Resource limits and reliability
 
 - Review rate limits for memory growth and behaviour across restarts or multiple backend instances.
-- Use shared storage for limits that are expected to be consistent across instances.
+- Use shared storage for limits that must be consistent across instances.
 - Add bounded timeouts and size limits to uploads and real-time events.
-- Verify room cleanup and persistence behaviour under restart, disconnect and database failure conditions.
+- Verify room cleanup and persistence under restart, disconnect and database-failure conditions.
 
 **Acceptance criteria:** resource limits remain bounded under sustained traffic and behave predictably when more than one backend instance is running.
 
@@ -70,23 +66,24 @@ The deployed site could not be loaded by the available browser inspection, and t
 
 ## Recommended implementation order
 
-1. Add CI for backend checks/tests and frontend build.
-2. Fix and test the highest-risk server-side authorisation/state-validation findings.
+1. Verify production environment variables and HTTPS/CORS in staging.
+2. Review server-side authorisation and state transitions for neutral functionality.
 3. Review REST and Socket.IO policy consistency and session boundaries.
-4. Make production configuration explicit and verify HTTPS/CORS.
-5. Harden rate limits, upload limits and room persistence.
-6. Validate PWA lifecycle, mobile accessibility and production navigation.
-7. Add operational monitoring and recovery documentation.
+4. Harden rate limits, upload limits and persistence.
+5. Validate PWA lifecycle, mobile accessibility and production navigation.
+6. Add operational monitoring and recovery documentation.
 
 ## Verification status
 
 | Area | Status |
 |---|---|
-| Source inspection | Reviewed selectively |
+| Selective source inspection | Completed |
+| Existing GitHub Actions CI | Passed on this PR (run 42246657275) |
+| Backend syntax checks and unit tests | Passed in CI |
+| Frontend production build | Passed in CI |
+| Playwright browser tests | Passed in CI |
 | Live production interaction | Not verified |
-| Backend test suite | Not executed |
-| Frontend production build | Not executed |
 | Security penetration test | Not performed |
-| Mobile device testing | Not performed |
+| Physical mobile-device testing | Not performed |
 
-This roadmap should be treated as a starting point. Each item needs an implementation, automated tests where possible, and verification in a staging deployment before release.
+Treat this roadmap as a prioritised engineering plan, not a statement that all findings have already been fixed. Production changes should be verified in staging before release.
